@@ -9,9 +9,6 @@ Dx11Renderer::~Dx11Renderer()
 
 	if (mSamplerLinear)	mSamplerLinear->Release();
 
-	if (mCBChangesNever)		mCBChangesNever->Release();
-	if (mCBChangesOnResize)		mCBChangesOnResize->Release();
-
 	if (mDepthStencil)		mDepthStencil->Release();
 	if (mDepthStencilView)	mDepthStencilView->Release();
 
@@ -129,89 +126,6 @@ void Dx11Renderer::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight
 		mDeviceContext->RSSetViewports(1, &viewport);
 
 
-		D3D11_BUFFER_DESC bufferDescription;
-		ZeroMemory(&bufferDescription, sizeof(bufferDescription));
-
-		//Constant buffers
-		bufferDescription.Usage = D3D11_USAGE_DEFAULT;
-		bufferDescription.ByteWidth = sizeof(CBChangesNever);
-		bufferDescription.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		bufferDescription.CPUAccessFlags = 0;
-
-		if (!SUCCEEDED(mDevice->CreateBuffer(&bufferDescription, nullptr, &mCBChangesNever)))
-			throw std::exception("Failed to create constant buffer");
-
-		bufferDescription.ByteWidth = sizeof(CBChangesOnResize);
-		if (!SUCCEEDED(mDevice->CreateBuffer(&bufferDescription, nullptr, &mCBChangesOnResize)))
-			throw std::exception("Failed to create constant buffer");
-
-
-		bufferDescription.ByteWidth = sizeof(CBChangesEveryFrame);
-		if (!SUCCEEDED(mDevice->CreateBuffer(&bufferDescription, nullptr, &mCBChangesEveryFrame)))
-			throw std::exception("Failed to create constant buffer");
-
-
-/*
-
-		//Texture
-		if (!SUCCEEDED(D3DX11CreateShaderResourceViewFromFile(mDevice, "seafloor.dds", nullptr, nullptr,
-			&mTextureRV, nullptr)))
-			throw std::exception("Failed to create shader resource from file");
-*/
-
-/*
-
-		//Sample state
-		D3D11_SAMPLER_DESC sampleDescription;
-		ZeroMemory(&sampleDescription, sizeof(sampleDescription));
-
-		sampleDescription.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-		sampleDescription.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-		sampleDescription.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-		sampleDescription.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-		sampleDescription.ComparisonFunc = D3D11_COMPARISON_NEVER;
-		sampleDescription.MinLOD = 0;
-		sampleDescription.MaxLOD = D3D11_FLOAT32_MAX;
-
-		if (!SUCCEEDED(mDevice->CreateSamplerState(&sampleDescription, &mSamplerLinear)))
-			throw std::exception("Failed to create sampler state");
-*/
-
-		//View matrix
-		//mWorld = XMMatrixIdentity();
-		XMStoreFloat4x4(&mWorld, XMMatrixIdentity());
-		/*
-		auto translation = XMMatrixTranslation(10.0f, 20.0f, 30.0f);
-		auto rotation = XMMatrixRotationX(90);
-
-		XMFLOAT3 trans = Math::getTranslationFromMatrix(translation);
-		*/
-
-		XMVECTOR Eye = XMVectorSet(0.0f, 3.0f, -6.0f, 0.0f);
-		XMVECTOR At =  XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-		XMVECTOR Up =  XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-		//mView = XMMatrixLookAtLH(Eye, At, Up);
-
-		XMStoreFloat4x4(&mView, XMMatrixLookAtLH(Eye, At, Up));
-
-		CBChangesNever cbChangesNever;
-		XMStoreFloat4x4(&cbChangesNever.mView, XMMatrixTranspose(XMLoadFloat4x4(&mView)));
-		//cbChangesNever.mView = XMMatrixTranspose(mView);
-		mDeviceContext->UpdateSubresource(mCBChangesNever, 0, nullptr, &cbChangesNever, 0, 0);
-
-
-		//Projection matrix
-//		mProjection = XMMatrixPerspectiveFovLH(XM_PIDIV4, renderWindowWidth / (float)renderWindowHeight,
-//			0.01f, 100.0f);
-		XMStoreFloat4x4(&mProjection, XMMatrixPerspectiveFovLH(XM_PIDIV4 /*XMConvertToRadians(90.0f)*/, renderWindowWidth /
-			(float)renderWindowHeight, 0.01f, 100.0f));
-
-		CBChangesOnResize cbChangesOnResize;
-		XMStoreFloat4x4(&cbChangesOnResize.mProjection, XMMatrixTranspose(XMLoadFloat4x4(&mProjection)));
-		//cbChangesOnResize.mProjection = XMMatrixTranspose(mProjection);
-		mDeviceContext->UpdateSubresource(mCBChangesOnResize, 0, nullptr, &cbChangesOnResize, 0, 0);
-
-
 		initDXUT(hWnd);
 	}
 
@@ -246,98 +160,11 @@ void Dx11Renderer::initDXUT(HWND hWnd)
 
 void Dx11Renderer::preRender()
 {
-	//Clear back buffer.
-	/*float random[4] =
-	{
-		cosf(t),
-		sinf(t),
-		-cosf(t),
-		sinf(t)
-	};
-	*/
-
 	float ClearColor[4] = { 0.0f, 0.125f, 0.3f, 1.0f };
 	mDeviceContext->ClearRenderTargetView(mRenderTargetView, ClearColor);
-	//mDeviceContext->ClearRenderTargetView(mRenderTargetView, random);
 	
 	//Clear depth buffer to max (1.0)
 	mDeviceContext->ClearDepthStencilView(mDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
-
-
-	static float t(0.0f);
-	{
-		static DWORD timeStart(0);
-		DWORD timeCur = GetTickCount();
-		if (timeStart == 0)
-			timeStart = timeCur;
-		t = (timeCur - timeStart) / 1000.0f;
-	}
-
-
-	/*
-	
-	XMMATRIX rotX = XMMatrixRotationX(t * 0.01f);
-	XMMATRIX rotY = XMMatrixRotationY(t * 0.01f);
-	XMMATRIX rotZ = XMMatrixRotationZ(sinf(t));
-	XMMATRIX rot = XMMatrixMultiply(XMMatrixMultiply(rotX, rotY), rotZ);
-	
-	XMMATRIX trix = XMLoadFloat4x4(&mView);
-	trix = XMMatrixMultiply(trix, rotY);
-
-	//XMStoreFloat4x4(&mView, rot);
-	XMMATRIX trans = XMMatrixTranslation(0.0f, 0.0f, -25.0f);
-	trix = XMMatrixMultiply(trans, trix);
-
-	XMMATRIX pos = XMMatrixMultiply(XMLoadFloat4x4(&mView), XMMatrixTranslation(0.0f, 0.0f, -10.0f));
-	XMStoreFloat4x4(&mView, pos);
-
-	//XMStoreFloat4x4(&mView, trix);
-
-	//XMStoreFloat4x4(&mView, XMMatrixTranslation(0.0f, 0.0f, -0.5f));
-
-	CBChangesEveryFrame view;
-	XMStoreFloat4x4(&view.mWorld, XMMatrixTranspose(XMLoadFloat4x4(&mView)));
-	
-	//constBuffer.mWorld = XMMatrixTranspose(mWorld);
-	//view.vMeshColor = mMeshColor;
-	//mDeviceContext->UpdateSubresource(mCBChangesNever, 0, nullptr, &view, 0, 0);
-	
-	XMStoreFloat4x4(&mWorld, XMMatrixTranslation(0.0f, 0.0f, 0.0f));//rot);
-	/*
-	mMeshColor.x = (sinf(t * 1.0f) + 1.0f) * 0.5f;
-	mMeshColor.y = (cosf(t * 3.0f) + 1.0f) * 0.5f;
-	mMeshColor.z = (sinf(t * 5.0f) + 1.0f) * 0.5f;
-	*/
-
-	/*
-	Math::setTranslationInFloat4x4(mView, XMFLOAT3(0.0f, 0.0f, t));
-
-	CBChangesNever cbNever;
-	XMStoreFloat4x4(&cbNever.mView, XMMatrixTranspose(XMLoadFloat4x4(&mView)));
-	mDeviceContext->UpdateSubresource(mCBChangesNever, 0, nullptr, &cbNever, 0, 0);
-	*/
-	
-	CBChangesEveryFrame constBuffer;
-	XMStoreFloat4x4(&constBuffer.mWorld, XMMatrixTranspose(XMLoadFloat4x4(&mWorld)));
-	//constBuffer.mWorld = XMMatrixTranspose(mWorld);
-	//constBuffer.vMeshColor = mMeshColor;
-	mDeviceContext->UpdateSubresource(mCBChangesEveryFrame, 0, nullptr, &constBuffer, 0, 0);
-	
-	static bool once = false;
-	if (!once)
-	{
-	//	mDeviceContext->VSSetConstantBuffers(0, 1, &mCBChangesNever);
-		mDeviceContext->VSSetConstantBuffers(1, 1, &mCBChangesOnResize);
-		//mDeviceContext->VSSetShader(mVertexShader, nullptr, 0);
-		mDeviceContext->UpdateSubresource(mCBChangesEveryFrame, 0, nullptr, &constBuffer, 0, 0);
-		once = true;
-	}
-
-
-	//mDeviceContext->PSSetConstantBuffers(2, 1, &mCBChangesEveryFrame);
-	//mDeviceContext->PSSetShaderResources(0, 1, &mTextureRV);
-	//mDeviceContext->PSSetSamplers(0, 1, &mSamplerLinear);
-	//mDeviceContext->PSSetSamplers(0, 0, nullptr);
 }
 
 void Dx11Renderer::render()

@@ -76,7 +76,7 @@ void Application::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight)
 	auto bert = mResourceManager->getShaderManager()->getVertexShader("Wireframe.fx");
 
 
-	mCamera = new Camera(90.0f, 100.0f, 0.1f, 1280/720.0f, mSceneGraph);
+	mCamera = new Camera(45.0f, 100.0f, 0.1f, 1280/720.0f, mSceneGraph);
 
 	cube->create(mDx11Renderer, mResourceManager->getShaderManager());
 

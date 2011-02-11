@@ -68,10 +68,6 @@ public:
 	, mDepthStencil(nullptr)
 	, mDepthStencilView(nullptr)
 
-	, mCBChangesNever(nullptr)
-	, mCBChangesOnResize(nullptr)
-	//		  mCBChangesEveryFrame(nullptr)
-
 	, mSamplerLinear(nullptr)
 	{
 	}
@@ -96,10 +92,6 @@ public:
 
 	HRESULT compileShader(const char* fileName, const char* entryPoint, const char* shaderModel, ID3DBlob** blobOut);
 
-	inline ID3D11Buffer* getChangesNeverBuffer()
-	{
-		return mCBChangesNever;
-	}
 
 private:
 	void initDXUT(HWND hWnd);
@@ -112,29 +104,9 @@ private:
 	ID3D11Texture2D*		mDepthStencil;
 	ID3D11DepthStencilView*	mDepthStencilView;
 
-
-	//Texture
-//	ID3D11ShaderResourceView*	mTextureRV;
-
 	Font* mFont;
 
-
-	ID3D11Buffer*		mCBChangesNever;
-	ID3D11Buffer*		mCBChangesOnResize;
-	ID3D11Buffer*		mCBChangesEveryFrame;
-
-
 	ID3D11SamplerState*	mSamplerLinear;
-
-	//XMMATRIX	mWorld;
-	//XMMATRIX	mView;
-	//XMMATRIX	mProjection;
-
-	XMFLOAT4X4	mWorld;
-	XMFLOAT4X4	mView;
-	XMFLOAT4X4	mProjection;
-
-//	XMFLOAT4	mMeshColor;
 };
 
 #endif

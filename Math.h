@@ -45,6 +45,16 @@ namespace Math
 	}
 
 
+
+	inline XMFLOAT4X4 XMFloat4x4Transpose(const XMFLOAT4X4& M)
+	{
+		const XMMATRIX& tempMatrix = XMMatrixTranspose(XMLoadFloat4x4(&M));
+
+		XMFLOAT4X4 temp4x4;
+		XMStoreFloat4x4(&temp4x4, tempMatrix);
+
+		return temp4x4;
+	}
 }
 
 

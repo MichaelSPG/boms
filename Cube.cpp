@@ -109,6 +109,7 @@ void Cube::create(Dx11Renderer* renderer, ShaderManager* shaderManager)
 
 void Cube::draw(Dx11Renderer* renderer)
 {
+	//This should contain every state change needed to render something properly.
 	auto context = renderer->getDeviceContext();
 
 	UINT offsets =  0;

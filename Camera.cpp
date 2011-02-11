@@ -9,7 +9,7 @@ Camera::Camera(float fieldOfViewDegrees, float farClip, float nearClip, float as
 	, mUp(0.0f, 1.0f, 0.0f)
 	, mPosition(0.0f, 0.0f, 0.0f)
 
-	, mFoV(XMConvertToRadians(fieldOfViewDegrees))
+	, mFieldOfView(XMConvertToRadians(fieldOfViewDegrees))
 	, mFarClip(farClip)
 	, mNearClip(nearClip)
 	, mAspectRatio(aspectRatio)
@@ -36,11 +36,8 @@ Camera::Camera(float fieldOfViewDegrees, float farClip, float nearClip, float as
 	mWorld = XMMatrixIdentity();
 	*/
 
-	
+	ID3D11Device* device = mSceneGraph->getRenderer()->getDevice();
 
-	createProjection();
-
-	
 
 	D3D11_BUFFER_DESC bufferDescription;
 	ZeroMemory(&bufferDescription, sizeof(bufferDescription));
@@ -50,7 +47,7 @@ Camera::Camera(float fieldOfViewDegrees, float farClip, float nearClip, float as
 	bufferDescription.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bufferDescription.CPUAccessFlags = 0;
 
-	HRESULT res = mSceneGraph->getRenderer()->getDevice()->CreateBuffer(&bufferDescription,
+	HRESULT res = device->CreateBuffer(&bufferDescription,
 		nullptr, &mViewProjectionBuffer);
 	assert(SUCCEEDED(res));
 
@@ -65,19 +62,26 @@ Camera::Camera(float fieldOfViewDegrees, float farClip, float nearClip, float as
 
 
 
-
-	ZeroMemory(&bufferDescription, sizeof(bufferDescription));
-
 	//Constant buffers
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
 	bufferDescription.ByteWidth = sizeof(CBChangesNever);
 	bufferDescription.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bufferDescription.CPUAccessFlags = 0;
 
-	if (!SUCCEEDED(mSceneGraph->getRenderer()->getDevice()->CreateBuffer(&bufferDescription, nullptr, &mViewBuffer)))
+	if (!SUCCEEDED(device->CreateBuffer(&bufferDescription, nullptr, &mViewBuffer)))
 		throw std::exception("Failed to create constant buffer");
 
 	mDeviceContext->VSSetConstantBuffers(0, 1, &mViewBuffer);
+
+
+	bufferDescription.ByteWidth = sizeof(CBChangesOnResize);
+	if (!SUCCEEDED(device->CreateBuffer(&bufferDescription, nullptr, &mProjectionBuffer)))
+		throw std::exception("Failed to create constant buffer");
+
+	mDeviceContext->VSSetConstantBuffers(1, 1, &mProjectionBuffer);
+
+	createProjection();
+
 
 	//////////////////////////////////////////////////////////////////////////
 	/*
