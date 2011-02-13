@@ -3,17 +3,13 @@
 #include "SceneGraph.h"
 
 
-Camera::Camera(float fieldOfViewDegrees, float farClip, float nearClip, float aspectRatio,
-	SceneGraph*	sceneGraph)
+Camera::Camera(const ProjectionInfo& projectionInfo, SceneGraph* sceneGraph)
 	: mLookAt(0.0f, 0.0f, 0.0f)
 	, mUp(0.0f, 1.0f, 0.0f)
 	, mPosition(0.0f, 0.0f, 0.0f)
-
-	, mFieldOfView(XMConvertToRadians(fieldOfViewDegrees))
-	, mFarClip(farClip)
-	, mNearClip(nearClip)
-	, mAspectRatio(aspectRatio)
 	
+	, mProjectionInfo(projectionInfo)
+
 	, mSceneGraph(sceneGraph)
 	, mDeviceContext(mSceneGraph->getRenderer()->getDeviceContext())
 	/*
@@ -23,11 +19,13 @@ Camera::Camera(float fieldOfViewDegrees, float farClip, float nearClip, float as
 	, mWorld(XMMatrixIdentity())
 	*/
 {
+	assert(sceneGraph);
 	
 	XMStoreFloat4x4(&mProjection, XMMatrixIdentity());
 	XMStoreFloat4x4(&mView, XMMatrixIdentity());
-	XMStoreFloat4x4(&mViewProjection, XMMatrixIdentity());
 	XMStoreFloat4x4(&mWorld, XMMatrixIdentity());
+
+	XMMatrixRotationX(90.0f);
 	
 	/*
 	mProjection = XMMatrixIdentity();
@@ -47,9 +45,6 @@ Camera::Camera(float fieldOfViewDegrees, float farClip, float nearClip, float as
 	bufferDescription.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bufferDescription.CPUAccessFlags = 0;
 
-	HRESULT res = device->CreateBuffer(&bufferDescription,
-		nullptr, &mViewProjectionBuffer);
-	assert(SUCCEEDED(res));
 
 	/*
 	bufferDescription.ByteWidth = sizeof(CBChangesNever);
@@ -95,7 +90,7 @@ Camera::Camera(float fieldOfViewDegrees, float farClip, float nearClip, float as
 	mPosition.x = XMVectorGetX(Eye);
 	mPosition.y = XMVectorGetY(Eye);
 	mPosition.z = XMVectorGetZ(Eye);
-	mPosition.x += 5.0f;
+	//mPosition.x += 5.0f;
 
 	/*mView =*/ XMStoreFloat4x4(&mView, XMMatrixLookAtLH(Eye, At, Up));
 

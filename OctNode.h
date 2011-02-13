@@ -45,6 +45,8 @@ private:
 
 	Primitive*	mWireFramePrimitive;
 	AABB*		mAABB;
+
+	float m_color;
 };
 
 #endif // OCT_NODE_H

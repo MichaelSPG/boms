@@ -27,22 +27,22 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 	assert(dx11Renderer);
 	assert(shaderManager);
 
+
 	mVertexShader = shaderManager->getVertexShader("Wireframe.fx");
 	mPixelShader  = shaderManager->getPixelShader("Wireframe.fx");
 
 
 	D3D11_BUFFER_DESC bufferDescription;
 	ZeroMemory(&bufferDescription, sizeof(bufferDescription));
-	
+
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
-	bufferDescription.ByteWidth = sizeof(CBChangesEveryFrame);
+	bufferDescription.ByteWidth = sizeof(CBWireFrame);
 	bufferDescription.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bufferDescription.CPUAccessFlags = 0;
+	bufferDescription.MiscFlags = 0;
 
-	HRESULT res = dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr,
-		&mBuffer);
-	assert(SUCCEEDED(res));
-
+	assert(SUCCEEDED(dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr,
+		&mBuffer)));
 
 
 	const XMFLOAT3& halfExtents = aabb.getHalfExtents();
@@ -61,54 +61,16 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 		{ XMFLOAT3(-halfExtents.x, -halfExtents.y, halfExtents.z) },//Lower left, back
 	};
 
-	/*
-	SimpleVertex vertices[] =
-	{
-		{ XMFLOAT3( -2.0f, 2.0f, -2.0f ), XMFLOAT2( 0.0f, 0.0f ) },
-		{ XMFLOAT3( 2.0f, 2.0f, -2.0f ), XMFLOAT2( 1.0f, 0.0f ) },
-		{ XMFLOAT3( 2.0f, 2.0f, 2.0f ), XMFLOAT2( 1.0f, 1.0f ) },
-		{ XMFLOAT3( -2.0f, 2.0f, 2.0f ), XMFLOAT2( 0.0f, 1.0f ) },
 
-		{ XMFLOAT3( -2.0f, -2.0f, -2.0f ), XMFLOAT2( 0.0f, 0.0f ) },
-		{ XMFLOAT3( 2.0f, -2.0f, -2.0f ), XMFLOAT2( 1.0f, 0.0f ) },
-		{ XMFLOAT3( 2.0f, -2.0f, 2.0f ), XMFLOAT2( 1.0f, 1.0f ) },
-		{ XMFLOAT3( -2.0f, -2.0f, 2.0f ), XMFLOAT2( 0.0f, 1.0f ) },
-
-		{ XMFLOAT3( -2.0f, -2.0f, 2.0f ), XMFLOAT2( 0.0f, 0.0f ) },
-		{ XMFLOAT3( -2.0f, -2.0f, -2.0f ), XMFLOAT2( 1.0f, 0.0f ) },
-		{ XMFLOAT3( -2.0f, 2.0f, -2.0f ), XMFLOAT2( 1.0f, 1.0f ) },
-		{ XMFLOAT3( -2.0f, 2.0f, 2.0f ), XMFLOAT2( 0.0f, 1.0f ) },
-
-		{ XMFLOAT3( 2.0f, -2.0f, 2.0f ), XMFLOAT2( 0.0f, 0.0f ) },
-		{ XMFLOAT3( 2.0f, -2.0f, -2.0f ), XMFLOAT2( 1.0f, 0.0f ) },
-		{ XMFLOAT3( 2.0f, 2.0f, -2.0f ), XMFLOAT2( 1.0f, 1.0f ) },
-		{ XMFLOAT3( 2.0f, 2.0f, 2.0f ), XMFLOAT2( 0.0f, 1.0f ) },
-
-		{ XMFLOAT3( -2.0f, -2.0f, -2.0f ), XMFLOAT2( 0.0f, 0.0f ) },
-		{ XMFLOAT3( 2.0f, -2.0f, -2.0f ), XMFLOAT2( 1.0f, 0.0f ) },
-		{ XMFLOAT3( 2.0f, 2.0f, -2.0f ), XMFLOAT2( 1.0f, 1.0f ) },
-		{ XMFLOAT3( -2.0f, 2.0f, -2.0f ), XMFLOAT2( 0.0f, 1.0f ) },
-
-		{ XMFLOAT3( -2.0f, -2.0f, 2.0f ), XMFLOAT2( 0.0f, 0.0f ) },
-		{ XMFLOAT3( 2.0f, -2.0f, 2.0f ), XMFLOAT2( 1.0f, 0.0f ) },
-		{ XMFLOAT3( 2.0f, 2.0f, 2.0f ), XMFLOAT2( 1.0f, 1.0f ) },
-		{ XMFLOAT3( -2.0f, 2.0f, 2.0f ), XMFLOAT2( 0.0f, 1.0f ) },
-	};
-	*/
 	//Verte buffer
-	D3D11_BUFFER_DESC bufferDesc;
-	ZeroMemory(&bufferDesc, sizeof(bufferDesc));
-	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	bufferDesc.ByteWidth = sizeof(Vertex) * ARRAYSIZE(vertices);
-	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bufferDesc.CPUAccessFlags = 0;
-	bufferDesc.MiscFlags = 0;
+	bufferDescription.ByteWidth = sizeof(Vertex) * ARRAYSIZE(vertices);
+	bufferDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
 	D3D11_SUBRESOURCE_DATA initData;
 	ZeroMemory(&initData, sizeof(initData));
 	initData.pSysMem = vertices;
 
-	if (!SUCCEEDED(dx11Renderer->getDevice()->CreateBuffer(&bufferDesc, &initData,
+	if (!SUCCEEDED(dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
 		&mVertexBuffer)))
 	{
 		throw std::exception("Failed to create a vertex buffer");
@@ -123,36 +85,11 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 	///Index buffer
 	WORD indices[] =
 	{
-		0, 1,
-		1, 2,
-		2, 3,
-		3, 4,
-		4, 5,
-		5, 6,
-		6, 7
+		0, 4, 5, 1, 0,
+		3, 2, 1, 5, 6,
+		2, 3, 7, 6, 7, 4
 	};
-	/*
-	WORD indices[] =
-	{
-		3,1,0,
-		2,1,3,
-
-		6,4,5,
-		7,4,6,
-
-		11,9,8,
-		10,9,11,
-
-		14,12,13,
-		15,12,14,
-
-		19,17,16,
-		18,17,19,
-
-		22,20,21,
-		23,20,22
-	};
-	*/
+	
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
 	bufferDescription.ByteWidth = sizeof(WORD) * ARRAYSIZE(indices);
 	bufferDescription.BindFlags = D3D11_BIND_INDEX_BUFFER;
@@ -160,18 +97,16 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 
 	initData.pSysMem = indices;
 
-	res = dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
-		&mIndexBuffer);
-	assert(SUCCEEDED(res));
-
-	const XMFLOAT3& position = aabb.getOwner()->getPosition();
-	XMStoreFloat4x4(&mTranslation, XMMatrixTranslation(position.x, position.y, position.z));
+	assert(SUCCEEDED(dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
+		&mIndexBuffer)));
 }
 
 void Primitive::draw(Dx11Renderer* dx11Renderer)
 {
 	assert(dx11Renderer);
 
+	/*
+	goto v2;
 
 	UINT offsets = 0;
 	UINT stride = sizeof(SimpleVertex);
@@ -181,7 +116,7 @@ void Primitive::draw(Dx11Renderer* dx11Renderer)
 	//mDeviceContext->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offsets);
 	
 	CBWireFrame constBuffer;
-	XMStoreFloat4x4(&constBuffer.world, XMMatrixTranslation(0.0f, 1000.0f, 10.0f));
+	XMStoreFloat4x4(&constBuffer.world, XMMatrixTranslation(0.0f, 0.0f, 10.0f));
 	//XMStoreFloat4x4(&constBuffer.mWorld, XMLoadFloat4x4(&mTranslation));
 	constBuffer.color = XMFLOAT4(1.0f, 0.0f, 1.0f, 0.0f);
 	dx11Renderer->getDeviceContext()->UpdateSubresource(mBuffer, 0, nullptr, &constBuffer,
@@ -198,4 +133,50 @@ void Primitive::draw(Dx11Renderer* dx11Renderer)
 	dx11Renderer->getDeviceContext()->IASetInputLayout(mVertexShader->getInputLayout());
 	
 	dx11Renderer->getDeviceContext()->DrawIndexed(14, 0, 0);
+
+
+	
+v2:
+*/
+	auto context = dx11Renderer->getDeviceContext();
+
+	UINT offsets2 =  0;
+	UINT stride2 = sizeof(Vertex);
+	context->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride2, &offsets2);
+	context->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+
+	context->IASetInputLayout(mVertexShader->getInputLayout());
+	//context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
+
+	context->VSSetShader(mVertexShader->getVertexShader(), nullptr, 0);
+	context->PSSetShader(mPixelShader->getPixelShader(), nullptr, 0);
+
+	static float t = 0.0f;
+	t += 0.01f;
+	//XMStoreFloat4x4(&mWorld, XMMatrixRotationY(sin(t)));
+
+
+
+	static bool once = false;
+	//if (!once)
+	{
+		CBChangesEveryFrame cb;
+
+		XMStoreFloat4x4(&cb.mWorld, XMMatrixIdentity());
+
+		//cb.vMeshColor = XMFLOAT4(sin(x), sin(y), sin(z), 1.0f);
+		cb.vMeshColor = XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f);
+		//cb.mWorld = mWorld;
+		
+		//context->UpdateSubresource(mBuffer, 0, nullptr, &cb, 0, 0);
+		context->VSSetConstantBuffers(2, 1, &mBuffer);
+		context->PSSetConstantBuffers(2, 1, &mBuffer);
+
+
+		once = true;
+	}
+
+
+	context->DrawIndexed(16, 0, 0);
 }

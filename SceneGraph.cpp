@@ -31,9 +31,9 @@ void SceneGraph::init(unsigned short treeDepth, Dx11Renderer* renderer,
 
 	//mRootNode = std::make_shared<OctNode>(OctNode(getNumCreatedObjects()));
 	//mRootNode = std::shared_ptr<OctNode>(new OctNode(0));
-	AABB aabb(0.1f, 0.1f, 0.1f, nullptr);
+	AABB aabb(100.0f, 100.0f, 100.0f, nullptr);
 
-	mRootNode = std::make_shared<OctNode>(getNumCreatedObjects(), XMFLOAT3(0.0f, 10.0f, 0.0f), 
+	mRootNode = std::make_shared<OctNode>(getNumCreatedObjects(), XMFLOAT3(0.0f, 0.0f, 0.0f), 
 		this, nullptr, aabb);
 	mRootNode->mAABB->mOwner = mRootNode.get();
 

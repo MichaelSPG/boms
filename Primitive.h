@@ -16,11 +16,14 @@ struct Vertex
 
 class Primitive
 {
+	friend class OctNode;
+
 public:
 	Primitive();
 	~Primitive();
-	
-	void createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shaderManager, const AABB& aabb);
+
+	void createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shaderManager,
+		const AABB& aabb);
 
 	void draw(Dx11Renderer* dx11Renderer);
 	
@@ -32,8 +35,6 @@ private:
 
 	ID3D11Buffer*		mVertexBuffer;
 	ID3D11Buffer*		mIndexBuffer;
-
-	XMFLOAT4X4 mTranslation;
 };
 
 #endif // PRIMITIVE_H

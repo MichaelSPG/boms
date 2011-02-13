@@ -24,11 +24,10 @@ public:
 	*/
 	inline int getNumCreatedObjects()
 	{
-		return mNumCreatedObjects++;
+		return ++mNumCreatedObjects;
 	}
 
 	/**	Returns the amount of created objects without incrementing the value.
-		
 	*/
 	inline int getNumCreatedObjectsNoIncrement() const
 	{

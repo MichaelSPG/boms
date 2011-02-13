@@ -9,7 +9,7 @@ void Cube::create(Dx11Renderer* renderer, ShaderManager* shaderManager)
 
 	VSin vertices[] =
 	{
-		
+
 		{ XMFLOAT3( -1.0f, 1.0f, -1.0f ), XMFLOAT3( 0.0f, 0.0f , 1.0f) },
 		{ XMFLOAT3( 1.0f, 1.0f, -1.0f ), XMFLOAT3( 1.0f, 0.0f , 1.0f ) },
 		{ XMFLOAT3( 1.0f, 1.0f, 1.0f ), XMFLOAT3( 1.0f, 1.0f , 1.0f ) },
@@ -119,6 +119,7 @@ void Cube::draw(Dx11Renderer* renderer)
 	
 	context->IASetInputLayout(mVertexShader->getInputLayout());
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 
 	context->VSSetShader(mVertexShader->getVertexShader(), nullptr, 0);
 	context->PSSetShader(mPixelShader->getPixelShader(), nullptr, 0);

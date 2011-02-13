@@ -70,13 +70,14 @@ void Application::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight)
 	mResourceManager->initShaderManager(mDx11Renderer);
 
 	mSceneGraph = new SceneGraph();
-	mSceneGraph->init(3, mDx11Renderer, mResourceManager->getShaderManager());
+	mSceneGraph->init(4, mDx11Renderer, mResourceManager->getShaderManager());
 
 	
 	auto bert = mResourceManager->getShaderManager()->getVertexShader("Wireframe.fx");
 
 
-	mCamera = new Camera(45.0f, 100.0f, 0.1f, 1280/720.0f, mSceneGraph);
+//	mCamera = new Camera(45.0f, 100.0f, 0.1f, 1280/720.0f, mSceneGraph);
+	mCamera = new Camera(ProjectionInfo(45.0f, 1000.0f, 0.1f, 1280.0f/720.0f), mSceneGraph);
 
 	cube->create(mDx11Renderer, mResourceManager->getShaderManager());
 
@@ -126,7 +127,7 @@ void Application::update(float deltaTime)
 
 	cube->draw(mDx11Renderer);
 
-	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
+	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 	mSceneGraph->drawAABBs(mDx11Renderer);
 
 
@@ -161,6 +162,25 @@ bool Application::keyPressed(const OIS::KeyEvent &arg)
 	if (arg.key == OIS::KC_C)
 	{
 		c = true;
+	}
+
+	switch (arg.key)
+	{
+	case OIS::KC_ADD:
+		{
+			auto pi = mCamera->getProjectionInfo();
+			pi.mAspectRatio += 0.025f;
+			mCamera->setProjectionInfo(pi);
+		}
+		break;
+
+	case OIS::KC_SUBTRACT:
+		{
+			auto pi = mCamera->getProjectionInfo();
+			pi.mAspectRatio -= 0.025f;
+			mCamera->setProjectionInfo(pi);
+		}
+		break;
 	}
 
 
@@ -200,8 +220,8 @@ bool Application::keyReleased(const OIS::KeyEvent &arg)
 bool Application::mouseMoved( const OIS::MouseEvent &arg )
 {
 	
-	mCamera->rotateAboutAxis(Camera::AXIS_X, (float)arg.state.X.abs * 0.001f);
-	mCamera->rotateAboutAxis(Camera::AXIS_Y, (float)arg.state.Y.abs * 0.001f);
+	mCamera->rotateAboutAxis(Camera::AXIS_Y, (float)arg.state.X.rel * 0.01f);
+	mCamera->rotateAboutAxis(Camera::AXIS_X, (float)arg.state.Y.rel * 0.01f);
 	
 
 	return true;
