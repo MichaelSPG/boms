@@ -68,7 +68,7 @@ public:
 	, mDepthStencil(nullptr)
 	, mDepthStencilView(nullptr)
 
-	, mSamplerLinear(nullptr)
+	, mFont(nullptr)
 	{
 	}
 
@@ -90,7 +90,8 @@ public:
 		return mDevice;
 	}
 
-	HRESULT compileShader(const char* fileName, const char* entryPoint, const char* shaderModel, ID3DBlob** blobOut);
+	HRESULT compileShader(const char* fileName, const char* entryPoint,
+		const char* shaderModel, ID3DBlob** blobOut);
 
 
 private:
@@ -105,8 +106,6 @@ private:
 	ID3D11DepthStencilView*	mDepthStencilView;
 
 	Font* mFont;
-
-	ID3D11SamplerState*	mSamplerLinear;
 };
 
 #endif

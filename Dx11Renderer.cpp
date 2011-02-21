@@ -1,13 +1,11 @@
 #include "Dx11Renderer.h"
 
+#include <sstream>
+
 
 Dx11Renderer::~Dx11Renderer()
 {
-	Log::log("Uninitializing DirectX", LOG_SEV_NOTICE);
-
-	if (mDeviceContext)	mDeviceContext->ClearState();
-
-	if (mSamplerLinear)	mSamplerLinear->Release();
+	Log::logMessage("Uninitializing DirectX", pantheios::SEV_NOTICE);
 
 	if (mDepthStencil)		mDepthStencil->Release();
 	if (mDepthStencilView)	mDepthStencilView->Release();
@@ -16,15 +14,21 @@ Dx11Renderer::~Dx11Renderer()
 
 	if (mSwapChain)			mSwapChain->Release();
 
-	if (mDeviceContext)	mDeviceContext->Release();
+	if (mDeviceContext)
+	{
+		mDeviceContext->ClearState();
+		mDeviceContext->Flush();
+		mDeviceContext->Release();
+	}
 	if (mDevice)		mDevice->Release();
 
-	Log::log("DirectX successfully uninitialized");
+
+	Log::logMessage("DirectX successfully uninitialized");
 }
 
 void Dx11Renderer::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight)
 {
-	Log::log("Starting initialization of Direct3D 11");
+	Log::logMessage("Starting initialization of Direct3D 11");
 
 	try
 	{
@@ -55,22 +59,21 @@ void Dx11Renderer::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight
 			D3D_FEATURE_LEVEL_10_0,
 		};
 		D3D_FEATURE_LEVEL fl = D3D_FEATURE_LEVEL_11_0;
-
-		Log::log("Creating D3D11 device and swap chain");
+		
+		Log::logMessage("Creating D3D11 device and swap chain");
 		if (!SUCCEEDED(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, deviceFlags,
 			featureLevels, ARRAYSIZE(featureLevels), D3D11_SDK_VERSION, &swapChainDesc, &mSwapChain,
 			&mDevice, &fl, &mDeviceContext)))
 				throw std::exception("Failed to create D3D11 device");
-
 		
 		//Back buffer
 		ID3D11Texture2D *backBuffer = nullptr;
-		Log::log("Creating back buffer");
+		Log::logMessage("Creating back buffer");
 		if (!SUCCEEDED(mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer)))
 			throw std::exception("Failed to create back buffer");
 
 		//D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
-		Log::log("Creating render target view");
+		Log::logMessage("Creating render target view");
 		if (!SUCCEEDED(mDevice->CreateRenderTargetView(backBuffer, nullptr, &mRenderTargetView)))
 			throw std::exception("Failed to create render target view");
 
@@ -93,7 +96,7 @@ void Dx11Renderer::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight
 		depthDesc.CPUAccessFlags = 0;
 		depthDesc.MiscFlags = 0;
 
-		Log::log("Creating depth stencil texture");
+		Log::logMessage("Creating depth stencil texture");
 		if (!SUCCEEDED(mDevice->CreateTexture2D(&depthDesc, nullptr, &mDepthStencil)))
 			throw std::exception("Failed to create depth stencil texture");
 
@@ -106,9 +109,12 @@ void Dx11Renderer::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight
 		depthViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 		depthViewDesc.Texture2D.MipSlice = 0;
 
-		Log::log("Creating depth stencil view");
-		if (!SUCCEEDED(mDevice->CreateDepthStencilView(mDepthStencil, &depthViewDesc, &mDepthStencilView)))
+		Log::logMessage("Creating depth stencil view");
+		if (!SUCCEEDED(mDevice->CreateDepthStencilView(mDepthStencil, &depthViewDesc,
+			&mDepthStencilView)))
+		{
 			throw std::exception("Failed to create depth stencil view");
+		}
 
 
 		mDeviceContext->OMSetRenderTargets(1, &mRenderTargetView, mDepthStencilView);
@@ -125,23 +131,51 @@ void Dx11Renderer::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight
 
 		mDeviceContext->RSSetViewports(1, &viewport);
 
+#ifdef _DEBUG
+		//Set debug info in D3D objects to help debugging their lifetimes if necessary.
+
+		const char* swapChainName = "IDXGISwapChain";
+		mSwapChain->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof(swapChainName) - 1,
+			swapChainName);
+
+		const char* deviceName = "ID3D11Device";
+		mDevice->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof(deviceName) - 1,
+			deviceName);
+
+		const char* deviceContextName = "ID3D11DeviceContext";
+		mDeviceContext->SetPrivateData(WKPDID_D3DDebugObjectName,
+			sizeof(deviceContextName) - 1, deviceContextName);
+
+		const char* renderTargetViewName = "ID3D11RenderTargetView";
+		mRenderTargetView->SetPrivateData(WKPDID_D3DDebugObjectName,
+			sizeof(renderTargetViewName) - 1, renderTargetViewName);
+
+		const char* depthStencilName = "ID3D11Texture2D_DepthStencil";
+		mDepthStencil->SetPrivateData(WKPDID_D3DDebugObjectName, 
+			sizeof(depthStencilName) - 1, depthStencilName);
+
+		const char* depthStencilViewName = "ID3D11DepthStencilView";
+		mDepthStencilView->SetPrivateData(WKPDID_D3DDebugObjectName, 
+			sizeof(depthStencilViewName) - 1, depthStencilViewName);
+#endif
 
 		initDXUT(hWnd);
 	}
 
 	catch (std::exception &e)
 	{
-		Log::log(std::string(e.what() + std::string("\nExiting")).c_str(), LOG_SEV_EMERGENCY);
+		Log::logMessage(std::string(e.what() + std::string("\nExiting")).c_str(),
+			pantheios::SEV_EMERGENCY);
 		MessageBox(nullptr, e.what(), "Error", MB_ICONSTOP | MB_SETFOREGROUND);
 		exit(EXIT_FAILURE);
 	}	
 
-	Log::log("DirectX initialization completed successfully");
+	Log::logMessage("DirectX initialization completed successfully");
 }
 
 void Dx11Renderer::initDXUT(HWND hWnd)
 {
-	Log::log("Initializing DXUT");
+	Log::logMessage("Initializing DXUT");
 
 	if (!SUCCEEDED(DXUTInit()))
 		throw std::exception("Failed to initialize DXUT");
@@ -155,7 +189,7 @@ void Dx11Renderer::initDXUT(HWND hWnd)
 //	if (!SUCCEEDED(DXUTSetD3D10Device(mDevice, mSwapChain)))
 //		throw std::exception("Failed to set D3D device for DXUT");
 
-	Log::log("DXUT successfully initialized");
+	Log::logMessage("DXUT successfully initialized");
 }
 
 void Dx11Renderer::preRender()
@@ -175,7 +209,7 @@ void Dx11Renderer::render()
 void Dx11Renderer::present()
 {
 	if (!SUCCEEDED(mSwapChain->Present(0, 0)))
-		Log::log("IDXGISwapChain::Present failed", LOG_SEV_ERROR);
+		Log::logMessage("IDXGISwapChain::Present failed", pantheios::SEV_ERROR);
 }
 
 HRESULT Dx11Renderer::compileShader(const char* fileName, const char* entryPoint, const char* shaderModel, ID3DBlob** blobOut)
@@ -197,7 +231,7 @@ HRESULT Dx11Renderer::compileShader(const char* fileName, const char* entryPoint
 		{
 			std::stringstream message;
 			message << "Failed to compile shader " << fileName << ". Error message: " << (char*)errorBlob->GetBufferPointer();
-			Log::log(message.str().c_str(), LOG_SEV_ERROR);
+			Log::logMessage(message.str().c_str(), pantheios::SEV_ERROR);
 			OutputDebugStringA((char*)errorBlob->GetBufferPointer());
 		}
 

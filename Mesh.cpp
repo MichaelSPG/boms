@@ -19,7 +19,7 @@ Mesh::Mesh(SimpleVertex *vertices, WORD *indices, Dx11Renderer *renderer)
 
 	initData.pSysMem = vertices;
 
-	Log::log("Creating back buffer", LOG_SEV_INFORMATIONAL);
+	Log::logMessage("Creating back buffer");
 	if (!SUCCEEDED(renderer->getDevice()->CreateBuffer(&bufferDescription, &initData, &mVertexBuffer)))
 		throw std::exception("Failed to create vertex buffer");
 
@@ -37,7 +37,7 @@ Mesh::Mesh(SimpleVertex *vertices, WORD *indices, Dx11Renderer *renderer)
 
 	initData.pSysMem = indices;
 
-	Log::log("Creating index buffer", LOG_SEV_INFORMATIONAL);
+	Log::logMessage("Creating index buffer");
 	if (!SUCCEEDED(renderer->getDevice()->CreateBuffer(&bufferDescription, &initData, &mIndexBuffer)))
 		throw std::exception("Failed to create index buffer.");
 

@@ -1,103 +1,99 @@
 #include "OctNode.h"
+
 #include "Log.h"
 #include "SceneGraph.h"
 #include "Dx11Renderer.h"
-#include "AABB.h"
+#include "Convert.h"
 
-OctNode::OctNode(int id, const XMFLOAT3& position, SceneGraph* sceneGraph,
-	OctNode* parent, const AABB& aabb)
+
+OctNode::OctNode(int id, const hkVector4& position, SceneGraph* sceneGraph,
+	OctNode* parent, const hkAabb& aabb)
 	: Node(position, id, sceneGraph)
 	, mParent(parent)
-	, mAABB(new AABB(aabb))
-	, mWireFramePrimitive(nullptr)
 {
-	/*
-	std::ostringstream out;
-	out << "Creating a node, ID: " << mID;
-	Log::log(out.str().c_str());
-	*/
+	mAABB = aabb;
 
-	/*if (!parent)
-	{
-		mAABB = AABB(0.0f, 0.0f, 0.0f, 1000.0f, 1000.0f, 1000.0f);
-	}
-	else
-	{
-		XMVectorGetX(parent->mAABB.mPosition) - XMVectorGetX(parent->mAABB.mHalfExtents);
-		
-		mAABB = AABB(XMVectorGetX(parent->mAABB.mPosition) - XMVectorGetX(parent->mAABB.mHalfExtents),
-					 XMVectorGetY(parent->mAABB.mPosition) - XMVectorGetY(parent->mAABB.mHalfExtents),
-					 XMVectorGetZ(parent->mAABB.mPosition) - XMVectorGetZ(parent->mAABB.mHalfExtents),
-					 1,1,1);
-		
-	}*/
+	mWireframeColor = XMFLOAT3(0.25f, 0.25f, 0.25f);
 }
 
 OctNode::~OctNode()
 {
-	/*
-	std::ostringstream out;
-	out << "Deleting a node, ID: " << mID;
-	Log::log(out.str().c_str());
-	*/
-
-	if (mWireFramePrimitive)
-		delete mWireFramePrimitive;
+	while (mChildren.size())
+	{
+		delete mChildren.back();
+		mChildren.pop_back();
+	}
 }
 
 void OctNode::createChildren(unsigned short depth, SceneGraph* sceneGraph)
 {
-	if (--depth == 0)
+	++depth;
+	if (depth >= mSceneGraph->mMaxTreeDepth)
 		return;
 
-	mChildren.reserve(8);
+	mDepth = depth;
+
+	mChildren.reserve(8u);
 	
 	//Each child node's extents needs to be exactly half the size of its parent.
-	XMFLOAT3 halfHalfExtents = mAABB->mHalfExtents;
-	halfHalfExtents.x *= 0.5f;
-	halfHalfExtents.y *= 0.5f;
-	halfHalfExtents.z *= 0.5f;
+	hkVector4 aabbMin;
+	hkVector4 aabbMax;
+	aabbMin.setMul4(0.5f, mAABB.m_min);
+	aabbMax.setMul4(0.5f, mAABB.m_max);
 
-	AABB aabb(halfHalfExtents, this);
+	hkAabb aabb(aabbMin, aabbMax);
+	
+	hkVector4 halfHalfExtents;
+	aabb.getHalfExtents(halfHalfExtents);
+	
+	aabb.m_min.sub3clobberW(halfHalfExtents);
+	aabb.m_max.sub3clobberW(halfHalfExtents);
 
 	//Create 8 children and make their AABBs fill the current node's AABB.
 
-	XMFLOAT3 position;
+	hkVector4 position(0.0f, 0.0f, 0.0f);
+	hkQuadReal& positionQuad = position.getQuad();
+
 	for (int i = 0; i < 2; ++i)
 	{
 		if (i == 0)
 		{
-			position.x = mPosition.x + halfHalfExtents.x;
+			positionQuad.x = mPosition.getSimdAt(0) + halfHalfExtents.getSimdAt(0);
 		}
 		else
 		{
-			position.x = mPosition.x - halfHalfExtents.x;
+			positionQuad.x = mPosition.getSimdAt(0) - halfHalfExtents.getSimdAt(0);
 		}
 
 		for (int j = 0; j < 2; ++j)
 		{
 			if (j == 0)
 			{
-				position.y = mPosition.y + halfHalfExtents.y;
+				positionQuad.y = mPosition.getSimdAt(1) + halfHalfExtents.getSimdAt(1);
 			}
 			else
 			{
-				position.y = mPosition.y - halfHalfExtents.y;
+				positionQuad.y = mPosition.getSimdAt(1) - halfHalfExtents.getSimdAt(1);
 			}
 
 			for (int k = 0; k < 2; ++k)
 			{
 				if (k == 0)
 				{
-					position.z = mPosition.z + halfHalfExtents.z;
+					positionQuad.z = mPosition.getSimdAt(2) + halfHalfExtents.getSimdAt(2);
 				}
 				else
 				{
-					position.z = mPosition.z - halfHalfExtents.z;
+					positionQuad.z = mPosition.getSimdAt(2) - halfHalfExtents.getSimdAt(2);
 				}
 
-				mChildren.push_back(std::make_shared<OctNode>(sceneGraph->
-					getNumCreatedObjects(), position, mSceneGraph, this, aabb));
+				OctNode* node = new OctNode(sceneGraph->getNumCreatedObjects(),
+					hkVector4(0.0f, 0.0f, 0.0f, 0.0f), mSceneGraph, this, aabb);
+
+				node->setPosition(position);
+
+				mChildren.push_back(node);
+				mSceneGraph->mOctNodes.push_back(node);
 			}
 		}
 	}
@@ -143,57 +139,4 @@ void OctNode::createChildren(unsigned short depth, SceneGraph* sceneGraph)
 	{
 		mChildren[i]->createChildren(depth, sceneGraph);
 	}
-}
-
-void OctNode::attachSceneNode(std::shared_ptr<SceneNode> node)
-{
-	mSceneNodes.push_back(node);
-}
-
-void OctNode::drawAABB(Dx11Renderer* dx11Renderer)
-{
-	assert(dx11Renderer);
-
-	m_color += 0.025f;
-
-
-	CBWireFrame cb;
-	XMStoreFloat4x4(&cb.world, XMMatrixIdentity());
-	cb.world._14 = mPosition.x;
-	cb.world._24 = mPosition.y;
-	cb.world._34 = mPosition.z;
-	
-	cb.color = XMFLOAT4(-sin(m_color), sin(m_color), cos(m_color), 0.0f);
-
-	dx11Renderer->getDeviceContext()->UpdateSubresource(mWireFramePrimitive->mBuffer, 0,
-		nullptr, &cb, 0, 0);
-
-
-	mWireFramePrimitive->draw(dx11Renderer);
-
-	if (mChildren.size())
-	{
-		for (int i = 0; i < 8; ++i)
-		{
-			mChildren[i]->drawAABB(dx11Renderer);
-		}
-	}
-}
-
-void OctNode::prepareForDrawing(Dx11Renderer* dx11Renderer, ShaderManager* shaderManager)
-{
-	assert(dx11Renderer);
-
-	mWireFramePrimitive = new Primitive();
-	mWireFramePrimitive->createPrimitive(dx11Renderer, shaderManager, *mAABB);
-
-	if (mChildren.size())
-	{
-		for (int i = 0; i < 8; ++i)
-		{
-			mChildren[i]->prepareForDrawing(dx11Renderer, shaderManager);
-		}
-	}
-
-	m_color = (float)rand();
 }

@@ -66,7 +66,7 @@ public:
 		translate(translation.x, translation.y, translation.z);
 	}
 
-	 void translate(float x, float y, float z)
+	inline void translate(float x, float y, float z)
 	{
 		mPosition.x += x;
 		mPosition.y += y;

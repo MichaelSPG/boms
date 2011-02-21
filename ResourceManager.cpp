@@ -1,20 +1,19 @@
 #include "ResourceManager.h"
 
 ResourceManager::ResourceManager()
+	: mShaderManager(nullptr)
 {
 
 }
 
 ResourceManager::~ResourceManager()
 {
+	if (mShaderManager)
+	{
+		delete mShaderManager;
+	}
+}
 
-}
-/*
-ShaderManager& ResourceManager::getShaderManager()
-{
-	return *mShaderManager;
-}
-*/
 void ResourceManager::initShaderManager(Dx11Renderer* dx11Renderer)
 {
 	assert(dx11Renderer);

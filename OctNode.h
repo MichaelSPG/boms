@@ -5,48 +5,80 @@
 
 #include <vector>
 #include <memory>
-#include "AABB.h"
 #include "Primitive.h"
+#include "SceneNode.h"
+#include "Templates.h"
 
 
 class SceneGraph;
 class SceneNode;
 
-class OctNode : public Node
+class OctNode : protected Node
 {
 	friend class SceneGraph;
-public:
-	OctNode(int id, const XMFLOAT3& position, SceneGraph* sceneGraph,
-		OctNode* parent, const AABB& aabb);
+	friend class SceneNode;
+
+	OctNode(int id, const hkVector4& position, SceneGraph* sceneGraph, OctNode* parent
+		, const hkAabb& aabb);
 
 	~OctNode();
 
+public:
 	void createChildren(unsigned short depth, SceneGraph* sceneGraph);
-
-	void attachSceneNode(std::shared_ptr<SceneNode> node);
 
 	inline const int getID() const
 	{
 		return mID;
 	}
+	/*
+	inline virtual void setPosition(const float x, const float y, const float z)
+	{
+		hkVector4 translation(mPosition);
 
-	/**	Creates buffers and prepares the node's AABB for drawing.
+		mPosition.set(x, y, z);
+
+		translation.sub3clobberW(mPosition);
+
+		mAABB.m_min.add3clobberW(translation);
+		mAABB.m_max.add3clobberW(translation);
+		
+
+		verifyPosition();
+	}
 	*/
-	void prepareForDrawing(Dx11Renderer* dx11Renderer, ShaderManager* shadermanager);
-
-	void drawAABB(Dx11Renderer* dx11Renderer);
-
-	
 
 private:
+	//Checks if the node should remain as a child of its current OctNode.
+	void verifyPosition()
+	{
+
+	}
+
+	inline void attachSceneNode(SceneNode* node)
+	{
+		node->mOctNode = this;
+		mSceneNodes.push_back(node);
+
+		mWireframeColor = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	}
+
+	inline void detatchSceneNode(SceneNode* node)
+	{
+		node->mOctNode = nullptr;
+		unordered_erase(mSceneNodes, node);
+
+		if (!mSceneNodes.size())
+		{
+			mWireframeColor = XMFLOAT3(0.25f, 0.25f, 0.25f);
+		}
+	}
+
+
 	OctNode*	mParent;
-	std::vector<std::shared_ptr<OctNode>>	mChildren;
-	std::vector<std::shared_ptr<SceneNode>>	mSceneNodes;
+	std::vector<OctNode*>	mChildren;
+	std::vector<SceneNode*>	mSceneNodes;
 
-	Primitive*	mWireFramePrimitive;
-	AABB*		mAABB;
-
-	float m_color;
+	unsigned short mDepth;
 };
 
 #endif // OCT_NODE_H

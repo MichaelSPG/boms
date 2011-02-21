@@ -1,6 +1,7 @@
 #include "Primitive.h"
 
-#include "AABB.h"
+#include <Common/Base/Types/Geometry/Aabb/hkAabb.h>
+
 #include "ShaderManager.h"
 #include "Node.h"
 #include "PixelShader.h"
@@ -8,21 +9,32 @@
 
 
 Primitive::Primitive()
+	: mBuffer(nullptr)
+	, mIndexBuffer(nullptr)
+	, mVertexBuffer(nullptr)
+	, mColor(0.0f, 1.0f, 0.0f, 0.0f)
 {
 
 }
 
 Primitive::~Primitive()
 {
-	mBuffer->Release();
-	mIndexBuffer->Release();
-	mVertexBuffer->Release();
+	if (mBuffer)
+	{
+		mBuffer->Release();
+	}
+	if (mIndexBuffer)
+	{
+		mIndexBuffer->Release();
+	}
+	if (mVertexBuffer)
+	{
+		mVertexBuffer->Release();
+	}
 }
 
-#define GREEN XMFLOAT3(0.0f, 1.0f, 0.0f)
-
 void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shaderManager,
-	const AABB& aabb)
+	const hkAabb& aabb)
 {
 	assert(dx11Renderer);
 	assert(shaderManager);
@@ -44,21 +56,33 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 	assert(SUCCEEDED(dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr,
 		&mBuffer)));
 
+#ifdef _DEBUG
+	const char bufferName[] = "PrimitiveConstantBuffer";
+	mBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof(bufferName) - 1, bufferName);
+#endif // _DEBUG
 
-	const XMFLOAT3& halfExtents = aabb.getHalfExtents();
+	
+
+
+
+	hkVector4 halfExtents;
+	aabb.getHalfExtents(halfExtents);
+	//const XMFLOAT3& halfExtents = aabb.getHalfExtents();
+
+	
 
 	//Vertex buffer
 	Vertex vertices[] =
 	{
-		{ XMFLOAT3(-halfExtents.x,  halfExtents.y, -halfExtents.z) },//Upper left, front
-		{ XMFLOAT3( halfExtents.x,  halfExtents.y, -halfExtents.z) },//Upper right, front
-		{ XMFLOAT3( halfExtents.x, -halfExtents.y, -halfExtents.z) },//Lower right, front
-		{ XMFLOAT3(-halfExtents.x, -halfExtents.y, -halfExtents.z) },//Lower left, front
+		{ XMFLOAT3(-halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Upper left, front
+		{ XMFLOAT3( halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Upper right, front
+		{ XMFLOAT3( halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Lower right, front
+		{ XMFLOAT3(-halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Lower left, front
 
-		{ XMFLOAT3(-halfExtents.x,  halfExtents.y, halfExtents.z) },//Upper left, back
-		{ XMFLOAT3( halfExtents.x,  halfExtents.y, halfExtents.z) },//Upper right, back
-		{ XMFLOAT3( halfExtents.x, -halfExtents.y, halfExtents.z) },//Lower right, back
-		{ XMFLOAT3(-halfExtents.x, -halfExtents.y, halfExtents.z) },//Lower left, back
+		{ XMFLOAT3(-halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Upper left, back
+		{ XMFLOAT3( halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Upper right, back
+		{ XMFLOAT3( halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Lower right, back
+		{ XMFLOAT3(-halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Lower left, back
 	};
 
 
@@ -75,6 +99,12 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 	{
 		throw std::exception("Failed to create a vertex buffer");
 	}
+
+#ifdef _DEBUG
+	const char vertexBufferName[] = "PrimitiveVertexBuffer";
+	mVertexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof(vertexBufferName) - 1,
+		vertexBufferName);
+#endif // _DEBUG
 
 	unsigned int stride = sizeof(SimpleVertex);
 	unsigned int offset = 0;
@@ -99,6 +129,12 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 
 	assert(SUCCEEDED(dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
 		&mIndexBuffer)));
+
+#ifdef _DEBUG
+	const char indexBufferName[] = "PrimitiveIndexBuffer";
+	mIndexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof(indexBufferName) - 1,
+		indexBufferName);
+#endif // _DEBUG
 }
 
 void Primitive::draw(Dx11Renderer* dx11Renderer)
@@ -146,8 +182,9 @@ v2:
 	context->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
 
 	context->IASetInputLayout(mVertexShader->getInputLayout());
-	//context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
+	//context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINESTRIP_ADJ);
+	//context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
+	//context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
 	context->VSSetShader(mVertexShader->getVertexShader(), nullptr, 0);
 	context->PSSetShader(mPixelShader->getPixelShader(), nullptr, 0);
@@ -161,12 +198,12 @@ v2:
 	static bool once = false;
 	//if (!once)
 	{
-		CBChangesEveryFrame cb;
+//		CBChangesEveryFrame cb;
 
-		XMStoreFloat4x4(&cb.mWorld, XMMatrixIdentity());
+//		XMStoreFloat4x4(&cb.mWorld, XMMatrixIdentity());
 
 		//cb.vMeshColor = XMFLOAT4(sin(x), sin(y), sin(z), 1.0f);
-		cb.vMeshColor = XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f);
+//		cb.vMeshColor = mColor;
 		//cb.mWorld = mWorld;
 		
 		//context->UpdateSubresource(mBuffer, 0, nullptr, &cb, 0, 0);

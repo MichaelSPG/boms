@@ -10,13 +10,18 @@ class VertexShader
 	friend class ShaderManager;
 
 public:
-	VertexShader(ID3D11VertexShader* vertexShader, ID3D11InputLayout* inputLayout)
+
+	VertexShader(ID3D11VertexShader* vertexShader, ID3D11InputLayout* inputLayout, int id)
 		: mVertexShader(vertexShader)
 		, mInputLayout(inputLayout)
+		, mID(id)
 	{
 	}
+
 	~VertexShader()
 	{
+		mVertexShader->Release();
+		mInputLayout->Release();
 	}
 
 	inline ID3D11VertexShader* getVertexShader() const
@@ -42,6 +47,7 @@ private:
 
 	ID3D11VertexShader*	mVertexShader;
 	ID3D11InputLayout*	mInputLayout;
+	int					mID;
 };
 
 #endif // VERTEX_SHADER_H

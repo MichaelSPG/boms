@@ -5,39 +5,57 @@
 #include "Camera.h"
 
 
-Application::Application() : 
-	mInputManager(nullptr),
-	mKeyboard(nullptr),
-	mMouse(nullptr),
-	mDx11Renderer(nullptr),
-	mResourceManager(nullptr),
-	mSceneGraph(nullptr)
+Application::Application()
+	: mInputManager(nullptr)
+	, mKeyboard(nullptr)
+	, mMouse(nullptr)
+	, mDx11Renderer(nullptr)
+	, mResourceManager(nullptr)
+	, mSceneGraph(nullptr)
+	, mCamera(nullptr)
 {
 	w = a = s = d = space = c = false;
 }
 
 Application::~Application()
 {
-	Log::log("Shutting down", LOG_SEV_NOTICE);
+	Log::logMessage("Shutting down", pantheios::SEV_NOTICE);
 
 	mInputManager->destroyInputObject(mKeyboard);
 	mInputManager->destroyInputObject(mMouse);
 	mInputManager->destroyInputSystem(mInputManager);
+
+	if (mCamera)
+	{
+		delete mCamera;
+	}
+	if (mSceneGraph)
+	{
+		delete mSceneGraph;
+	}
+	if (mResourceManager)
+	{
+		delete mResourceManager;
+	}
+	if (mDx11Renderer)
+	{
+		delete mDx11Renderer;
+	}
 }
 
 
 #include "Cube.h"
-Cube* cube = new Cube();
+//Cube* cube = new Cube();
 
 void Application::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight)
 {
 #ifdef _DEBUG
-	Log::init(LOG_SEV_DEBUG);
+	Log::init(pantheios::SEV_DEBUG);
 #else
-	Log::init(LOG_SEV_DEBUG);
+	Log::init(pantheios::SEV_DEBUG);
 #endif
 
-	Log::log("Initializing application", LOG_SEV_NOTICE);
+	Log::logMessage("Initializing application", pantheios::SEV_NOTICE);
 
 
 	mDx11Renderer = new Dx11Renderer();
@@ -45,7 +63,7 @@ void Application::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight)
 
 	//OIS
 	{
-		Log::log("Initializing OIS", LOG_SEV_NOTICE);
+		Log::logMessage("Initializing OIS", pantheios::SEV_NOTICE);
 
 		OIS::ParamList paramList;;
 		paramList.insert(OIS::ParamList::value_type("WINDOW", STR(unsigned long(hWnd))));
@@ -68,10 +86,9 @@ void Application::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight)
 
 	mResourceManager = new ResourceManager();
 	mResourceManager->initShaderManager(mDx11Renderer);
-
+	
 	mSceneGraph = new SceneGraph();
-	mSceneGraph->init(4, mDx11Renderer, mResourceManager->getShaderManager());
-
+	mSceneGraph->init(3, mDx11Renderer, mResourceManager->getShaderManager());
 	
 	auto bert = mResourceManager->getShaderManager()->getVertexShader("Wireframe.fx");
 
@@ -79,9 +96,9 @@ void Application::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight)
 //	mCamera = new Camera(45.0f, 100.0f, 0.1f, 1280/720.0f, mSceneGraph);
 	mCamera = new Camera(ProjectionInfo(45.0f, 1000.0f, 0.1f, 1280.0f/720.0f), mSceneGraph);
 
-	cube->create(mDx11Renderer, mResourceManager->getShaderManager());
+//	cube->create(mDx11Renderer, mResourceManager->getShaderManager());
 
-	Log::log("Initialization completed successfully", LOG_SEV_NOTICE);
+	Log::logMessage("Initialization completed successfully", pantheios::SEV_NOTICE);
 }
 
 void Application::update(float deltaTime)
@@ -125,9 +142,10 @@ void Application::update(float deltaTime)
 
 	mDx11Renderer->preRender();
 
-	cube->draw(mDx11Renderer);
+//	cube->draw(mDx11Renderer);
 
-	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
+//	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 	mSceneGraph->drawAABBs(mDx11Renderer);
 
 
@@ -220,8 +238,8 @@ bool Application::keyReleased(const OIS::KeyEvent &arg)
 bool Application::mouseMoved( const OIS::MouseEvent &arg )
 {
 	
-	mCamera->rotateAboutAxis(Camera::AXIS_Y, (float)arg.state.X.rel * 0.01f);
-	mCamera->rotateAboutAxis(Camera::AXIS_X, (float)arg.state.Y.rel * 0.01f);
+	mCamera->rotateAboutAxis(Camera::AXIS_Y, -((float)arg.state.X.rel * 0.01f));
+	mCamera->rotateAboutAxis(Camera::AXIS_X, -((float)arg.state.Y.rel * 0.01f));
 	
 
 	return true;

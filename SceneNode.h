@@ -6,19 +6,42 @@
 #include <vector>
 #include <memory>
 
+
 class SceneGraph;
+class OctNode;
 
 class SceneNode : public Node
 {
 	friend class SceneGraph;
-public:
-	SceneNode(const XMFLOAT3& position, int id, SceneGraph* sceneGraph);
+	friend class OctNode;
+
+	SceneNode(const hkVector4& position, int id, SceneGraph* sceneGraph);
 	~SceneNode();
 
-	std::shared_ptr<SceneNode> createChild();
+public:
 	
+
+	SceneNode* createChild(const hkVector4& position = hkVector4(0.0f, 0.0f, 0.0f, 0.0f));
+/*	
+	inline virtual void setPosition(const float x, const float y, const float z)
+	{
+		hkVector4 translation(mPosition);
+
+		mPosition.set(x, y, z);
+
+		translation.sub3clobberW(mPosition);
+
+		mAABB.m_min.add3clobberW(translation);
+		mAABB.m_max.add3clobberW(translation);
+
+		verifyPosition();
+	}
+	*/
 private:
-	std::vector<std::shared_ptr<SceneNode>> mChildren;
+	inline void verifyPosition();
+
+	std::vector<SceneNode*> mChildren;
+	OctNode*	mOctNode;
 };
 
 #endif // SCENE_NODE_H

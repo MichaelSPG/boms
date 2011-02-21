@@ -5,6 +5,19 @@
 
 class Node;
 
+enum IntersectionResult
+{
+	//Completely outside
+	OUTSIDE,
+
+	//At least partially intersecting
+	INTERSECTING,
+
+	//Fits completely within the box
+	CONTAINED
+};
+
+
 class AABB
 {
 public:
@@ -12,7 +25,8 @@ public:
 	friend class SceneNode;
 	friend class SceneGraph;
 
-public:
+	
+
 	AABB(float halfExtentsX, float halfExtentsY, float halfExtentsZ, Node* owner)
 		: mHalfExtents(halfExtentsX, halfExtentsY, halfExtentsZ)
 		, mOwner(owner)
@@ -23,9 +37,19 @@ public:
 		, mOwner(owner)
 	{}
 
+	AABB()
+		: mHalfExtents(0.0f, 0.0f, 0.0f)
+		, mOwner(nullptr)
+	{}
+
+	AABB(const AABB& aabb, Node* owner)
+		: mHalfExtents(aabb.mHalfExtents)
+		, mOwner(owner)
+	{}
+
 	~AABB();
 
-	bool intersects(const AABB& aabb) const;
+	const IntersectionResult intersects(const AABB& aabb) const;
 
 	inline Node* getOwner() const
 	{

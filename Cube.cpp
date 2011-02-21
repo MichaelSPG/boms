@@ -57,7 +57,7 @@ void Cube::create(Dx11Renderer* renderer, ShaderManager* shaderManager)
 
 	initData.pSysMem = vertices;
 
-	Log::log("Creating vertex buffer", LOG_SEV_INFORMATIONAL);
+	Log::logMessage("Creating vertex buffer");
 	if (!SUCCEEDED(renderer->getDevice()->CreateBuffer(&bufferDescription, &initData, &mVertexBuffer)))
 		throw std::exception("Failed to create vertex buffer");
 
@@ -92,7 +92,7 @@ void Cube::create(Dx11Renderer* renderer, ShaderManager* shaderManager)
 
 	initData.pSysMem = indices;
 
-	Log::log("Creating index buffer", LOG_SEV_INFORMATIONAL);
+	Log::logMessage("Creating index buffer");
 	if (!SUCCEEDED(renderer->getDevice()->CreateBuffer(&bufferDescription, &initData, &mIndexBuffer)))
 		throw std::exception("Failed to create index buffer.");
 

@@ -9,13 +9,16 @@ class PixelShader
 	friend class ShaderManager;
 
 public:
-	PixelShader(ID3D11PixelShader* pixelShader)
+
+	PixelShader(ID3D11PixelShader* pixelShader, int id)
 		: mPixelShader(pixelShader)
+		, mID(id)
 	{
 	}
 
 	~PixelShader()
 	{
+		mPixelShader->Release();
 	}
 
 	inline ID3D11PixelShader* getPixelShader() const
@@ -29,7 +32,8 @@ private:
 		mPixelShader = pixelShader;
 	}
 
-	ID3D11PixelShader* mPixelShader;
+	ID3D11PixelShader*	mPixelShader;
+	int					mID;
 };
 
 #endif // PIXEL_SHADER_H

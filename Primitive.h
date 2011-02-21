@@ -5,7 +5,7 @@
 
 class ShaderManager;
 class VertexShader;
-class AABB;
+class hkAabb;
 class PixelShader;
 class VertexShader;
 
@@ -16,14 +16,16 @@ struct Vertex
 
 class Primitive
 {
+	friend class Node;
 	friend class OctNode;
+	friend class SceneNode;
 
 public:
 	Primitive();
 	~Primitive();
 
 	void createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shaderManager,
-		const AABB& aabb);
+		const hkAabb& aabb);
 
 	void draw(Dx11Renderer* dx11Renderer);
 	
@@ -35,6 +37,8 @@ private:
 
 	ID3D11Buffer*		mVertexBuffer;
 	ID3D11Buffer*		mIndexBuffer;
+
+	XMFLOAT4			mColor;
 };
 
 #endif // PRIMITIVE_H

@@ -5,49 +5,33 @@
 #include <pantheios/backends/bec.file.h>
 #include <pantheios/frontends/fe.simple.h>
 
-#include "ToString.h"
-
-
-//http://blog.pantheios.org/2010/10/choosing-severity-levels.html
-enum Severity
-{
-	LOG_SEV_EMERGENCY,
-	LOG_SEV_ALERT,
-	LOG_SEV_CRITICAL,
-	LOG_SEV_ERROR,
-	LOG_SEV_WARNING,
-	LOG_SEV_NOTICE,
-	LOG_SEV_INFORMATIONAL,
-	LOG_SEV_DEBUG
-};
+PANTHEIOS_CALL(void) pantheios_be_file_getAppInit(int /* backEndId */, pan_be_file_init_t* init) /* throw() */;
 
 
 class Log
 {
 public:
-	/**	
-		@param logLvl The lowest severity of messages to log.
+	/**	Returns true on success.
+		The lowest message severity to log.
 	*/
-	static void init(Severity logLvl = LOG_SEV_DEBUG);
+	static bool init(pantheios::pan_severity_t severity = pantheios::SEV_DEBUG);
 
+	static void deinit();
 
 	/**	Logs a message to the log file.
-		If severity is less than current logLevel, the message will be ignored.
 	*/
-	static void log(const char *message, Severity severity = LOG_SEV_INFORMATIONAL);
+	static void logMessage(const char* message,
+		pantheios::pan_severity_t severity = pantheios::SEV_INFORMATIONAL);
 
-	inline static void setLogLevel(Severity severity)
+	inline static void setLogLevel(pantheios::pan_severity_t severity)
 	{
-		logLevel = severity;
+		pantheios_fe_simple_setSeverityCeiling(severity);
 	}
 
-	inline static Severity getLogLevel()
+	inline static int getSeverityLevel()
 	{
-		return logLevel;
+		return pantheios_fe_simple_getSeverityCeiling();
 	}
-
-private:
-	static Severity logLevel;
 };
 
 #endif

@@ -21,19 +21,33 @@ class ShaderManager
 	~ShaderManager();
 
 public:
-	const std::shared_ptr<VertexShader>& getVertexShader(const std::string& fileName);
+	const std::shared_ptr<VertexShader> getVertexShader(const std::string& fileName);
 
-	const std::shared_ptr<PixelShader>& getPixelShader(const std::string& fileName);
+	const std::shared_ptr<PixelShader> getPixelShader(const std::string& fileName);
 	
+	//Returns number of created shaders, but does not increment the stored value.
+	inline int getNumCreatedShadersNoIncr()
+	{
+		return mNumCreatedShaders;
+	}
+
 private:
-	std::shared_ptr<VertexShader>& createVertexShader(const std::string& fileName);
+	std::shared_ptr<VertexShader> createVertexShader(const std::string& fileName);
 
-	std::shared_ptr<PixelShader>& createPixelShader(const std::string& fileName);
+	std::shared_ptr<PixelShader> createPixelShader(const std::string& fileName);
 
-	std::map<std::string, std::shared_ptr<VertexShader>> mVertexShaders;
-	std::map<std::string, std::shared_ptr<PixelShader>> mPixelShaders;
+	//Increments number of created shaders and returns it.
+	inline int getNumCreatedShaders()
+	{
+		return ++mNumCreatedShaders;
+	}
 
-	Dx11Renderer* mDx11Renderer;
+
+	std::map<std::string, std::shared_ptr<VertexShader>>	mVertexShaders;
+	std::map<std::string, std::shared_ptr<PixelShader>>		mPixelShaders;
+
+	Dx11Renderer*	mDx11Renderer;
+	int				mNumCreatedShaders;
 };
 
 #endif // SHADER_MANAGER_H

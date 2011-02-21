@@ -1,59 +1,52 @@
 #include "Log.h"
 
-Severity Log::logLevel = LOG_SEV_DEBUG;
+extern "C" const char PANTHEIOS_FE_PROCESS_IDENTITY[] = "TestApp";
 
-void Log::init(Severity logLvl /*= LOG_SEV_DEBUG*/)
+
+PANTHEIOS_CALL(void) pantheios_be_file_getAppInit(int /* backEndId */, pan_be_file_init_t* init) /* throw() */
 {
-	if (pantheios::init())
-		throw (std::exception("Failed to initialize Pantheios."));
-
-	
-
-	pantheios_be_file_setFilePath(PANTHEIOS_LITERAL_STRING("log.log"), PANTHEIOS_BE_FILE_F_TRUNCATE,
-		PANTHEIOS_BE_FILE_F_TRUNCATE, PANTHEIOS_BEID_ALL);
-
-	logLevel = logLvl;
-
-	pantheios_fe_simple_setSeverityCeiling(logLevel);
+	init->flags |= PANTHEIOS_BE_INIT_F_NO_PROCESS_ID;
+	init->flags |= PANTHEIOS_BE_INIT_F_NO_THREAD_ID;
+	init->flags |= PANTHEIOS_BE_INIT_F_HIDE_DATE;
+	init->flags |= PANTHEIOS_BE_INIT_F_HIGH_RESOLUTION;
+	/*
+	PANTHEIOS_BE_INIT_F_NO_PROCESS_ID
+	PANTHEIOS_BE_INIT_F_NO_THREAD_ID
+	PANTHEIOS_BE_INIT_F_NO_DATETIME
+	PANTHEIOS_BE_INIT_F_NO_SEVERITY
+	PANTHEIOS_BE_INIT_F_USE_SYSTEM_TIME
+	PANTHEIOS_BE_INIT_F_DETAILS_AT_START
+	PANTHEIOS_BE_INIT_F_USE_UNIX_FORMAT
+	PANTHEIOS_BE_INIT_F_HIDE_DATE
+	PANTHEIOS_BE_INIT_F_HIDE_TIME
+	PANTHEIOS_BE_INIT_F_HIGH_RESOLUTION
+	PANTHEIOS_BE_INIT_F_LOW_RESOLUTION
+	*/
 }
 
-void Log::log(const char *message, Severity severity /*= LOG_SEV_INFORMATIONAL*/)
+
+bool Log::init(pantheios::pan_severity_t severity /*= pantheios::SEV_DEBUG*/)
 {
-	if (severity > logLevel)
-		return;
-
-	switch (severity)
+	if (pantheios::init())
 	{
-	case LOG_SEV_EMERGENCY:
-		pantheios::log(pantheios::emergency, message);
-		break;
-
-	case LOG_SEV_ALERT:
-		pantheios::log(pantheios::alert, message);
-		break;
-
-	case LOG_SEV_CRITICAL:
-		pantheios::log(pantheios::critical, message);
-		break;
-
-	case LOG_SEV_ERROR:
-		pantheios::log(pantheios::error, message);
-		break;
-
-	case LOG_SEV_WARNING:
-		pantheios::log(pantheios::warning, message);
-		break;
-
-	case LOG_SEV_NOTICE:
-		pantheios::log(pantheios::notice, message);
-		break;
-
-	case LOG_SEV_INFORMATIONAL:
-		pantheios::log(pantheios::informational, message);
-		break;
-
-	case LOG_SEV_DEBUG:
-		pantheios::log(pantheios::debug, message);
-		break;
+		return false;
 	}
+
+	pantheios_be_file_setFilePath(PANTHEIOS_LITERAL_STRING("log.log"),
+		PANTHEIOS_BE_FILE_F_TRUNCATE, PANTHEIOS_BE_FILE_F_TRUNCATE, PANTHEIOS_BEID_ALL);
+
+	pantheios_fe_simple_setSeverityCeiling(severity);
+
+	return true;
+}
+
+void Log::deinit()
+{
+	pantheios::pantheios_uninit();
+}
+
+void Log::logMessage(const char *message,
+	pantheios::pan_severity_t severity /*= pantheios::SEV_INFORMATIONAL*/)
+{
+	pantheios::log(severity, message);
 }
