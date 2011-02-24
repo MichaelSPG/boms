@@ -54,6 +54,9 @@ public:
 
 	void drawAABBs(Dx11Renderer* dx11Renderer) const;
 
+
+	bool displayEmptyAabbs;
+
 private:
 	OctNode*	mRootNode;
 

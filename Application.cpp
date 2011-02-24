@@ -3,6 +3,7 @@
 #include "Log.h"
 #include "SceneGraph.h"
 #include "Camera.h"
+#include "SceneNode.h"
 
 
 Application::Application()
@@ -14,7 +15,7 @@ Application::Application()
 	, mSceneGraph(nullptr)
 	, mCamera(nullptr)
 {
-	w = a = s = d = space = c = false;
+	w = a = s = d = space = c = shift = false;
 }
 
 Application::~Application()
@@ -88,15 +89,31 @@ void Application::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight)
 	mResourceManager->initShaderManager(mDx11Renderer);
 	
 	mSceneGraph = new SceneGraph();
-	mSceneGraph->init(3, mDx11Renderer, mResourceManager->getShaderManager());
-	
-	auto bert = mResourceManager->getShaderManager()->getVertexShader("Wireframe.fx");
+	mSceneGraph->init(4, mDx11Renderer, mResourceManager->getShaderManager());
 
 
 //	mCamera = new Camera(45.0f, 100.0f, 0.1f, 1280/720.0f, mSceneGraph);
 	mCamera = new Camera(ProjectionInfo(45.0f, 1000.0f, 0.1f, 1280.0f/720.0f), mSceneGraph);
 
 //	cube->create(mDx11Renderer, mResourceManager->getShaderManager());
+
+
+	//////////////////////////////////////////////////////////////////////////
+
+	SceneNode* node = mSceneGraph->createSceneNode();
+	hkVector4 amin(-0.5f, -0.5f, -0.5f);
+	hkVector4 amax( 0.5f,  0.5f,  0.5f);
+
+	node->mAABB.m_min = amin;
+	node->mAABB.m_max = amax;
+
+	node->setPosition(27.0f, 34.0f, 30.0f);
+
+	mSceneNodes.push_back(node);
+	
+	mSceneNodes[0]->createDrawableAabb(mDx11Renderer, mResourceManager->getShaderManager());
+
+	//////////////////////////////////////////////////////////////////////////
 
 	Log::logMessage("Initialization completed successfully", pantheios::SEV_NOTICE);
 }
@@ -108,28 +125,89 @@ void Application::update(float deltaTime)
 	
 	if (w)
 	{
-		mCamera->translate(0.0f, 0.0f, 1.2f);
+		if (shift)
+		{
+			mCamera->translate(0.0f, 0.0f, 6.0f);
+		}
+		else
+		{
+			mCamera->translate(0.0f, 0.0f, 1.2f);
+		}
 	}
 	if (s)
 	{
-		mCamera->translate(0.0f, 0.0f, -1.2f);
+		if (shift)
+		{
+			mCamera->translate(0.0f, 0.0f, -6.0f);
+		}
+		else
+		{
+			mCamera->translate(0.0f, 0.0f, -1.2f);
+		}
 	}
 	if (a)
 	{
-		mCamera->translate(-1.2f, 0.0f, 0.0f);
+		if (shift)
+		{
+			mCamera->translate(-6.0f, 0.0f, 0.0f);
+		}
+		else
+		{
+			mCamera->translate(-1.2f, 0.0f, 0.0f);
+		}
 	}
 	if (d)
 	{
-		mCamera->translate(1.2f, 0.0f, 0.0f);
+		if (shift)
+		{
+			mCamera->translate(6.0f, 0.0f, 0.0f);
+		}
+		else
+		{
+			mCamera->translate(1.2f, 0.0f, 0.0f);
+		}
 	}
 	if (space)
 	{
-		mCamera->translate(0.1f, 1.0f, 0.0f);
+		if (shift)
+		{
+			mCamera->translate(0.0f, 6.0f, 0.0f);
+		}
+		else
+		{
+			mCamera->translate(0.0f, 1.0f, 0.0f);
+		}
 	}
 	if (c)
 	{
-		mCamera->translate(0.1f, -1.0f, 0.0f);
+		if (shift)
+		{
+			mCamera->translate(0.0f, -6.0f, 0.0f);
+		}
+		else
+		{
+			mCamera->translate(0.0f, -1.0f, 0.0f);
+		}
 	}
+
+	static float i = 0.0f;
+	i += 0.01f;
+
+	hkVector4 pos = mSceneNodes[0]->getPosition();
+	hkQuadReal posQuad = pos.getQuad();
+
+	float sinI = sin(i) * 10.0f;
+	float cosI = cos(i) * 10.0f;
+	float tanI = -cos(sinI) * 10.0f;
+
+	posQuad.x = sinI;
+	posQuad.z = cosI;
+	posQuad.y = tanI;
+
+	pos.set(posQuad.x, posQuad.y, posQuad.z, posQuad.w);
+	pos.mul4(7.5f);
+
+	mSceneNodes[0]->setPosition(pos);
 	
 	//////////////////////////////////////////////////////////////////////////
 	/*
@@ -181,6 +259,14 @@ bool Application::keyPressed(const OIS::KeyEvent &arg)
 	{
 		c = true;
 	}
+	if (arg.key == OIS::KC_G)
+	{
+		mSceneGraph->displayEmptyAabbs = !mSceneGraph->displayEmptyAabbs;
+	}
+	if (arg.key == OIS::KC_LSHIFT)
+	{
+		shift = true;
+	}
 
 	switch (arg.key)
 	{
@@ -230,6 +316,10 @@ bool Application::keyReleased(const OIS::KeyEvent &arg)
 	if (arg.key == OIS::KC_C)
 	{
 		c = false;
+	}
+	if (arg.key == OIS::KC_LSHIFT)
+	{
+		shift = false;
 	}
 
 	return true;

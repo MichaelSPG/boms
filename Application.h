@@ -49,7 +49,9 @@ private:
 	SceneGraph*	mSceneGraph;
 	Camera* mCamera;
 
-	bool w, a, s, d, space, c;
+	bool w, a, s, d, space, c, shift;
+
+	std::vector<SceneNode*>	mSceneNodes;
 };
 
 #endif

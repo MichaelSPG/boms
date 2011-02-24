@@ -16,7 +16,6 @@ public:
 		: mPosition(0.0f, 0.0f, 0.0f, 0.0f)
 		, mID(id)
 		, mSceneGraph(sceneGraph)
-		, mAABB()
 		, mWireFramePrimitive(nullptr)
 	{
 		mAABB.setEmpty();
@@ -36,7 +35,7 @@ public:
 
 		mPosition.set(x, y, z);
 
-		translation.add3clobberW(mPosition);
+		translation.sub3clobberW(mPosition);
 
 		mAABB.m_min.add3clobberW(translation);
 		mAABB.m_max.add3clobberW(translation);
@@ -52,7 +51,7 @@ public:
 
 	/**	Creates buffers and prepares the node's AABB for drawing.
 	*/
-	void prepareForDrawing(Dx11Renderer* dx11Renderer, ShaderManager* shadermanager);
+	void createDrawableAabb(Dx11Renderer* dx11Renderer, ShaderManager* shadermanager);
 
 	void drawAABB(Dx11Renderer* dx11Renderer);
 

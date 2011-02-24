@@ -19,6 +19,7 @@ class Primitive
 	friend class Node;
 	friend class OctNode;
 	friend class SceneNode;
+	friend class SceneGraph;
 
 public:
 	Primitive();

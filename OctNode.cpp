@@ -28,64 +28,56 @@ OctNode::~OctNode()
 void OctNode::createChildren(unsigned short depth, SceneGraph* sceneGraph)
 {
 	++depth;
-	if (depth >= mSceneGraph->mMaxTreeDepth)
-		return;
-
 	mDepth = depth;
 
+	if (depth >= mSceneGraph->mMaxTreeDepth)
+	{
+		return;
+	}
+
 	mChildren.reserve(8u);
-	
-	//Each child node's extents needs to be exactly half the size of its parent.
-	hkVector4 aabbMin;
-	hkVector4 aabbMax;
-	aabbMin.setMul4(0.5f, mAABB.m_min);
-	aabbMax.setMul4(0.5f, mAABB.m_max);
 
-	hkAabb aabb(aabbMin, aabbMax);
-	
-	hkVector4 halfHalfExtents;
-	aabb.getHalfExtents(halfHalfExtents);
-	
-	aabb.m_min.sub3clobberW(halfHalfExtents);
-	aabb.m_max.sub3clobberW(halfHalfExtents);
+	//Each child node's extents needs to have extents exactly half the size of its parent.
+	hkVector4 halfExtents;
+	mAABB.getHalfExtents(halfExtents);
+	halfExtents.mul4(0.5f);
+	//halfExtents now represents the max point for the new AABB.
 
-	//Create 8 children and make their AABBs fill the current node's AABB.
+	//Make a negative of halfExtents so that we have both min and max points for the new AABB.
+	hkVector4 halfExtentsNeg;
+	halfExtentsNeg.setNeg3(halfExtents);
+
+	//If half extents are 20, 20, 20, this AABB will have halfExtentsNeg equal -10, -10, -10
+	//and halfExtents equal 10, 10, 10.
+	const hkAabb aabb(halfExtentsNeg, halfExtents);
+	
 
 	hkVector4 position(0.0f, 0.0f, 0.0f);
-	hkQuadReal& positionQuad = position.getQuad();
+	float halfExtentX = halfExtents.getSimdAt(0);
 
-	for (int i = 0; i < 2; ++i)
+	//If this is false, the AABB is not square and this function needs to be altered,
+	//for instance to getting x,y,z manually each time instead of using halfExtentX.
+
+	assert(halfExtents.getSimdAt(0) == halfExtents.getSimdAt(1)
+		&& halfExtents.getSimdAt(0) == halfExtents.getSimdAt(2)
+		&& halfExtents.getSimdAt(1) == halfExtents.getSimdAt(2));
+
+	assert(halfExtentsNeg.getSimdAt(0) == halfExtentsNeg.getSimdAt(1)
+		&& halfExtentsNeg.getSimdAt(0) == halfExtentsNeg.getSimdAt(2)
+		&& halfExtentsNeg.getSimdAt(1) == halfExtentsNeg.getSimdAt(2));
+
+	for (int x = 0; x < 2; ++x)
 	{
-		if (i == 0)
+		for (int y = 0; y < 2; ++y)
 		{
-			positionQuad.x = mPosition.getSimdAt(0) + halfHalfExtents.getSimdAt(0);
-		}
-		else
-		{
-			positionQuad.x = mPosition.getSimdAt(0) - halfHalfExtents.getSimdAt(0);
-		}
+			for (int z = 0; z < 2; ++z)
+			{
+				//Generate the position for the new node.
+				float posX = (float)mPosition.getSimdAt(0) + (x ? halfExtentX : -halfExtentX);
+				float posY = (float)mPosition.getSimdAt(1) + (y ? halfExtentX : -halfExtentX);
+				float posZ = (float)mPosition.getSimdAt(2) + (z ? halfExtentX : -halfExtentX);
 
-		for (int j = 0; j < 2; ++j)
-		{
-			if (j == 0)
-			{
-				positionQuad.y = mPosition.getSimdAt(1) + halfHalfExtents.getSimdAt(1);
-			}
-			else
-			{
-				positionQuad.y = mPosition.getSimdAt(1) - halfHalfExtents.getSimdAt(1);
-			}
-
-			for (int k = 0; k < 2; ++k)
-			{
-				if (k == 0)
-				{
-					positionQuad.z = mPosition.getSimdAt(2) + halfHalfExtents.getSimdAt(2);
-				}
-				else
-				{
-					positionQuad.z = mPosition.getSimdAt(2) - halfHalfExtents.getSimdAt(2);
-				}
+				position.set(posX, posY, posZ, 0.0f);
 
 				OctNode* node = new OctNode(sceneGraph->getNumCreatedObjects(),
 					hkVector4(0.0f, 0.0f, 0.0f, 0.0f), mSceneGraph, this, aabb);
@@ -97,44 +89,7 @@ void OctNode::createChildren(unsigned short depth, SceneGraph* sceneGraph)
 			}
 		}
 	}
-	/*
-	for (int i = 0; i < 8; ++i)
-	{
-		XMFLOAT3 position;
 
-		if (i % 2 == 1)
-		{
-			position.x = mPosition.x + halfHalfExtents.x;
-		}
-		else
-		{
-			position.x = mPosition.x - halfHalfExtents.x;
-		}
-
-		switch (i % 4)
-		{
-		case 0:
-			position.y = mPosition.y + halfHalfExtents.y;
-			break;
-
-		case 1:
-			position.y = mPosition.y + halfHalfExtents.y;
-			break;
-
-		case 2:
-			position.z = mPosition.z + halfHalfExtents.z;
-			break;
-
-		case 3:
-			position.z = mPosition.z - halfHalfExtents.z;
-			break;
-		}
-		
-	//	position.x = position.y = position.z = 0.0f;
-		mChildren.push_back(std::make_shared<OctNode>(sceneGraph->getNumCreatedObjects(),
-			position, mSceneGraph, this, aabb));
-	}
-	*/
 	for (int i = 0; i < 8; ++i)
 	{
 		mChildren[i]->createChildren(depth, sceneGraph);

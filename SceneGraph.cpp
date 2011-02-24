@@ -1,6 +1,7 @@
 #include "SceneGraph.h"
 
 #include <assert.h>
+#include <vector>
 
 #include "OctNode.h"
 #include "SceneNode.h"
@@ -47,8 +48,9 @@ void SceneGraph::init(unsigned short treeDepth, Dx11Renderer* renderer,
 	mOctNodes.push_back(mRootNode);
 
 	mRootNode->createChildren(0, this);
-//	mRootNode->prepareForDrawing(mRenderer, shaderManager);
+//	mRootNode->createDrawableAabb(mRenderer, shaderManager);
 
+	/*
 	SceneNode* node = createSceneNode();
 	hkVector4 amin(-0.5f, -0.5f, -0.5f);
 	hkVector4 amax( 0.5f,  0.5f,  0.5f);
@@ -59,15 +61,16 @@ void SceneGraph::init(unsigned short treeDepth, Dx11Renderer* renderer,
 	node->setPosition(10.0f, 10.0f, 30.0f);
 
 	mSceneNodes.push_back(node);
+	*/
 
 	for (unsigned int i = 0; i < mSceneNodes.size(); ++i)
 	{
-		mSceneNodes[i]->prepareForDrawing(mRenderer, shaderManager);
+		mSceneNodes[i]->createDrawableAabb(mRenderer, shaderManager);
 	}
 
 	for (unsigned int i = 0; i < mOctNodes.size(); ++i)
 	{
-		mOctNodes[i]->prepareForDrawing(mRenderer, shaderManager);
+		mOctNodes[i]->createDrawableAabb(mRenderer, shaderManager);
 	}
 
 	Log::logMessage("Scene graph initialized successfully");
@@ -77,9 +80,6 @@ void SceneGraph::drawAABBs(Dx11Renderer* dx11Renderer) const
 {
 	assert (dx11Renderer);
 
-//	mRootNode->drawAABB(dx11Renderer);
-
-
 
 	for (unsigned int i = 0; i < mSceneNodes.size(); ++i)
 	{
@@ -88,8 +88,17 @@ void SceneGraph::drawAABBs(Dx11Renderer* dx11Renderer) const
 
 	for (unsigned int i = 0; i < mOctNodes.size(); ++i)
 	{
-	//	if (mOctNodes[i]->mSceneNodes.size())
+		if (mOctNodes[i]->mSceneNodes.size())
+		{
 			mOctNodes[i]->drawAABB(dx11Renderer);
+		}
+		else
+		{
+			if (displayEmptyAabbs)
+			{
+				mOctNodes[i]->drawAABB(dx11Renderer);
+			}
+		}
 	}
 }
 
@@ -98,6 +107,8 @@ SceneNode* SceneGraph::createSceneNode(const hkVector4& position /*= hkVector4(0
 	SceneNode* node = new SceneNode(position, getNumCreatedObjects(), this);
 	
 	placeSceneNode(node, mRootNode, 1);
+
+	mSceneNodes.push_back(node);
 
 	return node;
 }

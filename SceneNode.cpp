@@ -29,7 +29,10 @@ SceneNode* SceneNode::createChild(const hkVector4& position /*= hkVector4(0.0f, 
 
 void SceneNode::verifyPosition()
 {
-	if ((mOctNode->mID != 1) && (mOctNode->mAABB.contains(mAABB)))
+	//Oct node 1 is the root node. It should always be able to contain this scene node.
+	//It's probably current mOctNode because this scene node was intersecting multiple
+	//smaller oct nodes.
+	if (mOctNode->mID != 1 && mOctNode->mAABB.contains(mAABB))
 	{
 		//Still fits in current octNode's AABB, no change necessary.
 		return;

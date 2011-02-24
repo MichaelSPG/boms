@@ -15,6 +15,7 @@ Node::~Node()
 void Node::drawAABB(Dx11Renderer* dx11Renderer)
 {
 	assert(dx11Renderer);
+	assert(mWireFramePrimitive && "createDrawableAabb must be called before drawAABB");
 
 
 	//m_color += 0.025f;
@@ -73,7 +74,7 @@ void Node::drawAABB(Dx11Renderer* dx11Renderer)
 	*/
 }
 
-void Node::prepareForDrawing(Dx11Renderer* dx11Renderer, ShaderManager* shaderManager)
+void Node::createDrawableAabb(Dx11Renderer* dx11Renderer, ShaderManager* shaderManager)
 {
 	assert(dx11Renderer);
 
@@ -85,7 +86,7 @@ void Node::prepareForDrawing(Dx11Renderer* dx11Renderer, ShaderManager* shaderMa
 	{
 		for (int i = 0; i < 8; ++i)
 		{
-			mChildren[i]->prepareForDrawing(dx11Renderer, shaderManager);
+			mChildren[i]->createDrawableAabb(dx11Renderer, shaderManager);
 		}
 	}*/
 

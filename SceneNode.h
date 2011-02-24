@@ -14,6 +14,7 @@ class SceneNode : public Node
 {
 	friend class SceneGraph;
 	friend class OctNode;
+	friend class Application;//TODO: remove
 
 	SceneNode(const hkVector4& position, int id, SceneGraph* sceneGraph);
 	~SceneNode();

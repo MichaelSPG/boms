@@ -86,7 +86,7 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 	};
 
 
-	//Verte buffer
+	//Vertex buffer
 	bufferDescription.ByteWidth = sizeof(Vertex) * ARRAYSIZE(vertices);
 	bufferDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
@@ -141,40 +141,8 @@ void Primitive::draw(Dx11Renderer* dx11Renderer)
 {
 	assert(dx11Renderer);
 
-	/*
-	goto v2;
-
-	UINT offsets = 0;
-	UINT stride = sizeof(SimpleVertex);
-	dx11Renderer->getDeviceContext()->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride,
-		&offsets);
-	dx11Renderer->getDeviceContext()->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
-	//mDeviceContext->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offsets);
-	
-	CBWireFrame constBuffer;
-	XMStoreFloat4x4(&constBuffer.world, XMMatrixTranslation(0.0f, 0.0f, 10.0f));
-	//XMStoreFloat4x4(&constBuffer.mWorld, XMLoadFloat4x4(&mTranslation));
-	constBuffer.color = XMFLOAT4(1.0f, 0.0f, 1.0f, 0.0f);
-	dx11Renderer->getDeviceContext()->UpdateSubresource(mBuffer, 0, nullptr, &constBuffer,
-		0, 0);
-	dx11Renderer->getDeviceContext()->VSSetConstantBuffers(2, 1, &mBuffer);
-	
-
-	
-
-	//dx11Renderer->getDeviceContext()->VSSetShader(mVertexShader, nullptr, 0);
-
-	dx11Renderer->getDeviceContext()->PSSetShader(mPixelShader->getPixelShader(), nullptr, 0);
-	dx11Renderer->getDeviceContext()->VSSetShader(mVertexShader->getVertexShader(), nullptr, 0);
-	dx11Renderer->getDeviceContext()->IASetInputLayout(mVertexShader->getInputLayout());
-	
-	dx11Renderer->getDeviceContext()->DrawIndexed(14, 0, 0);
-
-
-	
-v2:
-*/
 	auto context = dx11Renderer->getDeviceContext();
+
 
 	UINT offsets2 =  0;
 	UINT stride2 = sizeof(Vertex);
@@ -182,37 +150,12 @@ v2:
 	context->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
 
 	context->IASetInputLayout(mVertexShader->getInputLayout());
-	//context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINESTRIP_ADJ);
-	//context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
-	//context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
 	context->VSSetShader(mVertexShader->getVertexShader(), nullptr, 0);
 	context->PSSetShader(mPixelShader->getPixelShader(), nullptr, 0);
 
-	static float t = 0.0f;
-	t += 0.01f;
-	//XMStoreFloat4x4(&mWorld, XMMatrixRotationY(sin(t)));
-
-
-
-	static bool once = false;
-	//if (!once)
-	{
-//		CBChangesEveryFrame cb;
-
-//		XMStoreFloat4x4(&cb.mWorld, XMMatrixIdentity());
-
-		//cb.vMeshColor = XMFLOAT4(sin(x), sin(y), sin(z), 1.0f);
-//		cb.vMeshColor = mColor;
-		//cb.mWorld = mWorld;
-		
-		//context->UpdateSubresource(mBuffer, 0, nullptr, &cb, 0, 0);
-		context->VSSetConstantBuffers(2, 1, &mBuffer);
-		context->PSSetConstantBuffers(2, 1, &mBuffer);
-
-
-		once = true;
-	}
+	context->VSSetConstantBuffers(2, 1, &mBuffer);
+	context->PSSetConstantBuffers(2, 1, &mBuffer);
 
 
 	context->DrawIndexed(16, 0, 0);
