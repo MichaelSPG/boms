@@ -1,68 +1,61 @@
 #include "ShaderManager.h"
 
-#include <cassert>
+#include <assert.h>
 #include <sstream>
+
+#include <D3Dcompiler.h>
 
 
 ShaderManager::ShaderManager(Dx11Renderer* dx11Renderer)
 	: mDx11Renderer(dx11Renderer)
 	, mNumCreatedShaders(0)
 {
-	
 }
 
 ShaderManager::~ShaderManager()
 {
-	/*
-	for (auto itr = mPixelShaders.begin(); itr != mPixelShaders.end(); ++itr)
-	{
-		itr->second.get()->mPixelShader->Release();
-	}
-	
-	for (auto itr = mVertexShaders.begin(); itr != mVertexShaders.end(); ++itr)
-	{
-		itr->second->mVertexShader->Release();
-		itr->second->mInputLayout->Release();
-	}
-	
-	mPixelShaders.clear();
-	mVertexShaders.clear();
-	*/
 }
 
-const std::shared_ptr<VertexShader> ShaderManager::getVertexShader(const std::string& name)
+const std::shared_ptr<VertexShader> ShaderManager::getVertexShader(const std::string& fileName,
+	const std::vector<D3D11_INPUT_ELEMENT_DESC>& inputDesc)
 {
-	assert(name.length());
+	assert(fileName.length());
+	assert(inputDesc.size() && "Zero length input description");
 
 	//See if the shader already exists
-	auto val = mVertexShaders.find(name);
+	auto val = mVertexShaders.find(fileName);
 	if (val != mVertexShaders.end())
+	{
 		return val->second;
+	}
 
 	//Not found, create and return the shader
-	return createVertexShader(name);
+	return createVertexShader(fileName, inputDesc);
 }
 
-const std::shared_ptr<PixelShader> ShaderManager::getPixelShader(const std::string& name)
+const std::shared_ptr<PixelShader> ShaderManager::getPixelShader(const std::string& fileName)
 {
-	assert(name.length());
+	assert(fileName.length());
 
 	//See if the shader already exists
-	auto val = mPixelShaders.find(name);
+	auto val = mPixelShaders.find(fileName);
 	if (val != mPixelShaders.end())
+	{
 		return val->second;
+	}
 
 	//Not found, create and return the shader
-	return createPixelShader(name);
+	return createPixelShader(fileName);
 }
 
-std::shared_ptr<VertexShader> ShaderManager::createVertexShader(const std::string& fileName)
+std::shared_ptr<VertexShader> ShaderManager::createVertexShader(const std::string& fileName,
+	const std::vector<D3D11_INPUT_ELEMENT_DESC>& inputDesc)
 {
 	//TODO: Return a default fallback shader if this fails.
 
 	//Compile shader
 	ID3DBlob* vsBlob = nullptr;
-	if (!SUCCEEDED(mDx11Renderer->compileShader(fileName.c_str(), "VS", "vs_4_0", &vsBlob)))
+	if (FAILED(mDx11Renderer->compileShader(fileName.c_str(), "VS", "vs_4_0", &vsBlob)))
 	{
 		if (vsBlob)
 		{
@@ -74,7 +67,7 @@ std::shared_ptr<VertexShader> ShaderManager::createVertexShader(const std::strin
 
 	//Create shader
 	ID3D11VertexShader* vertexShader = nullptr;
-	if (!SUCCEEDED(mDx11Renderer->getDevice()->CreateVertexShader(vsBlob->GetBufferPointer(),
+	if (FAILED(mDx11Renderer->getDevice()->CreateVertexShader(vsBlob->GetBufferPointer(),
 		vsBlob->GetBufferSize(), nullptr, &vertexShader)))
 	{
 		if (vsBlob)
@@ -85,16 +78,9 @@ std::shared_ptr<VertexShader> ShaderManager::createVertexShader(const std::strin
 			+ fileName).c_str());
 	}
 
-	D3D11_INPUT_ELEMENT_DESC layout[] = 
-	{
-		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-	};
-	unsigned int numElements(ARRAYSIZE(layout));
-	
 	//Create input layout
 	ID3D11InputLayout* vertexLayout = nullptr;
-	if (!SUCCEEDED(mDx11Renderer->getDevice()->CreateInputLayout(layout, numElements,
+	if (FAILED(mDx11Renderer->getDevice()->CreateInputLayout(&inputDesc[0], inputDesc.size(),
 		vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &vertexLayout)))
 	{
 		if (vsBlob)
@@ -111,18 +97,15 @@ std::shared_ptr<VertexShader> ShaderManager::createVertexShader(const std::strin
 
 #ifdef _DEBUG
 	//Set debug data in the D3D objects.
-
-	std::stringstream bufferName("VertexShader_");
-	bufferName << fileName;
-	const char* vsNameCstr = bufferName.str().c_str();
+	std::string bufferName("VertexShader_");
+	bufferName.append(fileName);
 	vs.second->mVertexShader->SetPrivateData(WKPDID_D3DDebugObjectName,
-		sizeof(vsNameCstr - 1), vsNameCstr);
+		bufferName.size(), bufferName.c_str());
 
-	bufferName.str("");
-	bufferName << "InputLayout_" << fileName;
-	const char* layoutNameCstr = bufferName.str().c_str();
+	bufferName = "InputLayout_";
+	bufferName.append(fileName);
 	vs.second->mInputLayout->SetPrivateData(WKPDID_D3DDebugObjectName,
-		sizeof(layoutNameCstr - 1), layoutNameCstr);
+		bufferName.size(), bufferName.c_str());
 #endif // _DEBUG
 
 	mVertexShaders.insert(vs);
@@ -139,7 +122,7 @@ std::shared_ptr<PixelShader> ShaderManager::createPixelShader(const std::string&
 {
 	//Compile shader
 	ID3DBlob *psBlob = nullptr;
-	if (!SUCCEEDED(mDx11Renderer->compileShader(fileName.c_str(), "PS", "ps_4_0", &psBlob)))
+	if (FAILED(mDx11Renderer->compileShader(fileName.c_str(), "PS", "ps_4_0", &psBlob)))
 	{
 		if (psBlob)
 		{
@@ -151,7 +134,7 @@ std::shared_ptr<PixelShader> ShaderManager::createPixelShader(const std::string&
 
 	//Create shader
 	ID3D11PixelShader* pixelShader = nullptr;
-	if (!SUCCEEDED(mDx11Renderer->getDevice()->CreatePixelShader(psBlob->GetBufferPointer(),
+	if (FAILED(mDx11Renderer->getDevice()->CreatePixelShader(psBlob->GetBufferPointer(),
 		psBlob->GetBufferSize(), nullptr, &pixelShader)))
 	{
 		if (pixelShader)
@@ -169,11 +152,10 @@ std::shared_ptr<PixelShader> ShaderManager::createPixelShader(const std::string&
 #ifdef _DEBUG
 	//Set debug data in the D3D object.
 
-	std::stringstream bufferName("PixelShader_");
-	bufferName << fileName;
-	const char* psNameCstr = bufferName.str().c_str();
+	std::string bufferName("PixelShader_");
+	bufferName.append(fileName);
 	ps.second->mPixelShader->SetPrivateData(WKPDID_D3DDebugObjectName,
-		sizeof(psNameCstr - 1), psNameCstr);
+		bufferName.size(), bufferName.c_str());
 #endif // _DEBUG
 
 	mPixelShaders.insert(ps);

@@ -4,6 +4,7 @@
 #include "Dx11Renderer.h"
 #include "ShaderManager.h"
 #include "ResourceManager.h"
+#include "MeshManager.h"
 #include "VertexShader.h"
 #include "PixelShader.h"
 
@@ -19,7 +20,7 @@ class Cube
 public:
 	Cube() {}
 	~Cube() {}
-	void create(Dx11Renderer* renderer, ShaderManager* shaderManager);
+	void create(Dx11Renderer* renderer, ShaderManager* shaderManager, MeshManager* meshManager);
 
 	void draw(Dx11Renderer* renderer);
 	
@@ -28,8 +29,7 @@ private:
 	std::shared_ptr<VertexShader>	mVertexShader;
 	std::shared_ptr<PixelShader>	mPixelShader;
 
-	ID3D11Buffer*		mVertexBuffer;
-	ID3D11Buffer*		mIndexBuffer;
+	std::shared_ptr<Mesh>			mMesh;
 
 	ID3D11Buffer*		mEveryFrame;
 

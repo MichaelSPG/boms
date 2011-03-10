@@ -14,13 +14,12 @@ struct ProjectionInfo
 		, mFarClip(farClip)
 		, mNearClip(nearClip)
 		, mAspectRatio(aspectRatio)
-
 	{}
 
 	float	mFieldOfView;
 	float	mFarClip;
 	float	mNearClip;
-	float	mAspectRatio;
+	float	mAspectRatio;	//Aspect ratio of view space x:y
 };
 
 
@@ -34,32 +33,13 @@ public:
 		AXIS_Z
 	};
 
-	/**	
-		Aspect ratio of view space X:Y.
-	*/
 	Camera(const ProjectionInfo& projectionInfo, SceneGraph* sceneGraph);
+
 	~Camera();
 
-	void lookAt(const XMFLOAT3& position);
+	inline void lookAt(const XMFLOAT3& position);
 
-	void rotateAboutAxis(Axis axis, float degrees)
-	{
-		switch (axis)
-		{
-		case AXIS_X:
-			XMStoreFloat4x4(&mView, XMMatrixMultiply(XMLoadFloat4x4(&mView), XMMatrixRotationX(degrees)));
-			break;
-
-		case AXIS_Y:
-			XMStoreFloat4x4(&mView, XMMatrixMultiply(XMLoadFloat4x4(&mView), XMMatrixRotationY(degrees)));
-			break;
-
-		case AXIS_Z:
-			XMStoreFloat4x4(&mView, XMMatrixMultiply(XMLoadFloat4x4(&mView), XMMatrixRotationZ(degrees)));
-			break;
-		}
-		updateView();
-	}
+	void rotateAboutAxis(Axis axis, float degrees);
 
 	inline void translate(const XMFLOAT3& translation)
 	{
@@ -72,48 +52,19 @@ public:
 		mPosition.y += y;
 		mPosition.z += z;
 
-		update();
+		updateView();
 	}
 
-	inline void setPosition(const XMFLOAT3& translation);
+	inline void setPosition(const XMFLOAT3& translation)
+	{
+		setPosition(translation.x, translation.y, translation.z);
+	}
 
 	inline void setPosition(float x, float y, float z);
 
 	inline const XMFLOAT3& getPosition() const
 	{
 		return mPosition;
-	}
-	/*
-	inline void setFieldOfView(float degrees)
-	{
-		mFieldOfView = XMConvertToRadians(degrees);
-		//createProjection();
-	}*/
-	/*
-	inline const XMFLOAT4X4& getViewProjection()
-	{
-		return mViewProjection;
-	}*/
-
-	//Updates the view buffer
-	inline void updateView()
-	{
-		Math::setTranslationInFloat4x4(mView, mPosition);
-
-		CBChangesNever cbNever;
-		XMStoreFloat4x4(&cbNever.mView, XMMatrixTranspose(XMLoadFloat4x4(&mView)));
-		mDeviceContext->UpdateSubresource(mViewBuffer, 0, nullptr, &cbNever, 0, 0);
-	}
-
-	inline void createProjection()
-	{
-		XMStoreFloat4x4(&mProjection, XMMatrixPerspectiveFovLH(mProjectionInfo.mFieldOfView,
-			mProjectionInfo.mAspectRatio, mProjectionInfo.mNearClip, mProjectionInfo.mFarClip));
-
-		CBChangesOnResize cbChangesOnResize;
-		cbChangesOnResize.mProjection = Math::XMFloat4x4Transpose(mProjection);
-
-		mDeviceContext->UpdateSubresource(mProjectionBuffer, 0, nullptr, &cbChangesOnResize, 0, 0);
 	}
 
 	inline const ProjectionInfo& getProjectionInfo()
@@ -125,18 +76,58 @@ public:
 	{
 		mProjectionInfo = projectionInfo;
 
-		createProjection();
+		updateProjection();
 	}
 
-private:
-	
+//private:
+	//Updates the view matrix and then updates the view projection matrix.
+	inline void updateView()
+	{
+		Math::XMFloat4x4SetTranslation(mView, mPosition);
+		
+		//XMStoreFloat4x4(&mView, XMMatrixMultiply(XMLoadFloat4x4(&mView),
+		//	XMMatrixTranslation(mPosition.x, mPosition.y, mPosition.z)));
+		
+		//View projection matrix needs to be rebuilt.
+		updateViewProjection();
+	}
+
+	/*	Updates projection matrix with current projection info, and then updates
+		the view projection matrix.
+	*/
+	inline void updateProjection()
+	{
+		XMStoreFloat4x4(&mProjection, XMMatrixPerspectiveFovLH(mProjectionInfo.mFieldOfView,
+			mProjectionInfo.mAspectRatio, mProjectionInfo.mNearClip, mProjectionInfo.mFarClip));
+
+		//View projection matrix needs to be rebuilt.
+		updateViewProjection();
+	}
+
+	/*	Updates view projection matrix based on current projection and view matrices
+		and uploads it to the GPU
+	*/
+	inline void updateViewProjection()
+	{
+		//auto M = XMMatrixTranspose(XMMatrixMultiply(XMLoadFloat4x4(&mView), XMLoadFloat4x4(&mProjection)));
+		//XMStoreFloat4x4(&mViewProjection, M);
+
+		XMStoreFloat4x4(&mViewProjection, XMMatrixTranspose(
+			XMMatrixMultiply(XMLoadFloat4x4(&mView), XMLoadFloat4x4(&mProjection))));
+		
+		CBViewProjection viewProjection;
+		viewProjection.viewProjection = mViewProjection;
+		mDeviceContext->UpdateSubresource(mViewProjectionBuffer, 0, nullptr,
+			&viewProjection, 0, 0);
+	}
+
 
 	void update();
 
 	
 	XMFLOAT4X4	mProjection;
 	XMFLOAT4X4	mView;
-//	XMFLOAT4X4	mViewProjection;
+	XMFLOAT4X4	mViewProjection;
 	XMFLOAT4X4	mWorld;
 
 	XMFLOAT3	mLookAt;
@@ -145,9 +136,7 @@ private:
 
 	ProjectionInfo	mProjectionInfo;
 
-//	ID3D11Buffer*	mViewProjectionBuffer;
-	ID3D11Buffer*	mViewBuffer;
-	ID3D11Buffer*	mProjectionBuffer;
+	ID3D11Buffer*	mViewProjectionBuffer;
 
 	SceneGraph*				mSceneGraph;
 	ID3D11DeviceContext*	mDeviceContext;

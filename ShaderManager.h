@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "Dx11Renderer.h"
 
@@ -21,7 +22,8 @@ class ShaderManager
 	~ShaderManager();
 
 public:
-	const std::shared_ptr<VertexShader> getVertexShader(const std::string& fileName);
+	const std::shared_ptr<VertexShader> getVertexShader(const std::string& fileName,
+		const std::vector<D3D11_INPUT_ELEMENT_DESC>& inputDesc);
 
 	const std::shared_ptr<PixelShader> getPixelShader(const std::string& fileName);
 	
@@ -32,12 +34,13 @@ public:
 	}
 
 private:
-	std::shared_ptr<VertexShader> createVertexShader(const std::string& fileName);
+	std::shared_ptr<VertexShader> createVertexShader(const std::string& fileName,
+		const std::vector<D3D11_INPUT_ELEMENT_DESC>& inputDesc);
 
 	std::shared_ptr<PixelShader> createPixelShader(const std::string& fileName);
 
 	//Increments number of created shaders and returns it.
-	inline int getNumCreatedShaders()
+	inline unsigned int getNumCreatedShaders()
 	{
 		return ++mNumCreatedShaders;
 	}
@@ -47,7 +50,7 @@ private:
 	std::map<std::string, std::shared_ptr<PixelShader>>		mPixelShaders;
 
 	Dx11Renderer*	mDx11Renderer;
-	int				mNumCreatedShaders;
+	unsigned int	mNumCreatedShaders;
 };
 
 #endif // SHADER_MANAGER_H

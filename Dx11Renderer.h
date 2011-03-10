@@ -26,34 +26,15 @@ struct SimpleVertex
 	XMFLOAT2 Tex;
 };
 
-struct CBChangesNever
-{
-	//XMMATRIX mView;
-	XMFLOAT4X4 mView;
-};
-
-struct CBChangesOnResize
-{
-	//XMMATRIX mProjection;
-	XMFLOAT4X4 mProjection;
-};
-
-struct CBChangesEveryFrame
-{
-	//XMMATRIX mWorld;
-	XMFLOAT4X4 mWorld;
-	XMFLOAT4 vMeshColor;
-};
-
 struct CBWireFrame
 {
 	XMFLOAT4X4	world;
 	XMFLOAT4	color;
 };
 
-struct CBCamera
+struct CBViewProjection
 {
-	XMFLOAT4X4 camera;
+	XMFLOAT4X4 viewProjection;
 };
 
 class Dx11Renderer

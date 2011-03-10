@@ -17,6 +17,7 @@ class OctNode : protected Node
 {
 	friend class SceneGraph;
 	friend class SceneNode;
+	friend class Application;
 
 	OctNode(int id, const hkVector4& position, SceneGraph* sceneGraph, OctNode* parent
 		, const hkAabb& aabb);

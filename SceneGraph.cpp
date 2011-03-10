@@ -23,7 +23,12 @@ SceneGraph::~SceneGraph()
 {
 	if (mRootNode)
 	{
+		//Recursive delete
 		delete mRootNode;
+	}
+	for (unsigned int i = 0u; i < mSceneNodes.size(); ++i)
+	{
+		delete mSceneNodes[i];
 	}
 	if (mCamera)
 	{
@@ -63,12 +68,12 @@ void SceneGraph::init(unsigned short treeDepth, Dx11Renderer* renderer,
 	mSceneNodes.push_back(node);
 	*/
 
-	for (unsigned int i = 0; i < mSceneNodes.size(); ++i)
+	for (unsigned int i = 0u; i < mSceneNodes.size(); ++i)
 	{
 		mSceneNodes[i]->createDrawableAabb(mRenderer, shaderManager);
 	}
 
-	for (unsigned int i = 0; i < mOctNodes.size(); ++i)
+	for (unsigned int i = 0u; i < mOctNodes.size(); ++i)
 	{
 		mOctNodes[i]->createDrawableAabb(mRenderer, shaderManager);
 	}
@@ -81,12 +86,12 @@ void SceneGraph::drawAABBs(Dx11Renderer* dx11Renderer) const
 	assert (dx11Renderer);
 
 
-	for (unsigned int i = 0; i < mSceneNodes.size(); ++i)
+	for (unsigned int i = 0u; i < mSceneNodes.size(); ++i)
 	{
 		mSceneNodes[i]->drawAABB(dx11Renderer);
 	}
 
-	for (unsigned int i = 0; i < mOctNodes.size(); ++i)
+	for (unsigned int i = 0u; i < mOctNodes.size(); ++i)
 	{
 		if (mOctNodes[i]->mSceneNodes.size())
 		{
@@ -121,10 +126,8 @@ void SceneGraph::placeSceneNode(SceneNode* sceneNode, OctNode* octNode, unsigned
 		{
 			OctNode* candidate = nullptr;
 
-			for (unsigned int i = 0; i < octNode->mChildren.size(); ++i)
+			for (unsigned int i = 0u; i < octNode->mChildren.size(); ++i)
 			{
-				const hkAabb& aabb = octNode->mChildren[i]->mAABB;
-
 				if (octNode->mChildren[i]->mAABB.contains(sceneNode->mAABB))
 				{
 					if (!candidate)

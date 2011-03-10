@@ -6,46 +6,43 @@
 
 namespace Math
 {
-	inline XMFLOAT3 getTranslationFromMatrix(const XMMATRIX& matrix)
+	//Translation
+	//Get
+	inline XMFLOAT3 XMMatrixGetTranslation(const XMMATRIX& matrix)
 	{
 		return XMFLOAT3(matrix._41, matrix._42, matrix._43);
-	}
-
-	inline XMFLOAT3 getTranslationFromFloat4x4(const XMFLOAT4X4& matrix)
-	{
-		return XMFLOAT3(matrix._41, matrix._42, matrix._43);
-	}
-
-	inline void setTranslationInMatrix(XMMATRIX& matrix, const XMVECTOR& translation)
-	{
-		matrix._41 = -XMVectorGetX(translation);
-		matrix._42 = -XMVectorGetY(translation);
-		matrix._43 = -XMVectorGetZ(translation);
-	}
-
-	inline void setTranslationInFloat4x4(XMFLOAT4X4& matrix, const XMVECTOR& translation)
-	{
-		matrix._41 = -XMVectorGetX(translation);
-		matrix._42 = -XMVectorGetY(translation);
-		matrix._43 = -XMVectorGetZ(translation);
 	}
 	
-	inline void setTranslationInMatrix(XMMATRIX& matrix, const XMFLOAT3& translation)
+	//Set
+	inline void XMMatrixSetTranslation(XMMATRIX& matrix, const XMVECTOR& translation)
+	{
+		matrix._41 = -XMVectorGetX(translation);
+		matrix._42 = -XMVectorGetY(translation);
+		matrix._43 = -XMVectorGetZ(translation);
+	}
+
+	inline void XMMatrixSetTranslation(XMMATRIX& matrix, const XMFLOAT3& translation)
+	{
+		matrix._41 = -translation.x;
+		matrix._42 = -translation.y;
+		matrix._43 = -translation.z;
+	}
+	
+	inline void XMFloat4x4SetTranslation(XMFLOAT4X4& matrix, const XMVECTOR& translation)
+	{
+		matrix._41 = -XMVectorGetX(translation);
+		matrix._42 = -XMVectorGetY(translation);
+		matrix._43 = -XMVectorGetZ(translation);
+	}
+
+	inline void XMFloat4x4SetTranslation(XMFLOAT4X4& matrix, const XMFLOAT3& translation)
 	{
 		matrix._41 = -translation.x;
 		matrix._42 = -translation.y;
 		matrix._43 = -translation.z;
 	}
 
-	inline void setTranslationInFloat4x4(XMFLOAT4X4& matrix, const XMFLOAT3& translation)
-	{
-		matrix._41 = -translation.x;
-		matrix._42 = -translation.y;
-		matrix._43 = -translation.z;
-	}
-
-
-
+	//Transpose
 	inline XMFLOAT4X4 XMFloat4x4Transpose(const XMFLOAT4X4& M)
 	{
 		const XMMATRIX& tempMatrix = XMMatrixTranspose(XMLoadFloat4x4(&M));

@@ -9,8 +9,7 @@ class PixelShader
 	friend class ShaderManager;
 
 public:
-
-	PixelShader(ID3D11PixelShader* pixelShader, int id)
+	PixelShader(ID3D11PixelShader* pixelShader, unsigned int id)
 		: mPixelShader(pixelShader)
 		, mID(id)
 	{
@@ -33,7 +32,7 @@ private:
 	}
 
 	ID3D11PixelShader*	mPixelShader;
-	int					mID;
+	unsigned int		mID;
 };
 
 #endif // PIXEL_SHADER_H

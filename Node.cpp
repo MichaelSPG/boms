@@ -28,8 +28,6 @@ void Node::drawAABB(Dx11Renderer* dx11Renderer)
 	cb.world._24 = mPosition.getSimdAt(1);
 	cb.world._34 = mPosition.getSimdAt(2);
 
-
-
 	cb.color = XMFLOAT4(mWireframeColor.x, mWireframeColor.y, mWireframeColor.z, 0.0f);
 
 	//cb.color = XMFLOAT4(-sin(m_color), sin(m_color), cos(m_color), 0.0f);

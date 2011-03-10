@@ -4,11 +4,13 @@
 #include <vector>
 #include <memory>
 
+#include "Node.h"
+#include "OctNode.h"
+#include "SceneNode.h"
 #include "Dx11Renderer.h"
 #include "Convert.h"
 
 class ShaderManager;
-class OctNode;
 class SceneNode;
 class Camera;
 class Dx11Renderer;
@@ -24,6 +26,9 @@ public:
 	SceneGraph();
 	~SceneGraph();
 
+	/*	Tree depth is the maximum node depth to be created. Total number of oct nodes may
+		be as high as 8^n + 8^(n-1) + ... 8^1 + 8^0.
+	*/
 	void init(unsigned short treeDepth, Dx11Renderer* renderer, ShaderManager* shaderManager);
 
 	SceneNode* createSceneNode(const hkVector4& position = hkVector4(0.0f, 0.0f, 0.0f, 0.0f));
@@ -50,6 +55,11 @@ public:
 	inline Dx11Renderer* getRenderer()
 	{
 		return mRenderer;
+	}
+
+	inline OctNode* getRootNode()
+	{
+		return mRootNode;
 	}
 
 	void drawAABBs(Dx11Renderer* dx11Renderer) const;

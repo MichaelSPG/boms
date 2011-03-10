@@ -61,7 +61,7 @@ void Dx11Renderer::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight
 		D3D_FEATURE_LEVEL fl = D3D_FEATURE_LEVEL_11_0;
 		
 		Log::logMessage("Creating D3D11 device and swap chain");
-		if (!SUCCEEDED(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, deviceFlags,
+		if (FAILED(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, deviceFlags,
 			featureLevels, ARRAYSIZE(featureLevels), D3D11_SDK_VERSION, &swapChainDesc, &mSwapChain,
 			&mDevice, &fl, &mDeviceContext)))
 				throw std::exception("Failed to create D3D11 device");
@@ -69,12 +69,12 @@ void Dx11Renderer::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight
 		//Back buffer
 		ID3D11Texture2D *backBuffer = nullptr;
 		Log::logMessage("Creating back buffer");
-		if (!SUCCEEDED(mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer)))
+		if (FAILED(mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer)))
 			throw std::exception("Failed to create back buffer");
 
 		//D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
 		Log::logMessage("Creating render target view");
-		if (!SUCCEEDED(mDevice->CreateRenderTargetView(backBuffer, nullptr, &mRenderTargetView)))
+		if (FAILED(mDevice->CreateRenderTargetView(backBuffer, nullptr, &mRenderTargetView)))
 			throw std::exception("Failed to create render target view");
 
 		backBuffer->Release();
@@ -97,7 +97,7 @@ void Dx11Renderer::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight
 		depthDesc.MiscFlags = 0;
 
 		Log::logMessage("Creating depth stencil texture");
-		if (!SUCCEEDED(mDevice->CreateTexture2D(&depthDesc, nullptr, &mDepthStencil)))
+		if (FAILED(mDevice->CreateTexture2D(&depthDesc, nullptr, &mDepthStencil)))
 			throw std::exception("Failed to create depth stencil texture");
 
 
@@ -110,7 +110,7 @@ void Dx11Renderer::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight
 		depthViewDesc.Texture2D.MipSlice = 0;
 
 		Log::logMessage("Creating depth stencil view");
-		if (!SUCCEEDED(mDevice->CreateDepthStencilView(mDepthStencil, &depthViewDesc,
+		if (FAILED(mDevice->CreateDepthStencilView(mDepthStencil, &depthViewDesc,
 			&mDepthStencilView)))
 		{
 			throw std::exception("Failed to create depth stencil view");
@@ -133,30 +133,29 @@ void Dx11Renderer::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight
 
 #ifdef _DEBUG
 		//Set debug info in D3D objects to help debugging their lifetimes if necessary.
+		std::string debugString("IDXGISwapChain");
+		mSwapChain->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+			debugString.c_str());
 
-		const char* swapChainName = "IDXGISwapChain";
-		mSwapChain->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof(swapChainName) - 1,
-			swapChainName);
+		debugString = "ID3D11Device";
+		mDevice->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+			debugString.c_str());
 
-		const char* deviceName = "ID3D11Device";
-		mDevice->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof(deviceName) - 1,
-			deviceName);
+		debugString = "ID3D11DeviceContext";
+		mDeviceContext->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+			debugString.c_str());
 
-		const char* deviceContextName = "ID3D11DeviceContext";
-		mDeviceContext->SetPrivateData(WKPDID_D3DDebugObjectName,
-			sizeof(deviceContextName) - 1, deviceContextName);
+		debugString = "ID3D11RenderTargetView";
+		mRenderTargetView->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+			debugString.c_str());
 
-		const char* renderTargetViewName = "ID3D11RenderTargetView";
-		mRenderTargetView->SetPrivateData(WKPDID_D3DDebugObjectName,
-			sizeof(renderTargetViewName) - 1, renderTargetViewName);
+		debugString = "ID3D11Texture2D_DepthStencil";
+		mDepthStencil->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+			debugString.c_str());
 
-		const char* depthStencilName = "ID3D11Texture2D_DepthStencil";
-		mDepthStencil->SetPrivateData(WKPDID_D3DDebugObjectName, 
-			sizeof(depthStencilName) - 1, depthStencilName);
-
-		const char* depthStencilViewName = "ID3D11DepthStencilView";
-		mDepthStencilView->SetPrivateData(WKPDID_D3DDebugObjectName, 
-			sizeof(depthStencilViewName) - 1, depthStencilViewName);
+		debugString = "ID3D11DepthStencilView";
+		mDepthStencilView->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+			debugString.c_str());
 #endif
 
 		initDXUT(hWnd);
@@ -177,16 +176,16 @@ void Dx11Renderer::initDXUT(HWND hWnd)
 {
 	Log::logMessage("Initializing DXUT");
 
-	if (!SUCCEEDED(DXUTInit()))
+	if (FAILED(DXUTInit()))
 		throw std::exception("Failed to initialize DXUT");
 
 	DXUTSetHotkeyHandling(false, false, false);
 
-	if (!SUCCEEDED(DXUTSetWindow(hWnd, hWnd, hWnd, false)))
+	if (FAILED(DXUTSetWindow(hWnd, hWnd, hWnd, false)))
 		throw std::exception("Failed to set DXUT window");
 
 	
-//	if (!SUCCEEDED(DXUTSetD3D10Device(mDevice, mSwapChain)))
+//	if (FAILED(DXUTSetD3D10Device(mDevice, mSwapChain)))
 //		throw std::exception("Failed to set D3D device for DXUT");
 
 	Log::logMessage("DXUT successfully initialized");
@@ -208,7 +207,7 @@ void Dx11Renderer::render()
 
 void Dx11Renderer::present()
 {
-	if (!SUCCEEDED(mSwapChain->Present(0, 0)))
+	if (FAILED(mSwapChain->Present(0, 0)))
 		Log::logMessage("IDXGISwapChain::Present failed", pantheios::SEV_ERROR);
 }
 

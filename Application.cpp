@@ -3,7 +3,6 @@
 #include "Log.h"
 #include "SceneGraph.h"
 #include "Camera.h"
-#include "SceneNode.h"
 
 
 Application::Application()
@@ -44,10 +43,6 @@ Application::~Application()
 	}
 }
 
-
-#include "Cube.h"
-//Cube* cube = new Cube();
-
 void Application::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight)
 {
 #ifdef _DEBUG
@@ -87,17 +82,17 @@ void Application::init(HWND hWnd, int renderWindowWidth, int renderWindowHeight)
 
 	mResourceManager = new ResourceManager();
 	mResourceManager->initShaderManager(mDx11Renderer);
+	mResourceManager->initMeshManager(mDx11Renderer);
 	
 	mSceneGraph = new SceneGraph();
 	mSceneGraph->init(4, mDx11Renderer, mResourceManager->getShaderManager());
 
-
+	
 //	mCamera = new Camera(45.0f, 100.0f, 0.1f, 1280/720.0f, mSceneGraph);
 	mCamera = new Camera(ProjectionInfo(45.0f, 1000.0f, 0.1f, 1280.0f/720.0f), mSceneGraph);
 
-//	cube->create(mDx11Renderer, mResourceManager->getShaderManager());
-
-
+	//cube->create(mDx11Renderer, mResourceManager->getShaderManager(), mResourceManager->getMeshManager());
+	
 	//////////////////////////////////////////////////////////////////////////
 
 	SceneNode* node = mSceneGraph->createSceneNode();
@@ -208,27 +203,69 @@ void Application::update(float deltaTime)
 	pos.mul4(7.5f);
 
 	mSceneNodes[0]->setPosition(pos);
-	
-	//////////////////////////////////////////////////////////////////////////
-	/*
-	CBChangesNever cb;
-	XMStoreFloat4x4(&cb.mView, mCamera->getViewProjection());
-	mDx11Renderer->getDeviceContext()->UpdateSubresource(mDx11Renderer->getChangesNeverBuffer(), 0, nullptr, &cb, 0, 0);
-	*/
-	//////////////////////////////////////////////////////////////////////////
-	mCamera->updateView();
 
 	mDx11Renderer->preRender();
 
-//	cube->draw(mDx11Renderer);
-
-	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
+//	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
+	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 //	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 	mSceneGraph->drawAABBs(mDx11Renderer);
 
 
 	//mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	mDx11Renderer->render();
+
+	mSceneGraph->getRootNode()->drawAABB(mDx11Renderer);
+
+	//mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
+
+	//static auto mesh = mResourceManager->getMeshManager()->getMesh("dodecahedron.obj");
+//	static auto ps = mResourceManager->getShaderManager()->getPixelShader("HLSL_Basic.fx");
+//	static auto vs = mResourceManager->getShaderManager()->getVertexShader("HLSL_Basic.fx");
+
+	//////////////////////////////////////////////////////////////////////////
+
+	std::vector<D3D11_INPUT_ELEMENT_DESC> inputLayout;
+	D3D11_INPUT_ELEMENT_DESC d;
+	d.SemanticName = "POSITION";
+	d.SemanticIndex = 0;
+	d.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	d.InputSlot = 0;
+	d.AlignedByteOffset = 0;
+	d.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	d.InstanceDataStepRate = 0;
+	inputLayout.push_back(d);
+
+	d.SemanticName = "NORMAL";
+	d.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	d.AlignedByteOffset = 12;
+	inputLayout.push_back(d);
+
+	d.SemanticName = "TEXCOORD";
+	d.AlignedByteOffset = 24;
+	d.Format = DXGI_FORMAT_R32G32_FLOAT;
+	inputLayout.push_back(d);
+	
+	static auto vs = mResourceManager->getShaderManager()->getVertexShader("../assets/HLSL_Basic.fx", inputLayout);
+	static auto ps = mResourceManager->getShaderManager()->getPixelShader("../assets/HLSL_Basic.fx");
+
+	//////////////////////////////////////////////////////////////////////////
+	static auto context = mDx11Renderer->getDeviceContext();
+	//static auto mesh = mResourceManager->getMeshManager()->getMesh("../assets/duck.obj");
+	static auto mesh = mResourceManager->getMeshManager()->getMesh("../assets/teapot.obj");
+	context->IASetInputLayout(vs->getInputLayout());
+	context->VSSetShader(vs->getVertexShader(), nullptr, 0u);
+	context->PSSetShader(ps->getPixelShader(), nullptr, 0u);
+	
+	mesh->draw(mDx11Renderer);
+	
+
+	
+
+
+
 
 	mDx11Renderer->present();
 }

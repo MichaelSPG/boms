@@ -39,9 +39,23 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 	assert(dx11Renderer);
 	assert(shaderManager);
 
+	std::vector<D3D11_INPUT_ELEMENT_DESC> inputLayout;
+	D3D11_INPUT_ELEMENT_DESC d;
+	d.SemanticName = "POSITION";
+	d.SemanticIndex = 0;
+	d.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	d.InputSlot = 0;
+	d.AlignedByteOffset = 0;
+	d.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	d.InstanceDataStepRate = 0;
+	inputLayout.push_back(d);
 
-	mVertexShader = shaderManager->getVertexShader("Wireframe.fx");
-	mPixelShader  = shaderManager->getPixelShader("Wireframe.fx");
+	d.SemanticName = "COLOR";
+	d.AlignedByteOffset = 12;
+	inputLayout.push_back(d);
+
+	mVertexShader = shaderManager->getVertexShader("../assets/Wireframe.fx", inputLayout);
+	mPixelShader  = shaderManager->getPixelShader("../assets/Wireframe.fx");
 
 
 	D3D11_BUFFER_DESC bufferDescription;
@@ -94,7 +108,7 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 	ZeroMemory(&initData, sizeof(initData));
 	initData.pSysMem = vertices;
 
-	if (!SUCCEEDED(dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
+	if (FAILED(dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
 		&mVertexBuffer)))
 	{
 		throw std::exception("Failed to create a vertex buffer");
@@ -115,9 +129,18 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 	///Index buffer
 	WORD indices[] =
 	{
-		0, 4, 5, 1, 0,
-		3, 2, 1, 5, 6,
-		2, 3, 7, 6, 7, 4
+		0, 1,
+		1, 2,
+		2, 3,
+		3, 0,
+		4, 5,
+		5, 6,
+		6, 7,
+		7, 4,
+		4, 0,
+		1, 5,
+		6, 2,
+		7, 3
 	};
 	
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
@@ -154,9 +177,9 @@ void Primitive::draw(Dx11Renderer* dx11Renderer)
 	context->VSSetShader(mVertexShader->getVertexShader(), nullptr, 0);
 	context->PSSetShader(mPixelShader->getPixelShader(), nullptr, 0);
 
-	context->VSSetConstantBuffers(2, 1, &mBuffer);
-	context->PSSetConstantBuffers(2, 1, &mBuffer);
+	context->VSSetConstantBuffers(1, 1, &mBuffer);
+	context->PSSetConstantBuffers(1, 1, &mBuffer);
 
 
-	context->DrawIndexed(16, 0, 0);
+	context->DrawIndexed(24, 0, 0);
 }
