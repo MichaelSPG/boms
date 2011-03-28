@@ -2,19 +2,18 @@
 
 #include <sstream>
 
-#include <assimp.hpp>
-#include <aiScene.h>
-#include <aiPostProcess.h>
-
+#include "ResourceManager.h"
 #include "Log.h"
 #include "Dx11Renderer.h"
 #include "VertexTypes.h"
+#include "MeshSerializer.h"
 
 
 
-MeshManager::MeshManager(Dx11Renderer* dx11Renderer)
+MeshManager::MeshManager(Dx11Renderer* dx11Renderer, ResourceManager* resourceManager)
 	: mNumCreatedMeshes(0u)
 	, mDx11Renderer(dx11Renderer)
+	, mResourceManager(resourceManager)
 {
 	assert(dx11Renderer);
 }
@@ -24,19 +23,34 @@ MeshManager::~MeshManager()
 
 }
 
-const std::shared_ptr<Mesh> MeshManager::getMesh(const std::string& meshName)
+std::shared_ptr<Mesh> MeshManager::getMesh(const std::string& meshName)
 {
 	assert(meshName.length());
 
+	//Get the path for the file
+	std::string meshPath = mResourceManager->getFileSystem()->getPath(meshName);
+	if (!meshPath.length())
+	{
+		//Log error message if mesh doesn't exist.
+
+		std::string message("MeshManager: '");
+		message += meshName + "' does not exist in any known resource paths,"
+			" it will not be created";
+
+		Log::logMessage(message.c_str(), pantheios::SEV_ERROR);
+
+		return nullptr;
+	}
+
 	//See if the mesh already exists
-	auto val = mMeshes.find(meshName);
+	auto val = mMeshes.find(meshPath);
 	if (val != mMeshes.end())
 	{
 		return val->second;
 	}
 
-	//Not found, create and return the shader
-	std::shared_ptr<Mesh> mesh = createMesh(meshName);
+	//Not found, create and return the shader.
+	std::shared_ptr<Mesh> mesh = loadMesh(meshPath);
 	if (!mesh)
 	{
 		std::stringstream message;
@@ -45,59 +59,33 @@ const std::shared_ptr<Mesh> MeshManager::getMesh(const std::string& meshName)
 
 		return nullptr;
 	}
+	mesh->mName = meshName;
 
 	return mesh;
 }
 
-std::shared_ptr<Mesh> MeshManager::createMesh(const std::string& meshName)
+std::shared_ptr<Mesh> MeshManager::loadMesh(const std::string& meshName)
 {
-	std::stringstream debugMessage;
-	debugMessage << "Starting mesh creation of '" << meshName << '\'';
-	Log::logMessage(debugMessage.str().c_str(), pantheios::SEV_DEBUG);
+	MeshSerializer meshSerializer;
+	SerializedMesh serializedMesh;
+	bool success = meshSerializer.load(meshName, serializedMesh);
+	assert(success && "MeshManager::loadMesh failed");
 
-	Assimp::Importer importer;
-	unsigned int flags = aiProcess_Triangulate;
-#ifdef _DEBUG
-	flags |= aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_ConvertToLeftHanded;
-#else
-	flags |= aiProcessPreset_TargetRealtime_Fast | aiProcess_ConvertToLeftHanded;
-#endif // _DEBUG
-
-	const aiScene* scene = importer.ReadFile(meshName.c_str(), flags);
-	if (!scene)
+	if (!success)
 	{
-		Log::logMessage(importer.GetErrorString(), pantheios::SEV_ERROR);
-
+		//MeshSerializer has logged something, just return
 		return nullptr;
 	}
 
-	unsigned int meshCount = scene->mNumMeshes;
-	if (meshCount == 0)
-	{
-		std::stringstream message;
-		message << '\'' << meshName << "' contains no meshes";
-		Log::logMessage(message.str().c_str(), pantheios::SEV_ERROR);
-
-		return nullptr;
-	}
-
-	std::vector<std::vector<VertexNormalTex>> vertices(meshCount);
-	std::vector<std::vector<unsigned int>> indices(meshCount);
-
-	for (unsigned int i = 0u; i < meshCount; ++i)
-	{
-		parseData(vertices[i], indices[i], scene->mMeshes[i]);
-		//parseData(mesh->mSubMeshes[i]->)
-	}
-	//parseData(vertices, indices, scene);
-
+	assert(serializedMesh.indices.size() == serializedMesh.vertices.size());
+	const unsigned int meshCount = serializedMesh.indices.size();
 	std::vector<ID3D11Buffer*> vertexBuffers(meshCount);
 	std::vector<ID3D11Buffer*> indexBuffers(meshCount);
 
-	//Create the buffers from the vertex and index buffers for each mesh
 	for (unsigned int i = 0u; i < meshCount; ++i)
 	{
-		if (!createBuffers(vertices[i], indices[i], vertexBuffers[i], indexBuffers[i], meshName))
+		if (!createBuffers(serializedMesh.vertices[i], serializedMesh.indices[i],
+			vertexBuffers[i], indexBuffers[i], meshName))
 		{
 			std::stringstream message;
 			message << "Failed to create buffers from '" << meshName << '\'';
@@ -107,68 +95,35 @@ std::shared_ptr<Mesh> MeshManager::createMesh(const std::string& meshName)
 		}
 	}
 
-	assert(vertexBuffers.size() && indexBuffers.size());
-
 	std::stringstream message;
-	message << "Created mesh '" << meshName << "'";
-	Log::logMessage(message.str().c_str());
+	message << "Loaded mesh '" << meshName << "'";
+	Log::logMessage(message.str().c_str(), pantheios::SEV_NOTICE);
 
-	Mesh* mesh = new Mesh();
+	std::shared_ptr<Mesh> mesh(new Mesh());
 	mesh->mID = getNumCreatedMeshes();
 	mesh->mSubMeshes.resize(meshCount);
 
-	//Create all the submeshes and set their values
 	for (unsigned int i = 0u; i < meshCount; ++i)
 	{
 		mesh->mSubMeshes[i] = new Mesh();
 		mesh->mSubMeshes[i]->mID = getNumCreatedMeshes();
 		mesh->mSubMeshes[i]->mIndexBuffer = indexBuffers[i];
 		mesh->mSubMeshes[i]->mVertexBuffer = vertexBuffers[i];
-		mesh->mSubMeshes[i]->mIndices = indices[i].size();
+		mesh->mSubMeshes[i]->mIndices = serializedMesh.indices[i].size();
+
+		XMFLOAT3 min = serializedMesh.minExtents[i];
+		XMFLOAT3 max = serializedMesh.maxExtents[i];
+		mesh->mSubMeshes[i]->mAabb.m_min.set(min.x, min.y, min.z, 0.0f);
+		mesh->mSubMeshes[i]->mAabb.m_max.set(max.x, max.y, max.z, 0.0f);
 	}
 
-//	std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>(getNumCreatedMeshes(),
-//		vertexBuffer, indexBuffer, indices.size());
-	std::shared_ptr<Mesh> spMesh(mesh);
-	mMeshes[meshName] = spMesh;
-	
-	return spMesh;
-}
+	mesh->updateAABB();
+#if BS_DEBUG_LEVEL > 4
+	mesh->createDrawableAabb(mDx11Renderer, mResourceManager->getShaderManager());
+#endif
 
-void MeshManager::parseData(std::vector<VertexNormalTex>& vertices,
-	std::vector<unsigned int>& indices, const aiMesh* mesh)
-{
-	bool meshHasNormals = mesh->HasNormals();
-
-	for (unsigned int j = 0u; j < mesh->mNumFaces; ++j)
-	{
-		aiFace face = mesh->mFaces[j];
-
-		//assert(face.mNumIndices == 3 && "Faces with more/less than 3 indices is not supported");
-		for (unsigned int k = 0; k < face.mNumIndices; ++k)
-		{
-			indices.push_back(face.mIndices[k]);
-		}
-		/*
-		indices.push_back(face.mIndices[0]);
-		indices.push_back(face.mIndices[1]);
-		indices.push_back(face.mIndices[2]);
-		*/
-	}
-
-	for (unsigned int j = 0u; j < mesh->mNumVertices; ++j)
-	{
-		VertexNormalTex vertex;
-		vertex.position = mesh->mVertices[j];
-		if (meshHasNormals)
-		{
-			vertex.normal = mesh->mNormals[j];
-		}
-		vertices.push_back(vertex);
-	}
-
-	//Make sure something has been loaded.
-	assert(vertices.size() && indices.size());
+	mMeshes[meshName] = mesh;
+	return mesh;
 }
 
 bool MeshManager::createBuffers(const std::vector<VertexNormalTex>& vertices,
@@ -223,6 +178,6 @@ bool MeshManager::createBuffers(const std::vector<VertexNormalTex>& vertices,
 	indexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
 		debugString.c_str());
 #endif
-
+	
 	return true;
 }

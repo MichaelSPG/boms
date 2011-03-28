@@ -35,15 +35,9 @@ public:
 	}
 	
 private:
-	inline void setVertexShader(ID3D11VertexShader* vertexShader)
-	{
-		mVertexShader = vertexShader;
-	}
-
-	inline void setInputLayout(ID3D11InputLayout* inputLayout)
-	{
-		mInputLayout = inputLayout;
-	}
+	//Not copyable
+	VertexShader(const VertexShader&);
+	void operator=(const VertexShader&);
 
 	ID3D11VertexShader*	mVertexShader;
 	ID3D11InputLayout*	mInputLayout;

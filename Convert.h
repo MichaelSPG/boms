@@ -4,7 +4,7 @@
 #include <Common/Base/hkBase.h>
 //#include <Common/Base/Math/Vector/hkVector4.h>
 
-#include "Math.h"
+#include "bsMath.h"
 
 
 inline XMFLOAT3 toXM(const hkVector4& vec)

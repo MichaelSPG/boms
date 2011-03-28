@@ -17,11 +17,11 @@ void Cube::create(Dx11Renderer* renderer, ShaderManager* shaderManager, MeshMana
 	d.AlignedByteOffset = 12;
 	inputLayout.push_back(d);
 
-	mVertexShader = shaderManager->getVertexShader("../assets/Wireframe.fx", inputLayout);
+	mVertexShader = shaderManager->getVertexShader("Wireframe.fx", inputLayout);
 	
-	mPixelShader = shaderManager->getPixelShader("../assets/Wireframe.fx");
+	mPixelShader = shaderManager->getPixelShader("Wireframe.fx");
 	
-	mMesh = meshManager->getMesh("../assets/cube.obj");
+	mMesh = meshManager->getMesh("cube.obj");
 }
 
 void Cube::draw(Dx11Renderer* renderer)

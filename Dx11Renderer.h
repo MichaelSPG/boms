@@ -1,23 +1,19 @@
 #ifndef DX11_RENDERER_H
 #define DX11_RENDERER_H
 
+#include "bsConfig.h"
+
 #include <d3d11.h>
 #include <D3DX11.h>
-//#define _XM_NO_INTRINSICS_
-//#define XM_NO_OPERATOR_OVERLOADS//http://msdn.microsoft.com/en-us/library/ee418732%28v=VS.85%29.aspx#AvoidOverLoad
-//#include <xnamath.h>
-#include "Math.h"
+#include <D3Dcompiler.h>
+
+#include "bsMath.h"
 
 #include <vector>
 #include <exception>
-#define UNICODE
-#include <Core/DXUT.h>
-#include <Optional/DXUTsettingsdlg.h>
-#undef UNICODE
 
 #include "VertexTypes.h"
 #include "Renderable.h"
-#include "Font.h"
 #include "Log.h"
 
 struct SimpleVertex 
@@ -32,6 +28,11 @@ struct CBWireFrame
 	XMFLOAT4	color;
 };
 
+struct CBWorld
+{
+	XMFLOAT4X4	world;
+};
+
 struct CBViewProjection
 {
 	XMFLOAT4X4 viewProjection;
@@ -40,25 +41,16 @@ struct CBViewProjection
 class Dx11Renderer
 {
 public:
-	Dx11Renderer()
-	: mSwapChain(nullptr)
-	, mDevice(nullptr)
-	, mDeviceContext(nullptr)
-	, mRenderTargetView(nullptr)
-
-	, mDepthStencil(nullptr)
-	, mDepthStencilView(nullptr)
-
-	, mFont(nullptr)
-	{
-	}
+	Dx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindowHeight);
 
 	~Dx11Renderer();
 
-	void init(HWND hWnd, int renderWindowWidth, int renderWindowHeight);
+//	void init(HWND hWnd, int renderWindowWidth, int renderWindowHeight);
 
+	//Clears render view target and depth stencil.
 	void preRender();
-	void render();
+
+	//Presents drawn primitives.
 	void present();
 
 	inline ID3D11DeviceContext* getDeviceContext() const
@@ -76,7 +68,7 @@ public:
 
 
 private:
-	void initDXUT(HWND hWnd);
+//	void initDXUT(HWND hWnd);
 
 	IDXGISwapChain*			mSwapChain;
 	ID3D11Device*			mDevice;
@@ -85,8 +77,6 @@ private:
 
 	ID3D11Texture2D*		mDepthStencil;
 	ID3D11DepthStencilView*	mDepthStencilView;
-
-	Font* mFont;
 };
 
 #endif

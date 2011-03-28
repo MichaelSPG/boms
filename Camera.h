@@ -52,7 +52,7 @@ public:
 		mPosition.y += y;
 		mPosition.z += z;
 
-		updateView();
+		mViewNeedsUpdate = true;
 	}
 
 	inline void setPosition(const XMFLOAT3& translation)
@@ -67,7 +67,7 @@ public:
 		return mPosition;
 	}
 
-	inline const ProjectionInfo& getProjectionInfo()
+	inline const ProjectionInfo& getProjectionInfo() const
 	{
 		return mProjectionInfo;
 	}
@@ -76,59 +76,37 @@ public:
 	{
 		mProjectionInfo = projectionInfo;
 
-		updateProjection();
+		mProjectionNeedsUpdate = true;
 	}
 
-//private:
+	//Updates and uploads transformation matrix to the GPU if it has changed.
+	void update();
+
+private:
 	//Updates the view matrix and then updates the view projection matrix.
-	inline void updateView()
-	{
-		Math::XMFloat4x4SetTranslation(mView, mPosition);
-		
-		//XMStoreFloat4x4(&mView, XMMatrixMultiply(XMLoadFloat4x4(&mView),
-		//	XMMatrixTranslation(mPosition.x, mPosition.y, mPosition.z)));
-		
-		//View projection matrix needs to be rebuilt.
-		updateViewProjection();
-	}
+	void updateView();
 
 	/*	Updates projection matrix with current projection info, and then updates
 		the view projection matrix.
 	*/
-	inline void updateProjection()
-	{
-		XMStoreFloat4x4(&mProjection, XMMatrixPerspectiveFovLH(mProjectionInfo.mFieldOfView,
-			mProjectionInfo.mAspectRatio, mProjectionInfo.mNearClip, mProjectionInfo.mFarClip));
-
-		//View projection matrix needs to be rebuilt.
-		updateViewProjection();
-	}
+	void updateProjection();
 
 	/*	Updates view projection matrix based on current projection and view matrices
 		and uploads it to the GPU
 	*/
-	inline void updateViewProjection()
-	{
-		//auto M = XMMatrixTranspose(XMMatrixMultiply(XMLoadFloat4x4(&mView), XMLoadFloat4x4(&mProjection)));
-		//XMStoreFloat4x4(&mViewProjection, M);
-
-		XMStoreFloat4x4(&mViewProjection, XMMatrixTranspose(
-			XMMatrixMultiply(XMLoadFloat4x4(&mView), XMLoadFloat4x4(&mProjection))));
-		
-		CBViewProjection viewProjection;
-		viewProjection.viewProjection = mViewProjection;
-		mDeviceContext->UpdateSubresource(mViewProjectionBuffer, 0, nullptr,
-			&viewProjection, 0, 0);
-	}
+	void updateViewProjection();
 
 
-	void update();
 
 	
 	XMFLOAT4X4	mProjection;
 	XMFLOAT4X4	mView;
 	XMFLOAT4X4	mViewProjection;
-	XMFLOAT4X4	mWorld;
+
+	bool		mProjectionNeedsUpdate;
+	bool		mViewNeedsUpdate;
+	bool		mViewProjectionNeedsUpdate;
+
 
 	XMFLOAT3	mLookAt;
 	XMFLOAT3	mUp;

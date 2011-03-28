@@ -6,6 +6,10 @@
 #include <vector>
 #include <memory>
 
+#include "Renderable.h"
+#include "Mesh.h"
+#include "Templates.h"
+
 
 class SceneGraph;
 class OctNode;
@@ -20,29 +24,65 @@ class SceneNode : public Node
 	~SceneNode();
 
 public:
-	
-
 	SceneNode* createChild(const hkVector4& position = hkVector4(0.0f, 0.0f, 0.0f, 0.0f));
-/*	
-	inline virtual void setPosition(const float x, const float y, const float z)
+
+	inline void attachRenderable(const std::shared_ptr<Mesh>& renderable)
 	{
-		hkVector4 translation(mPosition);
-
-		mPosition.set(x, y, z);
-
-		translation.sub3clobberW(mPosition);
-
-		mAABB.m_min.add3clobberW(translation);
-		mAABB.m_max.add3clobberW(translation);
-
+		mRenderables.push_back(renderable);
+//		renderable->mSceneNode = this;
 		verifyPosition();
+		verifyAabb();
 	}
-	*/
+
+	inline void detachRenderable(const std::shared_ptr<Renderable>& renderable)
+	{
+//		renderable->mSceneNode = nullptr;
+		for (unsigned int i = 0u; i < mRenderables.size(); ++i)
+		{
+			if (mRenderables[i] == renderable)
+			{
+				unordered_erase(mRenderables, mRenderables[i]);
+			}
+		}
+	}
+
+	inline const std::vector<std::shared_ptr<Renderable>>& getRenderables() const
+	{
+		return mRenderables;
+	}
+
+	void draw(Dx11Renderer* dx11Renderer) const;
+
+	//World space
+	const hkVector4& getDerivedTranslation() const;
+
+	//Local space
+	inline const hkTransform& getTransformation() const
+	{
+		return mTransform;
+	}
+
+	//World space
+	const hkTransform& getDerivedTransformation() const;
+
+	void setTranslation(const float x, const float y, const float z);
+
 private:
-	inline void verifyPosition();
+	void verifyPosition();
+
+	void verifyAabb();
+
+	void updateDerivedTransform() const;
 
 	std::vector<SceneNode*> mChildren;
+	SceneNode*	mParentSceneNode;
 	OctNode*	mOctNode;
+
+	std::vector<std::shared_ptr<Renderable>>	mRenderables;
+
+	//Mutable to allow const scene nodes to get derived transformations.
+	mutable hkTransform	mDerivedTransform;
+	mutable bool		mDerivedTransformNeedsUpdate;
 };
 
 #endif // SCENE_NODE_H

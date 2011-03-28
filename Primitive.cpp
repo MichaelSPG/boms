@@ -1,5 +1,8 @@
 #include "Primitive.h"
 
+#include <assert.h>
+#include <vector>
+
 #include <Common/Base/Types/Geometry/Aabb/hkAabb.h>
 
 #include "ShaderManager.h"
@@ -34,7 +37,7 @@ Primitive::~Primitive()
 }
 
 void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shaderManager,
-	const hkAabb& aabb)
+	const hkAabb& aabb, bool nodeAabb /*= true*/)
 {
 	assert(dx11Renderer);
 	assert(shaderManager);
@@ -54,8 +57,8 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 	d.AlignedByteOffset = 12;
 	inputLayout.push_back(d);
 
-	mVertexShader = shaderManager->getVertexShader("../assets/Wireframe.fx", inputLayout);
-	mPixelShader  = shaderManager->getPixelShader("../assets/Wireframe.fx");
+	mVertexShader = shaderManager->getVertexShader("Wireframe.fx", inputLayout);
+	mPixelShader  = shaderManager->getPixelShader("Wireframe.fx");
 
 
 	D3D11_BUFFER_DESC bufferDescription;
@@ -67,8 +70,9 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 	bufferDescription.CPUAccessFlags = 0;
 	bufferDescription.MiscFlags = 0;
 
-	assert(SUCCEEDED(dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr,
-		&mBuffer)));
+	HRESULT hres = dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr,
+		&mBuffer);
+	assert(SUCCEEDED(hres));
 
 #ifdef _DEBUG
 	const char bufferName[] = "PrimitiveConstantBuffer";
@@ -76,37 +80,65 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 #endif // _DEBUG
 
 	
-
-
-
 	hkVector4 halfExtents;
 	aabb.getHalfExtents(halfExtents);
-	//const XMFLOAT3& halfExtents = aabb.getHalfExtents();
+	hkQuadReal maxQuad(aabb.m_max.getQuad());
+	hkQuadReal minQuad(aabb.m_min.getQuad());
+	
+	std::vector<Vertex> vertices;
+	if (nodeAabb)
+	{
+		//Vertex buffer
+		Vertex verticesAabb[] =
+		{
+			{ XMFLOAT3(-halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Upper left, front
+			{ XMFLOAT3( halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Upper right, front
+			{ XMFLOAT3( halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Lower right, front
+			{ XMFLOAT3(-halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Lower left, front
+
+			{ XMFLOAT3(-halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Upper left, back
+			{ XMFLOAT3( halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Upper right, back
+			{ XMFLOAT3( halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Lower right, back
+			{ XMFLOAT3(-halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Lower left, back
+		};
+
+		for (unsigned int i = 0u; i < ARRAYSIZE(verticesAabb); ++i)
+		{
+			vertices.push_back(verticesAabb[i]);
+		}
+	}
+	else
+	{
+		//Vertex buffer
+		Vertex verticesNotAabb[] =
+		{
+			{ XMFLOAT3(minQuad.x, maxQuad.y, minQuad.z) },//Upper left, front
+			{ XMFLOAT3(maxQuad.x, maxQuad.y, minQuad.z) },//Upper right, front
+			{ XMFLOAT3(maxQuad.x, minQuad.y, minQuad.z) },//Lower right, front
+			{ XMFLOAT3(minQuad.x, minQuad.y, minQuad.z) },//Lower left, front
+
+			{ XMFLOAT3(minQuad.x, maxQuad.y, maxQuad.z) },//Upper left, back
+			{ XMFLOAT3(maxQuad.x, maxQuad.y, maxQuad.z) },//Upper right, back
+			{ XMFLOAT3(maxQuad.x, minQuad.y, maxQuad.z) },//Lower right, back
+			{ XMFLOAT3(minQuad.x, minQuad.y, maxQuad.z) },//Lower left, back
+		};
+
+		for (unsigned int i = 0u; i < ARRAYSIZE(verticesNotAabb); ++i)
+		{
+			vertices.push_back(verticesNotAabb[i]);
+		}
+	}
 
 	
-
+	
+	
 	//Vertex buffer
-	Vertex vertices[] =
-	{
-		{ XMFLOAT3(-halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Upper left, front
-		{ XMFLOAT3( halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Upper right, front
-		{ XMFLOAT3( halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Lower right, front
-		{ XMFLOAT3(-halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Lower left, front
-
-		{ XMFLOAT3(-halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Upper left, back
-		{ XMFLOAT3( halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Upper right, back
-		{ XMFLOAT3( halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Lower right, back
-		{ XMFLOAT3(-halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Lower left, back
-	};
-
-
-	//Vertex buffer
-	bufferDescription.ByteWidth = sizeof(Vertex) * ARRAYSIZE(vertices);
+	bufferDescription.ByteWidth = sizeof(Vertex) * vertices.size();
 	bufferDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
 	D3D11_SUBRESOURCE_DATA initData;
 	ZeroMemory(&initData, sizeof(initData));
-	initData.pSysMem = vertices;
+	initData.pSysMem = &vertices[0];
 
 	if (FAILED(dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
 		&mVertexBuffer)))
@@ -120,11 +152,12 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 		vertexBufferName);
 #endif // _DEBUG
 
-	unsigned int stride = sizeof(SimpleVertex);
+	/*
+	unsigned int stride = sizeof(Vertex);
 	unsigned int offset = 0;
 	dx11Renderer->getDeviceContext()->IASetVertexBuffers(1, 1, &mVertexBuffer, &stride,
 		&offset);
-
+	*/
 
 	///Index buffer
 	WORD indices[] =
@@ -150,8 +183,9 @@ void Primitive::createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shade
 
 	initData.pSysMem = indices;
 
-	assert(SUCCEEDED(dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
-		&mIndexBuffer)));
+	hres = dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
+		&mIndexBuffer);
+	assert(SUCCEEDED(hres));
 
 #ifdef _DEBUG
 	const char indexBufferName[] = "PrimitiveIndexBuffer";
@@ -167,10 +201,10 @@ void Primitive::draw(Dx11Renderer* dx11Renderer)
 	auto context = dx11Renderer->getDeviceContext();
 
 
-	UINT offsets2 =  0;
-	UINT stride2 = sizeof(Vertex);
-	context->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride2, &offsets2);
-	context->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
+	UINT offsets =  0u;
+	UINT stride = sizeof(Vertex);
+	context->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offsets);
+	context->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0u);
 
 	context->IASetInputLayout(mVertexShader->getInputLayout());
 

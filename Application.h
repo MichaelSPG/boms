@@ -7,7 +7,6 @@
 
 #include "Dx11Renderer.h"
 #include "ToString.h"
-#include "EntityManager.h"
 #include "SceneGraph.h"
 #include "ResourceManager.h"
 
@@ -19,10 +18,8 @@ class Camera;
 class Application : public OIS::KeyListener, public OIS::MouseListener
 {
 public:
-	Application();
+	Application(HWND hWnd, int renderWindowWidth, int renderWindowHeight);
 	~Application();
-
-	void init(HWND hWnd, int renderWindowWidth, int renderWindowHeight);
 
 	void update(float deltaTime);
 
@@ -51,7 +48,8 @@ private:
 
 	bool w, a, s, d, space, c, shift;
 
-	std::vector<SceneNode*>	mSceneNodes;
+	std::vector<Node*>	mSceneNodes;
+	HWND mHwnd;
 };
 
 #endif

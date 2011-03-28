@@ -1,30 +1,32 @@
 #ifndef MESHMANAGER_H
 #define MESHMANAGER_H
 
+#include "bsConfig.h"
+
 #include <map>
 #include <memory>
 #include <string>
 
 #include "Mesh.h"
 
+class ResourceManager;
 class Dx11Renderer;
-struct aiMesh;
 
 
 class MeshManager
 {
 public:
-	MeshManager(Dx11Renderer* dx11Renderer);
+	MeshManager(Dx11Renderer* dx11Renderer, ResourceManager* resourceManager);
 	~MeshManager();
 
-	const std::shared_ptr<Mesh> getMesh(const std::string& meshName);
+	std::shared_ptr<Mesh> getMesh(const std::string& meshName);
 	
 
 private:
-	std::shared_ptr<Mesh> createMesh(const std::string& meshName);
+	//Loads a mesh created with the mesh serializer
+	std::shared_ptr<Mesh> loadMesh(const std::string& meshName);
 
-	void parseData(std::vector<VertexNormalTex>& vertices,
-		std::vector<unsigned int>& indices, const aiMesh* mesh);
+	std::shared_ptr<Mesh> createMesh(const std::string& meshName);
 
 	//Returns true on success.
 	bool createBuffers(const std::vector<VertexNormalTex>& vertices,
@@ -38,8 +40,9 @@ private:
 
 	std::map<std::string, std::shared_ptr<Mesh>>	mMeshes;
 
-	unsigned int	mNumCreatedMeshes;
-	Dx11Renderer*	mDx11Renderer;
+	ResourceManager*	mResourceManager;
+	Dx11Renderer*		mDx11Renderer;
+	unsigned int		mNumCreatedMeshes;
 };
 
 #endif // MESHMANAGER_H

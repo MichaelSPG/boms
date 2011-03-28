@@ -1,3 +1,6 @@
+#ifndef TEMPLATES_H
+#define TEMPLATES_H
+
 #include <vector>
 
 
@@ -9,3 +12,5 @@ inline void unordered_erase(std::vector<T>& vec, T& element)
 	std::swap(element, vec.back());
 	vec.pop_back();
 }
+
+#endif // TEMPLATES_H

@@ -1,9 +1,11 @@
 #ifndef VERTEX_TYPE_H
 #define VERTEX_TYPE_H
 
+#include "bsConfig.h"
+#include "bsMath.h"
+
 #define SVertexType D3DFVF_XYZRHW | D3DFVF_DIFFUSE
 
-#include <assimp.hpp>
 
 class SVertex
 {
@@ -17,16 +19,16 @@ public:
 //Vertex with normal
 struct VertexNormal
 {
-	aiVector3D position;
-	aiVector3D normal;
+	XMFLOAT3 position;
+	XMFLOAT3 normal;
 };
 
 //Vertex position, normal, texture coordinates
 struct VertexNormalTex
 {
-	aiVector3D position;
-	aiVector3D normal;
-	aiVector2D texCoord;
+	XMFLOAT3 position;
+	XMFLOAT3 normal;
+	XMFLOAT2 texCoord;
 };
 
 #endif

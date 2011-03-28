@@ -4,19 +4,18 @@
 #include <windows.h>
 
 /**	Simple timer.
-	Call Timer::start(), then use Timer::getTimeMilliSeconds to get milliseconds since
-	Timer::start() was called.
+	Use Timer::getTimeMilliSeconds to get millisecond intervals.
 	Uses no CPU cycles when idle.
+	Will likely be inaccurate if power saving or similar is active.
 */
 class Timer
 {
 public:
-	void start()
+	Timer()
 	{
 		LARGE_INTEGER frequency;
 		QueryPerformanceFrequency(&frequency);
-		//
-		mOneOverFrequency = 1.0f / (float)frequency.QuadPart;
+		mOneOverFrequency = (float)(1.0 / (double)frequency.QuadPart);
 
 		QueryPerformanceCounter(&mStart);
 	}
@@ -39,27 +38,3 @@ private:
 };
 
 #endif
-
-
-
-/*
-class Timer2
-{
-public:
-	Timer2() {}
-	~Timer2() {}
-
-	inline void start()
-	{
-		mStartTime = GetTickCount();
-	}
-
-	inline DWORD getTime()
-	{
-		return GetTickCount() - mStartTime;
-	}
-	
-private:
-	DWORD mStartTime;
-};
-*/

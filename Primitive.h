@@ -1,6 +1,8 @@
 #ifndef PRIMITIVE_H
 #define PRIMITIVE_H
 
+#include "Renderable.h"
+
 #include "Dx11Renderer.h"
 
 class ShaderManager;
@@ -14,7 +16,7 @@ struct Vertex
 	XMFLOAT3 Pos;
 };
 
-class Primitive
+class Primitive : public Renderable
 {
 	friend class Node;
 	friend class OctNode;
@@ -25,12 +27,18 @@ public:
 	Primitive();
 	~Primitive();
 
+	//nodeAabb should be set to false for anything but scene nodes and oct nodes.
 	void createPrimitive(Dx11Renderer* dx11Renderer, ShaderManager* shaderManager,
-		const hkAabb& aabb);
+		const hkAabb& aabb, bool nodeAabb = true);
 
 	void draw(Dx11Renderer* dx11Renderer);
+
+	inline const RenderableIdentifier getRenderableIdentifier() const
+	{
+		return WIREFRAME_PRIMITIVE;
+	}
 	
-private:
+//private://TODO: uncomment
 	std::shared_ptr<VertexShader>	mVertexShader;
 	std::shared_ptr<PixelShader>	mPixelShader;
 

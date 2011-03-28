@@ -1,11 +1,21 @@
-#ifndef MATH_H
-#define MATH_H
+#ifndef BS_MATH_H
+#define BS_MATH_H
 
+#include <math.h>
+#include <stdlib.h>//rand
+#include <Windows.h>//xnamath.h needs defines from this header, such as FLOAT
 #define XM_NO_OPERATOR_OVERLOADS//http://msdn.microsoft.com/en-us/library/ee418732%28v=VS.85%29.aspx#AvoidOverLoad
 #include <xnamath.h>
 
-namespace Math
+namespace bsMath
 {
+	inline float randomRange(const float min, const float max)
+	{
+		float r = (float)rand() / (float)RAND_MAX;
+		return min + r * (max - min);
+	}
+
+
 	//Translation
 	//Get
 	inline XMFLOAT3 XMMatrixGetTranslation(const XMMATRIX& matrix)
@@ -43,17 +53,24 @@ namespace Math
 	}
 
 	//Transpose
-	inline XMFLOAT4X4 XMFloat4x4Transpose(const XMFLOAT4X4& M)
+	//The parameter will be modified.
+	inline void XMFloat4x4Transpose(XMFLOAT4X4& inOut)
 	{
-		const XMMATRIX& tempMatrix = XMMatrixTranspose(XMLoadFloat4x4(&M));
+		XMStoreFloat4x4(&inOut, XMMatrixTranspose(XMLoadFloat4x4(&inOut)));
+	}
 
-		XMFLOAT4X4 temp4x4;
-		XMStoreFloat4x4(&temp4x4, tempMatrix);
-
-		return temp4x4;
+	//The result will be put into the out parameter.
+	inline void XMFloat4x4Multiply(const XMFLOAT4X4& M1, const XMFLOAT4X4& M2, XMFLOAT4X4& out)
+	{
+		XMStoreFloat4x4(&out, XMMatrixMultiply(XMLoadFloat4x4(&M1), XMLoadFloat4x4(&M2)));
+	}
+	
+	//The result will be put into the out parameter.
+	inline void XMFloat4x4PerspectiveFovLH(const float fovAngleY,
+		const float aspectRatio, const float nearZ, const float farZ, XMFLOAT4X4& out)
+	{
+		XMStoreFloat4x4(&out, XMMatrixPerspectiveFovLH(fovAngleY, aspectRatio, nearZ, farZ));
 	}
 }
 
-
-
-#endif // MATH_H
+#endif // BS_MATH_H

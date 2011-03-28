@@ -31,22 +31,14 @@ public:
 	{
 		return mID;
 	}
-	/*
-	inline virtual void setPosition(const float x, const float y, const float z)
+
+	//World space.
+	inline const hkTransform& getTransformation()
 	{
-		hkVector4 translation(mPosition);
-
-		mPosition.set(x, y, z);
-
-		translation.sub3clobberW(mPosition);
-
-		mAABB.m_min.add3clobberW(translation);
-		mAABB.m_max.add3clobberW(translation);
-		
-
-		verifyPosition();
+		//mTransform is always in world space for oct nodes, so no need to update from
+		//parents.
+		return mTransform;
 	}
-	*/
 
 private:
 	//Checks if the node should remain as a child of its current OctNode.

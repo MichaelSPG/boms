@@ -6,7 +6,11 @@
 
 
 Camera::Camera(const ProjectionInfo& projectionInfo, SceneGraph* sceneGraph)
-	: mLookAt(0.0f, 0.0f, 0.0f)
+	: mProjectionNeedsUpdate(true)
+	, mViewNeedsUpdate(true)
+	, mViewProjectionNeedsUpdate(true)
+
+	, mLookAt(0.0f, 0.0f, 0.0f)
 	, mUp(0.0f, 1.0f, 0.0f)
 	, mPosition(0.0f, 0.0f, 0.0f)
 	
@@ -20,7 +24,6 @@ Camera::Camera(const ProjectionInfo& projectionInfo, SceneGraph* sceneGraph)
 	XMStoreFloat4x4(&mProjection, XMMatrixIdentity());
 	XMStoreFloat4x4(&mView, XMMatrixIdentity());
 	XMStoreFloat4x4(&mViewProjection, XMMatrixIdentity());
-	XMStoreFloat4x4(&mWorld, XMMatrixIdentity());
 
 	ID3D11Device* device = mSceneGraph->getRenderer()->getDevice();
 
@@ -31,9 +34,12 @@ Camera::Camera(const ProjectionInfo& projectionInfo, SceneGraph* sceneGraph)
 	bufferDescription.ByteWidth = sizeof(CBViewProjection);
 	bufferDescription.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bufferDescription.CPUAccessFlags = 0u;
+
 	if (FAILED(device->CreateBuffer(&bufferDescription, nullptr, &mViewProjectionBuffer)))
 	{
-		throw std::exception("Failed to create view projection buffer");
+		Log::logMessage("Camera::Camera: failed to create view projection buffer",
+			pantheios::SEV_CRITICAL);
+		assert(!"Camera::Camera: failed to create view projection buffer");
 	}
 	mDeviceContext->VSSetConstantBuffers(0u, 1, &mViewProjectionBuffer);
 
@@ -54,9 +60,6 @@ Camera::Camera(const ProjectionInfo& projectionInfo, SceneGraph* sceneGraph)
 
 	XMStoreFloat4x4(&mProjection, XMMatrixPerspectiveFovLH(mProjectionInfo.mFieldOfView,
 		mProjectionInfo.mAspectRatio, mProjectionInfo.mNearClip, mProjectionInfo.mFarClip));
-
-	updateProjection();
-	updateView();
 }
 
 Camera::~Camera()
@@ -68,7 +71,7 @@ inline void Camera::lookAt(const XMFLOAT3& position)
 {
 	assert(!"Camera::lookAt not implemented");
 
-	updateView();
+	mViewNeedsUpdate = true;
 }
 
 void Camera::rotateAboutAxis(Axis axis, float degrees)
@@ -90,18 +93,31 @@ void Camera::rotateAboutAxis(Axis axis, float degrees)
 			XMMatrixMultiply(XMLoadFloat4x4(&mView), XMMatrixRotationZ(degrees)));
 		break;
 	}
-	updateView();
+	mViewNeedsUpdate = true;
 }
 
 inline void Camera::setPosition(float x, float y, float z)
 {
 	assert(!"Camera::setPosition not implemented");
 
-	updateView();
+	mViewNeedsUpdate = true;
 }
 
 void Camera::update()
 {
+	if (mViewNeedsUpdate)
+	{
+		updateView();
+	}
+	if (mProjectionNeedsUpdate)
+	{
+		updateProjection();
+	}
+	if (mViewProjectionNeedsUpdate)
+	{
+		updateViewProjection();
+	}
+
 	/*
 	CBCamera constBuffer;
 	XMStoreFloat4x4(&constBuffer.camera, mViewProjection);
@@ -112,4 +128,35 @@ void Camera::update()
 	*/
 }
 
+void Camera::updateView()
+{
+	bsMath::XMFloat4x4SetTranslation(mView, mPosition);
+
+	mViewNeedsUpdate = false;
+	//View projection matrix needs to be rebuilt.
+	mViewProjectionNeedsUpdate = true;
+}
+
+void Camera::updateProjection()
+{
+	bsMath::XMFloat4x4PerspectiveFovLH(mProjectionInfo.mFieldOfView, mProjectionInfo.mAspectRatio,
+		mProjectionInfo.mNearClip, mProjectionInfo.mFarClip, mProjection);
+
+	mProjectionNeedsUpdate = false;
+	//View projection matrix needs to be rebuilt.
+	mViewProjectionNeedsUpdate = true;
+}
+
+void Camera::updateViewProjection()
+{
+	bsMath::XMFloat4x4Multiply(mView, mProjection, mViewProjection);
+	bsMath::XMFloat4x4Transpose(mViewProjection);
+
+	CBViewProjection viewProjection;
+	viewProjection.viewProjection = mViewProjection;
+	mDeviceContext->UpdateSubresource(mViewProjectionBuffer, 0, nullptr,
+		&viewProjection, 0, 0);
+
+	mViewProjectionNeedsUpdate = false;
+}
 

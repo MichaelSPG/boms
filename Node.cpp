@@ -1,8 +1,22 @@
 #include "Node.h"
 
+#include <assert.h>
+
 #include "Primitive.h"
 #include "ShaderManager.h"
+#include "Log.h"
 
+
+Node::Node(const hkVector4& translation, int id, SceneGraph* sceneGraph)
+	: mAABB(hkVector4(0.0f, 0.0f, 0.0f, 0.0f), hkVector4(0.0f, 0.0f, 0.0f, 0.0f))
+	, mTransform(hkRotation(), hkVector4(0.0f, 0.0f, 0.0f, 0.0f))
+	, mID(id)
+	, mSceneGraph(sceneGraph)
+	, mWireFramePrimitive(nullptr)
+{
+	setTranslation(translation);
+	mTransform.getRotation().setIdentity();
+}
 
 Node::~Node()
 {
@@ -12,81 +26,58 @@ Node::~Node()
 	}
 }
 
-void Node::drawAABB(Dx11Renderer* dx11Renderer)
+void Node::drawAABB(Dx11Renderer* dx11Renderer) const
 {
 	assert(dx11Renderer);
-	assert(mWireFramePrimitive && "createDrawableAabb must be called before drawAABB");
+	assert(mWireFramePrimitive && mWireFramePrimitive->mBuffer
+		&& "createDrawableAabb must be called before drawAABB");
+	if (!(mWireFramePrimitive && mWireFramePrimitive->mBuffer))
+	{
+		Log::logMessage("Node::drawAABB: Trying to draw an AABB that has not been created",
+			pantheios::SEV_CRITICAL);
 
-
-	//m_color += 0.025f;
-	//	m_color = XMFLOAT3(1/mDepth, -(1/mDepth), mDepth);
-
+		return;
+	}
 
 	CBWireFrame cb;
 	XMStoreFloat4x4(&cb.world, XMMatrixIdentity());
-	cb.world._14 = mPosition.getSimdAt(0);
-	cb.world._24 = mPosition.getSimdAt(1);
-	cb.world._34 = mPosition.getSimdAt(2);
-
+	const hkVector4& translation = mTransform.getTranslation();
+	cb.world._14 = translation.getSimdAt(0);
+	cb.world._24 = translation.getSimdAt(1);
+	cb.world._34 = translation.getSimdAt(2);
 	cb.color = XMFLOAT4(mWireframeColor.x, mWireframeColor.y, mWireframeColor.z, 0.0f);
-
-	//cb.color = XMFLOAT4(-sin(m_color), sin(m_color), cos(m_color), 0.0f);
-	//	float oneOverDepth = 1.0f / mDepth;
 	/*
-	if (mDepth > 3.1f)
-	{
-		cb.color = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.0f);
-	}
-	else if (mDepth > 2.1f)
-	{
-		cb.color = XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f);
-	}
-	else if (mDepth > 1.1f)
-	{
-		cb.color = XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f);
-	}
-	else if (mDepth > 0.1f)
-	{
-		cb.color = XMFLOAT4(0.0f, 1.0f, 1.0f, 0.0f);
-	}
-	else if (mDepth < 0.2f)
-	{
-		cb.color = XMFLOAT4(0.0f, 0.0f, 1.0f, 0.0f);
-	}
-	*/
-
 	dx11Renderer->getDeviceContext()->UpdateSubresource(mWireFramePrimitive->mBuffer, 0,
 		nullptr, &cb, 0, 0);
-
+*/
 
 	mWireFramePrimitive->draw(dx11Renderer);
-
-	/*
-	if (mChildren.size())
-	{
-		for (int i = 0; i < 8; ++i)
-		{
-			mChildren[i]->drawAABB(dx11Renderer);
-		}
-	}
-	*/
 }
 
-void Node::createDrawableAabb(Dx11Renderer* dx11Renderer, ShaderManager* shaderManager)
+void Node::createDrawableAabb(Dx11Renderer* dx11Renderer, ShaderManager* shaderManager,
+	bool octNode /*= true*/)
 {
 	assert(dx11Renderer);
-
-	mWireFramePrimitive = new Primitive();
-	mWireFramePrimitive->createPrimitive(dx11Renderer, shaderManager, mAABB);
-
-	/*
-	if (mChildren.size())
+	if (mWireFramePrimitive)
 	{
-		for (int i = 0; i < 8; ++i)
-		{
-			mChildren[i]->createDrawableAabb(dx11Renderer, shaderManager);
-		}
-	}*/
+		delete mWireFramePrimitive;
+	}
+	mWireFramePrimitive = new Primitive();
+	mWireFramePrimitive->createPrimitive(dx11Renderer, shaderManager, mAABB, octNode);
+}
 
-//	m_color = (float)(rand() % mDepth);
+void Node::setTranslation(const float x, const float y, const float z)
+{
+	hkVector4 translation(mTransform.getTranslation());
+
+	mTransform.getTranslation().set(x, y, z, 0.0f);
+
+	//Get translation
+	translation.sub3clobberW(mTransform.getTranslation());
+
+	//Translate the AABB
+	mAABB.m_min.add3clobberW(translation);
+	mAABB.m_max.add3clobberW(translation);
+
+	verifyTranslation();
 }

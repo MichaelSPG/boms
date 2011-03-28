@@ -5,9 +5,12 @@
 
 #include <D3Dcompiler.h>
 
+#include "ResourceManager.h"
 
-ShaderManager::ShaderManager(Dx11Renderer* dx11Renderer)
-	: mDx11Renderer(dx11Renderer)
+
+ShaderManager::ShaderManager(Dx11Renderer* dx11Renderer, ResourceManager* resourceManager)
+	: mResourceManager(resourceManager)
+	, mDx11Renderer(dx11Renderer)
 	, mNumCreatedShaders(0)
 {
 }
@@ -22,30 +25,60 @@ const std::shared_ptr<VertexShader> ShaderManager::getVertexShader(const std::st
 	assert(fileName.length());
 	assert(inputDesc.size() && "Zero length input description");
 
+	//get the path for the file
+	std::string filePath = mResourceManager->getFileSystem()->getPath(fileName);
+	if (!filePath.length())
+	{
+		//Log error message if mesh doesn't exist.
+
+		std::string message("ShaderManager: '");
+		message += fileName + "' does not exist in any known resource paths,"
+			" it will not be created";
+
+		Log::logMessage(message.c_str(), pantheios::SEV_ERROR);
+
+		return nullptr;
+	}
+
 	//See if the shader already exists
-	auto val = mVertexShaders.find(fileName);
+	auto val = mVertexShaders.find(filePath);
 	if (val != mVertexShaders.end())
 	{
 		return val->second;
 	}
 
 	//Not found, create and return the shader
-	return createVertexShader(fileName, inputDesc);
+	return createVertexShader(filePath, inputDesc);
 }
 
 const std::shared_ptr<PixelShader> ShaderManager::getPixelShader(const std::string& fileName)
 {
 	assert(fileName.length());
 
+	//Get the path for the file
+	std::string filePath = mResourceManager->getFileSystem()->getPath(fileName);
+	if (!filePath.length())
+	{
+		//Log error message if mesh doesn't exist.
+
+		std::string message("ShaderManager: '");
+		message += fileName + "' does not exist in any known resource paths,"
+			" it will not be created";
+
+		Log::logMessage(message.c_str(), pantheios::SEV_ERROR);
+
+		return nullptr;
+	}
+
 	//See if the shader already exists
-	auto val = mPixelShaders.find(fileName);
+	auto val = mPixelShaders.find(filePath);
 	if (val != mPixelShaders.end())
 	{
 		return val->second;
 	}
 
 	//Not found, create and return the shader
-	return createPixelShader(fileName);
+	return createPixelShader(filePath);
 }
 
 std::shared_ptr<VertexShader> ShaderManager::createVertexShader(const std::string& fileName,
@@ -94,6 +127,7 @@ std::shared_ptr<VertexShader> ShaderManager::createVertexShader(const std::strin
 
 	auto vs = std::make_pair(fileName, std::make_shared<VertexShader>(vertexShader,
 		vertexLayout, getNumCreatedShaders()));
+	vs.second->mInputLayoutDescriptions = inputDesc;
 
 #ifdef _DEBUG
 	//Set debug data in the D3D objects.
@@ -113,7 +147,7 @@ std::shared_ptr<VertexShader> ShaderManager::createVertexShader(const std::strin
 	std::string logMessage("Created vertex shader \'");
 	logMessage.append(fileName);
 	logMessage.append("\'");
-	Log::logMessage(logMessage.c_str());
+	Log::logMessage(logMessage.c_str(), pantheios::SEV_NOTICE);
 
 	return vs.second;
 }
@@ -163,7 +197,26 @@ std::shared_ptr<PixelShader> ShaderManager::createPixelShader(const std::string&
 	std::string logMessage("Created pixel shader \'");
 	logMessage.append(fileName);
 	logMessage.append("\'");
-	Log::logMessage(logMessage.c_str());
+	Log::logMessage(logMessage.c_str(), pantheios::SEV_NOTICE);
 
 	return ps.second;
+}
+
+void ShaderManager::setVertexShader(VertexShader* vertexShader)
+{
+	assert(vertexShader);
+
+	ID3D11DeviceContext* context = mDx11Renderer->getDeviceContext();
+
+	context->IASetInputLayout(vertexShader->getInputLayout());
+	context->VSSetShader(vertexShader->getVertexShader(), nullptr, 0);
+}
+
+void ShaderManager::setPixelShader(PixelShader* pixelShader)
+{
+	assert(pixelShader);
+
+	ID3D11DeviceContext* context = mDx11Renderer->getDeviceContext();
+
+	context->PSSetShader(pixelShader->getPixelShader(), nullptr, 0);
 }

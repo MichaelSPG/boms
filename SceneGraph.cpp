@@ -6,16 +6,18 @@
 #include "OctNode.h"
 #include "SceneNode.h"
 #include "Timer.h"
-#include "ShaderManager.h"
+#include "ResourceManager.h"
 #include "Camera.h"
 
 
 
 SceneGraph::SceneGraph()
 	: mNumCreatedObjects(0)
-	, mRenderer(nullptr)
+	, mDx11Renderer(nullptr)
 	, mRootNode(nullptr)
 	, mCamera(nullptr)
+	, mResourceManager(nullptr)
+	, displayEmptyAabbs(false)
 {
 }
 
@@ -37,12 +39,14 @@ SceneGraph::~SceneGraph()
 }
 
 void SceneGraph::init(unsigned short treeDepth, Dx11Renderer* renderer,
-	ShaderManager* shaderManager)
+	ResourceManager* resourceManager)
 {
 	assert(treeDepth != 0 && "Tree depth cannot be zero.");
 	assert(renderer);
+	assert(resourceManager);
 
-	mRenderer = renderer;
+	mDx11Renderer = renderer;
+	mResourceManager = resourceManager;
 	mMaxTreeDepth = treeDepth;
 
 	hkAabb aabb(hkVector4(-100.0f, -100.0f, -100.0f), hkVector4(100.0f, 100.0f, 100.0f));
@@ -70,25 +74,52 @@ void SceneGraph::init(unsigned short treeDepth, Dx11Renderer* renderer,
 
 	for (unsigned int i = 0u; i < mSceneNodes.size(); ++i)
 	{
-		mSceneNodes[i]->createDrawableAabb(mRenderer, shaderManager);
+		mSceneNodes[i]->createDrawableAabb(mDx11Renderer, mResourceManager->getShaderManager());
 	}
 
 	for (unsigned int i = 0u; i < mOctNodes.size(); ++i)
 	{
-		mOctNodes[i]->createDrawableAabb(mRenderer, shaderManager);
+		mOctNodes[i]->createDrawableAabb(mDx11Renderer, mResourceManager->getShaderManager());
 	}
 
 	Log::logMessage("Scene graph initialized successfully");
 }
-
+#include <sstream>
 void SceneGraph::drawAABBs(Dx11Renderer* dx11Renderer) const
 {
 	assert (dx11Renderer);
 
-
 	for (unsigned int i = 0u; i < mSceneNodes.size(); ++i)
 	{
-		mSceneNodes[i]->drawAABB(dx11Renderer);
+		//TODO: Remove this
+		/*
+		std::stringstream msg;
+		msg << "i: " << i << " | nodes: " << mSceneNodes.size();
+		Log::logMessage(msg.str().c_str());
+		*/
+
+		CBWireFrame cb;
+		XMStoreFloat4x4(&cb.world, XMMatrixIdentity());
+
+		
+		if (mSceneNodes[i]->mWireFramePrimitive)
+		{
+			//const hkVector4& translation = mSceneNodes[i]->getTranslation();
+			const hkVector4& translation = mSceneNodes[i]->getDerivedTranslation();
+			cb.world._14 = translation.getSimdAt(0);
+			cb.world._24 = translation.getSimdAt(1);
+			cb.world._34 = translation.getSimdAt(2);
+			memcpy(&cb.color, &mSceneNodes[i]->mWireframeColor, 12);
+			//cb.color.x = mSceneNodes[i]->mWireframeColor.x;
+			//cb.color.y = mSceneNodes[i]->mWireframeColor.y;
+			//cb.color.z = mSceneNodes[i]->mWireframeColor.z;
+			cb.color.w = 0.0f;
+			mDx11Renderer->getDeviceContext()->UpdateSubresource(mSceneNodes[i]
+			->mWireFramePrimitive->mBuffer, 0, nullptr, &cb, 0, 0);
+			
+			
+			mSceneNodes[i]->drawAABB(dx11Renderer);
+		}
 	}
 
 	for (unsigned int i = 0u; i < mOctNodes.size(); ++i)
@@ -96,6 +127,12 @@ void SceneGraph::drawAABBs(Dx11Renderer* dx11Renderer) const
 		if (mOctNodes[i]->mSceneNodes.size())
 		{
 			mOctNodes[i]->drawAABB(dx11Renderer);
+			/*
+			for (unsigned int j = 0u; j < mOctNodes[i]->mSceneNodes.size(); ++j)
+			{
+				mOctNodes[i]->mSceneNodes[j]->draw(dx11Renderer);
+			}
+			*/
 		}
 		else
 		{
@@ -196,4 +233,27 @@ void SceneGraph::placeSceneNode(SceneNode* sceneNode, OctNode* octNode, unsigned
 		}
 		octNode->attachSceneNode(sceneNode);
 	}
+}
+
+const std::vector<std::shared_ptr<Renderable>> SceneGraph::getVisibleRenderables() const
+{
+	std::vector<std::shared_ptr<Renderable>> renderables;
+
+	for (unsigned int i = 0u; i < mOctNodes.size(); ++i)
+	{
+		OctNode* currentOctNode = mOctNodes[i];
+		unsigned int sceneNodeCount = currentOctNode->mSceneNodes.size();
+
+		for (unsigned int j = 0u; j < sceneNodeCount; ++j)
+		{
+			const auto& sceneNodeRenderables = currentOctNode->mSceneNodes[j]->getRenderables();
+			for (unsigned int k = 0u; k < sceneNodeRenderables.size(); ++k)
+			{
+				renderables.insert(renderables.end(), sceneNodeRenderables.begin(),
+					sceneNodeRenderables.end());
+			}
+		}
+	}
+
+	return renderables;
 }

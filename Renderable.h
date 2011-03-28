@@ -1,15 +1,22 @@
 #ifndef RENDERABLE_H
 #define RENDERABLE_H
 
+class SceneNode;
 
-class __declspec(novtable) Renderable
+class Renderable
 {
+	friend class SceneNode;
 public:
+
+	enum RenderableIdentifier
+	{
+		MESH,
+		WIREFRAME_PRIMITIVE
+	};
+
 	virtual ~Renderable() {}
 
-	virtual void setPosition(float x, float y, float z) = 0;
-
-	virtual void translate(float x, float y, float z) = 0;
+	virtual inline const RenderableIdentifier getRenderableIdentifier() const = 0;
 };
 
 #endif

@@ -26,10 +26,9 @@ public:
 	}
 	
 private:
-	inline void setPixelShader(ID3D11PixelShader* pixelShader)
-	{
-		mPixelShader = pixelShader;
-	}
+	//Not copyable
+	PixelShader(const PixelShader&);
+	void operator=(const PixelShader&);
 
 	ID3D11PixelShader*	mPixelShader;
 	unsigned int		mID;

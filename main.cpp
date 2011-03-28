@@ -1,3 +1,5 @@
+#include "bsConfig.h"
+
 #include <windows.h>
 #include <exception>
 
@@ -39,7 +41,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	hWnd = CreateWindowEx(winStyleEx, name, name, winStyle, CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left,
 		rect.bottom - rect.top, nullptr, nullptr, hInstance, nullptr);
 
-	Application application;
+	Application application(hWnd, windowWidth, windowHeight);
+	/*
 	try
 	{
 		application.init(hWnd, windowWidth, windowHeight);
@@ -54,101 +57,54 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		MessageBox(nullptr, "An unexpected error has occurred", "Error", MB_ICONSTOP | MB_SETFOREGROUND);
 		exit(EXIT_FAILURE);
 	}
-
+	*/
 	ShowWindow(hWnd, nShowCmd);
 	UpdateWindow(hWnd);
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	Timer timer;
-	timer.start();
 
-	const unsigned int maxFps = 60;
-	const float maxFrameTime = (1.0f / maxFps) * 1000.0f;
+	const float maxFrameTime = (1.0f / 60.0f) * 1000.0f;
 
-	float startTime(0);
-	float deltaTime(1);
+	float startTime = 0.0f;
+	float deltaTime = 16.67f;
 
-	const float weightRatio(2.0f / maxFps);
+	const float weightRatio(2.0f / 60.0f);
 	float timeMs(1.0f);
-	float updateFps(0);
 
-
-	if (maxFps)
+	try
 	{
-		try
+		while (!quit)
 		{
-			while (!quit)
+			while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 			{
-				while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-				{
-					if (msg.message == WM_QUIT)
-						break;
+				if (msg.message == WM_QUIT)
+					break;
 
-					TranslateMessage(&msg);
-					DispatchMessage(&msg);
-				}
-
-				startTime = timer.getTimeMilliSeconds();
-				application.update(deltaTime);
-
-				deltaTime = timer.getTimeMilliSeconds() - startTime;
-
-				if (deltaTime < maxFrameTime)
-				{
-					Sleep(static_cast<DWORD>(maxFrameTime - deltaTime));
-				}
-
-				deltaTime = timer.getTimeMilliSeconds() - startTime;
-
-				timeMs = timeMs * (1.0f - weightRatio) + deltaTime * weightRatio;
-
-				updateFps += deltaTime;
-
-				//Update fps no more often than every 500 ms.
-				if (updateFps > 500)
-				{
-					SetWindowText(hWnd, std::string("FPS: " + ToString::toString((unsigned int)((1 / timeMs) * 1000))).c_str());
-					updateFps = 0;
-				}
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
 			}
-		}
 
-		catch (std::exception &e)
-		{
-			MessageBox(nullptr, e.what(), "Error", MB_ICONSTOP | MB_SETFOREGROUND);
-			exit(EXIT_FAILURE);
+			startTime = timer.getTimeMilliSeconds();
+			application.update(deltaTime);
+
+			deltaTime = timer.getTimeMilliSeconds() - startTime;
+
+			if (deltaTime < maxFrameTime)
+			{
+				Sleep(static_cast<DWORD>(maxFrameTime - deltaTime));
+			}
+
+			deltaTime = timer.getTimeMilliSeconds() - startTime;
+
+			timeMs = timeMs * (1.0f - weightRatio) + deltaTime * weightRatio;
 		}
 	}
-	else
+
+	catch (std::exception &e)
 	{
-		try
-		{
-			while (!quit)
-			{
-				while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-				{
-					if (msg.message == WM_QUIT)
-						break;
-
-					TranslateMessage(&msg);
-					DispatchMessage(&msg);
-				}
-
-
-				//startTime = timer.getTime();
-				startTime = timer.getTimeMilliSeconds();
-				application.update(deltaTime);
-
-				//deltaTime = timer.getTime() - startTime;
-				deltaTime = timer.getTimeMilliSeconds() - startTime;
-			}
-		}
-
-		catch (std::exception &e)
-		{
-			MessageBox(nullptr, e.what(), "Error", MB_ICONSTOP | MB_SETFOREGROUND);
-			exit(EXIT_FAILURE);
-		}
+		MessageBox(nullptr, e.what(), "Error", MB_ICONSTOP | MB_SETFOREGROUND);
+		exit(EXIT_FAILURE);
 	}
 
 

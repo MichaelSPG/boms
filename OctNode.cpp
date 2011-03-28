@@ -1,5 +1,7 @@
 #include "OctNode.h"
 
+#include <assert.h>
+
 #include "Log.h"
 #include "SceneGraph.h"
 #include "Dx11Renderer.h"
@@ -73,16 +75,17 @@ void OctNode::createChildren(unsigned short depth, SceneGraph* sceneGraph)
 			for (int z = 0; z < 2; ++z)
 			{
 				//Generate the position for the new node.
-				float posX = (float)mPosition.getSimdAt(0) + (x ? halfExtentX : -halfExtentX);
-				float posY = (float)mPosition.getSimdAt(1) + (y ? halfExtentX : -halfExtentX);
-				float posZ = (float)mPosition.getSimdAt(2) + (z ? halfExtentX : -halfExtentX);
+				const hkVector4& translation = mTransform.getTranslation();
+				float posX = (float)translation.getSimdAt(0) + (x ? halfExtentX : -halfExtentX);
+				float posY = (float)translation.getSimdAt(1) + (y ? halfExtentX : -halfExtentX);
+				float posZ = (float)translation.getSimdAt(2) + (z ? halfExtentX : -halfExtentX);
 
 				position.set(posX, posY, posZ, 0.0f);
 
 				OctNode* node = new OctNode(sceneGraph->getNumCreatedObjects(),
 					hkVector4(0.0f, 0.0f, 0.0f, 0.0f), mSceneGraph, this, aabb);
 
-				node->setPosition(position);
+				node->setTranslation(position);
 
 				mChildren.push_back(node);
 				mSceneGraph->mOctNodes.push_back(node);
