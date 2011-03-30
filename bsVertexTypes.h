@@ -1,5 +1,5 @@
-#ifndef VERTEX_TYPE_H
-#define VERTEX_TYPE_H
+#ifndef BS_VERTEX_TYPE_H
+#define BS_VERTEX_TYPE_H
 
 #include "bsConfig.h"
 #include "bsMath.h"
@@ -31,4 +31,4 @@ struct VertexNormalTex
 	XMFLOAT2 texCoord;
 };
 
-#endif
+#endif // BS_VERTEX_TYPE_H

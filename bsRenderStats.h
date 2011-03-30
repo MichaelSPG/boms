@@ -1,5 +1,5 @@
-#ifndef BSRENDERSTATS_H
-#define BSRENDERSTATS_H
+#ifndef BS_RENDERSTATS_H
+#define BS_RENDERSTATS_H
 
 #include <string>
 #include <vector>
@@ -58,4 +58,4 @@ private:
 	std::vector<std::pair<float, float>>	mTrackedTimes;
 };
 
-#endif // BSRENDERSTATS_H
+#endif // BS_RENDERSTATS_H

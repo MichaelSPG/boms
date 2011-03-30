@@ -60,4 +60,4 @@ private:
 	bsWindow*	mWindow;
 };
 
-#endif
+#endif // APPLICATION_H

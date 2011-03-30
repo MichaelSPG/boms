@@ -1,5 +1,5 @@
-#ifndef TEMPLATES_H
-#define TEMPLATES_H
+#ifndef BS_TEMPLATES_H
+#define BS_TEMPLATES_H
 
 #include <vector>
 
@@ -13,4 +13,4 @@ inline void unordered_erase(std::vector<T>& vec, T& element)
 	vec.pop_back();
 }
 
-#endif // TEMPLATES_H
+#endif // BS_TEMPLATES_H

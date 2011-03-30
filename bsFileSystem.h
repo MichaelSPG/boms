@@ -1,5 +1,5 @@
-#ifndef FILESYSTEM_H
-#define FILESYSTEM_H
+#ifndef BS_FILESYSTEM_H
+#define BS_FILESYSTEM_H
 
 #include "bsConfig.h"
 
@@ -27,4 +27,4 @@ private:
 	std::unordered_map<std::string, std::string>	mFilePaths;
 };
 
-#endif // FILESYSTEM_H
+#endif // BS_FILESYSTEM_H

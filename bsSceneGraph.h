@@ -1,5 +1,5 @@
-#ifndef SCENE_GRAPH_H
-#define SCENE_GRAPH_H
+#ifndef BS_SCENE_GRAPH_H
+#define BS_SCENE_GRAPH_H
 
 #include <vector>
 #include <memory>
@@ -82,4 +82,4 @@ private:
 	unsigned short		mMaxTreeDepth;
 };
 
-#endif // SCENE_GRAPH_H
+#endif // BS_SCENE_GRAPH_H

@@ -1,5 +1,5 @@
-#ifndef MESH_SERIALIZER_H
-#define MESH_SERIALIZER_H
+#ifndef BS_MESH_SERIALIZER_H
+#define BS_MESH_SERIALIZER_H
 
 #include "bsConfig.h"
 
@@ -79,4 +79,4 @@ class bsMeshSerializer
 	bool load(const std::string& meshName, bsSerializedMesh& mesh);
 };
 
-#endif // MESH_SERIALIZER_H
+#endif // BS_MESH_SERIALIZER_H

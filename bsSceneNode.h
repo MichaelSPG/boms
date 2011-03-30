@@ -1,5 +1,5 @@
-#ifndef SCENE_NODE_H
-#define SCENE_NODE_H
+#ifndef BS_SCENE_NODE_H
+#define BS_SCENE_NODE_H
 
 #include "bsNode.h"
 
@@ -103,4 +103,4 @@ private:
 	mutable bool		mDerivedTransformNeedsUpdate;
 };
 
-#endif // SCENE_NODE_H
+#endif // BS_SCENE_NODE_H

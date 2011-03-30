@@ -1,5 +1,5 @@
-#ifndef RENDERQUEUE_H
-#define RENDERQUEUE_H
+#ifndef BS_RENDERQUEUE_H
+#define BS_RENDERQUEUE_H
 
 #include <vector>
 #include <memory>
@@ -74,4 +74,4 @@ private:
 	bool			mWorldBufferSet;
 };
 
-#endif // RENDERQUEUE_H
+#endif // BS_RENDERQUEUE_H

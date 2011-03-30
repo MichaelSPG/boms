@@ -1,7 +1,8 @@
-#ifndef RENDERABLE_H
-#define RENDERABLE_H
+#ifndef BS_RENDERABLE_H
+#define BS_RENDERABLE_H
 
 class bsSceneNode;
+
 
 class bsRenderable
 {
@@ -19,4 +20,4 @@ public:
 	virtual inline const RenderableIdentifier getRenderableIdentifier() const = 0;
 };
 
-#endif
+#endif // BS_RENDERABLE_H

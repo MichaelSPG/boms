@@ -1,5 +1,5 @@
-#ifndef BSTEXT_H
-#define BSTEXT_H
+#ifndef BS_TEXT_H
+#define BS_TEXT_H
 
 #include <string>
 
@@ -132,4 +132,4 @@ private:
 	unsigned int	mFlags;
 };
 
-#endif // BSTEXT_H
+#endif // BS_TEXT_H

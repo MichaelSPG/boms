@@ -1,5 +1,5 @@
-#ifndef BSTEXTMANAGER_H
-#define BSTEXTMANAGER_H
+#ifndef BS_TEXTMANAGER_H
+#define BS_TEXTMANAGER_H
 
 #include <string>
 #include <vector>
@@ -36,4 +36,4 @@ private:
 	std::vector<std::shared_ptr<bsTextBox>>	mTextBoxes;
 };
 
-#endif // BSTEXTMANAGER_H
+#endif // BS_TEXTMANAGER_H

@@ -1,5 +1,5 @@
-#ifndef CUBE_H
-#define CUBE_H
+#ifndef BS_CUBE_H
+#define BS_CUBE_H
 
 #include "bsDx11Renderer.h"
 #include "bsShaderManager.h"
@@ -36,4 +36,4 @@ private:
 	XMFLOAT4X4			mWorld;
 };
 
-#endif // CUBE_H
+#endif // BS_CUBE_H

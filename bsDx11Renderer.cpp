@@ -6,7 +6,6 @@
 #include "bsLog.h"
 
 
-
 bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindowHeight)
 	: mSwapChain(nullptr)
 	, mDevice(nullptr)

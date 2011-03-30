@@ -1,5 +1,5 @@
-#ifndef BSWINDOW_H
-#define BSWINDOW_H
+#ifndef BS_WINDOW_H
+#define BS_WINDOW_H
 
 #include "bsConfig.h"
 
@@ -42,4 +42,4 @@ private:
 	int		mWindowHeight;
 };
 
-#endif // BSWINDOW_H
+#endif // BS_WINDOW_H

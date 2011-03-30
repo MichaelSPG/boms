@@ -1,5 +1,5 @@
-#ifndef CONVERT_H
-#define CONVERT_H
+#ifndef BS_CONVERT_H
+#define BS_CONVERT_H
 
 #include <Common/Base/hkBase.h>
 
@@ -20,4 +20,4 @@ inline hkVector4 toHK(const XMFLOAT3& vec)
 
 } // bsMath
 
-#endif // CONVERT_H
+#endif // BS_CONVERT_H

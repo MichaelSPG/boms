@@ -1,5 +1,5 @@
-#ifndef BSSTRINGUTILS_H
-#define BSSTRINGUTILS_H
+#ifndef BS_STRINGUTILS_H
+#define BS_STRINGUTILS_H
 
 #include <string>
 #include <sstream>
@@ -59,4 +59,4 @@ public:
 	}
 };
 
-#endif // BSSTRINGUTILS_H
+#endif // BS_STRINGUTILS_H

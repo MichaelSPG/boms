@@ -1,5 +1,5 @@
-#ifndef NODE_H
-#define NODE_H
+#ifndef BS_NODE_H
+#define BS_NODE_H
 
 #include <Common/Base/Types/Geometry/Aabb/hkAabb.h>
 #include <Common/Base/Types/Geometry/Aabb/hkAabbUtil.h>
@@ -55,4 +55,4 @@ protected:
 	XMFLOAT3	mWireframeColor;
 };
 
-#endif // NODE_H
+#endif // BS_NODE_H

@@ -1,5 +1,5 @@
-#ifndef DX11_RENDERER_H
-#define DX11_RENDERER_H
+#ifndef BS_DX11_RENDERER_H
+#define BS_DX11_RENDERER_H
 
 #include "bsConfig.h"
 
@@ -43,8 +43,6 @@ public:
 
 	~bsDx11Renderer();
 
-//	void init(HWND hWnd, int renderWindowWidth, int renderWindowHeight);
-
 	//Clears render view target and depth stencil.
 	void preRender();
 
@@ -66,8 +64,6 @@ public:
 
 
 private:
-//	void initDXUT(HWND hWnd);
-
 	IDXGISwapChain*			mSwapChain;
 	ID3D11Device*			mDevice;
 	ID3D11DeviceContext*	mDeviceContext;
@@ -77,4 +73,4 @@ private:
 	ID3D11DepthStencilView*	mDepthStencilView;
 };
 
-#endif
+#endif // BS_DX11_RENDERER_H

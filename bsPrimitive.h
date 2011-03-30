@@ -1,5 +1,5 @@
-#ifndef PRIMITIVE_H
-#define PRIMITIVE_H
+#ifndef BS_PRIMITIVE_H
+#define BS_PRIMITIVE_H
 
 #include "bsRenderable.h"
 
@@ -50,4 +50,4 @@ public:
 	XMFLOAT4			mColor;
 };
 
-#endif // PRIMITIVE_H
+#endif // BS_PRIMITIVE_H

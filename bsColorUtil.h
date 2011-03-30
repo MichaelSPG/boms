@@ -1,5 +1,5 @@
-#ifndef BSCOLORUTIL_H
-#define BSCOLORUTIL_H
+#ifndef BS_COLORUTIL_H
+#define BS_COLORUTIL_H
 
 #include "bsConfig.h"
 #include "bsMath.h"
@@ -143,4 +143,4 @@ public:
 	static const unsigned int abgrBlue = 0x00ff0000;
 };
 
-#endif // BSCOLORUTIL_H
+#endif // BS_COLORUTIL_H

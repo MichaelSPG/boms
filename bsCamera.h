@@ -1,5 +1,5 @@
-#ifndef CAMERA_H
-#define CAMERA_H
+#ifndef BS_CAMERA_H
+#define BS_CAMERA_H
 
 #include "bsDx11Renderer.h"
 #include "bsSceneGraph.h"
@@ -120,4 +120,4 @@ private:
 	ID3D11DeviceContext*	mDeviceContext;
 };
 
-#endif // CAMERA_H
+#endif // BS_CAMERA_H

@@ -1,5 +1,5 @@
-#ifndef VERTEX_SHADER_H
-#define VERTEX_SHADER_H
+#ifndef BS_VERTEX_SHADER_H
+#define BS_VERTEX_SHADER_H
 
 struct ID3D11VertexShader;
 struct ID3D11InputLayout;
@@ -45,4 +45,4 @@ private:
 	std::vector<D3D11_INPUT_ELEMENT_DESC>	mInputLayoutDescriptions;
 };
 
-#endif // VERTEX_SHADER_H
+#endif // BS_VERTEX_SHADER_H

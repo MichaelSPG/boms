@@ -1,5 +1,5 @@
-#ifndef MESHMANAGER_H
-#define MESHMANAGER_H
+#ifndef BS_MESHMANAGER_H
+#define BS_MESHMANAGER_H
 
 #include "bsConfig.h"
 
@@ -45,4 +45,4 @@ private:
 	unsigned int		mNumCreatedMeshes;
 };
 
-#endif // MESHMANAGER_H
+#endif // BS_MESHMANAGER_H

@@ -1,5 +1,5 @@
-#ifndef PIXEL_SHADER_H
-#define PIXEL_SHADER_H
+#ifndef BS_PIXEL_SHADER_H
+#define BS_PIXEL_SHADER_H
 
 struct ID3D11PixelShader;
 
@@ -34,4 +34,4 @@ private:
 	unsigned int		mID;
 };
 
-#endif // PIXEL_SHADER_H
+#endif // BS_PIXEL_SHADER_H

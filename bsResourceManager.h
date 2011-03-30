@@ -1,5 +1,5 @@
-#ifndef RESOURCE_MANAGER_H
-#define RESOURCE_MANAGER_H
+#ifndef BS_RESOURCE_MANAGER_H
+#define BS_RESOURCE_MANAGER_H
 
 #include "bsConfig.h"
 
@@ -55,4 +55,4 @@ private:
 	bsTextManager*	mTextManager;
 };
 
-#endif // RESOURCE_MANAGER_H
+#endif // BS_RESOURCE_MANAGER_H

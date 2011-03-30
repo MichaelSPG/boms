@@ -1,5 +1,5 @@
-#ifndef TIMER_H
-#define TIMER_H
+#ifndef BS_TIMER_H
+#define BS_TIMER_H
 
 #include <windows.h>
 
@@ -37,4 +37,4 @@ private:
 	float mOneOverFrequency;
 };
 
-#endif
+#endif // BS_TIMER_H

@@ -1,5 +1,5 @@
-#ifndef BSTEXTBOX_H
-#define BSTEXTBOX_H
+#ifndef BS_TEXTBOX_H
+#define BS_TEXTBOX_H
 
 #include "bsConfig.h"
 
@@ -44,4 +44,4 @@ private:
 	float	mFadeDelay;
 };
 
-#endif // BSTEXTBOX_H
+#endif // BS_TEXTBOX_H

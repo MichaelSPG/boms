@@ -1,5 +1,5 @@
-#ifndef OCT_NODE_H
-#define OCT_NODE_H
+#ifndef BS_OCT_NODE_H
+#define BS_OCT_NODE_H
 
 #include "bsNode.h"
 
@@ -74,4 +74,4 @@ private:
 	unsigned short mDepth;
 };
 
-#endif // OCT_NODE_H
+#endif // BS_OCT_NODE_H

@@ -1,5 +1,5 @@
-#ifndef SHADER_MANAGER_H
-#define SHADER_MANAGER_H
+#ifndef BS_SHADER_MANAGER_H
+#define BS_SHADER_MANAGER_H
 
 #include <map>
 #include <memory>
@@ -10,8 +10,6 @@
 
 #include "bsVertexShader.h"
 #include "bsPixelShader.h"
-//class bsVertexShader;
-//class bsPixelShader;
 
 class bsResourceManager;
 
@@ -35,7 +33,6 @@ public:
 	{
 		return mNumCreatedShaders;
 	}
-
 
 	/*	Set a vertex shader for rendering.
 		Will also set the input layout.
@@ -76,11 +73,11 @@ private:
 
 
 	std::map<std::string, std::shared_ptr<bsVertexShader>>	mVertexShaders;
-	std::map<std::string, std::shared_ptr<bsPixelShader>>		mPixelShaders;
+	std::map<std::string, std::shared_ptr<bsPixelShader>>	mPixelShaders;
 
 	bsResourceManager*	mResourceManager;
 	bsDx11Renderer*		mDx11Renderer;
 	unsigned int		mNumCreatedShaders;
 };
 
-#endif // SHADER_MANAGER_H
+#endif // BS_SHADER_MANAGER_H

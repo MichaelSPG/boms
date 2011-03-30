@@ -76,13 +76,13 @@ void bsRenderStats::setFrameTime(const float timeMs)
 	{
 		const auto& current = mTrackedTimes[i];
 
-		if (mTrackedTimes[i].first > mCurrentMax.first)
+		if (current.first > mCurrentMax.first)
 		{
-			mCurrentMax = mTrackedTimes[i];
+			mCurrentMax = current;
 		}
-		else if (mTrackedTimes[i].first < mCurrentMin.first)
+		else if (current.first < mCurrentMin.first)
 		{
-			mCurrentMin = mTrackedTimes[i];
+			mCurrentMin = current;
 		}
 	}
 }
