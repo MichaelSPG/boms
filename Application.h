@@ -5,24 +5,24 @@
 #include <string>
 #include <windows.h>
 
-#include "Dx11Renderer.h"
-#include "ToString.h"
-#include "SceneGraph.h"
-#include "ResourceManager.h"
+#include "bsDx11Renderer.h"
+#include "bsSceneGraph.h"
+#include "bsResourceManager.h"
 
 
-class Log;
-class Camera;
+class bsLog;
+class bsCamera;
+class bsWindow;
 
 
 class Application : public OIS::KeyListener, public OIS::MouseListener
 {
 public:
-	Application(HWND hWnd, int renderWindowWidth, int renderWindowHeight);
+	Application(bsWindow* window);
+
 	~Application();
 
 	void update(float deltaTime);
-
 
 	virtual bool keyPressed(const OIS::KeyEvent &arg);
 
@@ -34,22 +34,30 @@ public:
 
 	virtual bool mouseReleased(const OIS::MouseEvent &arg, OIS::MouseButtonID id);
 
-private:
-	Dx11Renderer*	mDx11Renderer;
+	//Returns true if the application should quit.
+	inline bool quit() const
+	{
+		return mQuit;
+	}
 
-	ResourceManager*	mResourceManager;
+private:
+	bsDx11Renderer*	mDx11Renderer;
+
+	bsResourceManager*	mResourceManager;
 
 	OIS::InputManager	*mInputManager;
 	OIS::Keyboard		*mKeyboard;
 	OIS::Mouse			*mMouse;
 
-	SceneGraph*	mSceneGraph;
-	Camera* mCamera;
+	bsSceneGraph*	mSceneGraph;
+	bsCamera*		mCamera;
 
-	bool w, a, s, d, space, c, shift;
+	bool w, a, s, d, space, c, shift, moveDuck, resetDuck, rightMouseDown, leftMouseDown,
+		mQuit;
 
-	std::vector<Node*>	mSceneNodes;
+	std::vector<bsNode*>	mSceneNodes;
 	HWND mHwnd;
+	bsWindow*	mWindow;
 };
 
 #endif

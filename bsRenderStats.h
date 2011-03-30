@@ -2,6 +2,7 @@
 #define BSRENDERSTATS_H
 
 #include <string>
+#include <vector>
 
 
 class bsRenderStats
@@ -15,9 +16,12 @@ public:
 		, mMaxFrameTimeMs(0.0f)
 		, mMinFrameTimeMs(1e5f) //Should always be overwritten by the first call to setFrameTime()
 		, mAverageWeight(1.0f)
+		, mDurationToTrack(10000.0f)
+		, mCurrentMin(1e5f, 0.0f)
+		, mCurrentMax(0.0f, 0.0f)
 	{}
 
-	std::wstring getStatsString();
+	std::wstring getStatsString() const;
 
 	inline void setFps(const float fps)
 	{
@@ -27,20 +31,12 @@ public:
 		mAverageFps = mAverageFps * (1.0f - mAverageWeight) + fps * mAverageWeight;
 	}
 
-	inline void setFrameTime(const float timeMs)
+	void setFrameTime(const float timeMs);
+
+	//Default: 10000.0f (10 seconds)
+	inline void setDurationToTrack(const float durationMs)
 	{
-		mFrameTimeMs = timeMs;
-
-		mAverageTimeMs = mAverageTimeMs * (1.0f - mAverageWeight) + timeMs * mAverageWeight;
-
-		if (timeMs > mMaxFrameTimeMs)
-		{
-			mMaxFrameTimeMs = timeMs;
-		}
-		if (timeMs < mMinFrameTimeMs)
-		{
-			mMinFrameTimeMs = timeMs;
-		}
+		mDurationToTrack = durationMs;
 	}
 
 private:
@@ -53,6 +49,13 @@ private:
 	float	mMinFrameTimeMs;
 
 	float	mAverageWeight;
+
+	float	mDurationToTrack;
+	//pair<value, age in ms>
+	std::pair<float, float>	mCurrentMin;
+	std::pair<float, float>	mCurrentMax;
+
+	std::vector<std::pair<float, float>>	mTrackedTimes;
 };
 
 #endif // BSRENDERSTATS_H

@@ -1,20 +1,29 @@
 #include "Application.h"
 
+#include "bsConfig.h"
+
 #include <algorithm>
 #include <cassert>
 
-#include "bsTextManager.h"
+#include <boost/bind.hpp>
+//#include <boost/bind/mem_fn.hpp>
 
-#include "Log.h"
-#include "Timer.h"
-#include "SceneGraph.h"
-#include "Camera.h"
-#include "RenderQueue.h"
+#include <Common/Base/Algorithm/PseudoRandom/hkPseudoRandomGenerator.h>
+
+#include "bsLog.h"
+#include "bsTimer.h"
+#include "bsSceneGraph.h"
+#include "bsCamera.h"
+#include "bsRenderQueue.h"
 #include "bsRenderStats.h"
 #include "bsColorUtil.h"
+#include "bsTextBox.h"
+#include "bsTextManager.h"
+#include "bsStringUtils.h"
+#include "bsWindow.h"
 
 
-Application::Application(HWND hWnd, int renderWindowWidth, int renderWindowHeight)
+Application::Application(bsWindow* window)
 	: mInputManager(nullptr)
 	, mKeyboard(nullptr)
 	, mMouse(nullptr)
@@ -22,24 +31,25 @@ Application::Application(HWND hWnd, int renderWindowWidth, int renderWindowHeigh
 	, mResourceManager(nullptr)
 	, mSceneGraph(nullptr)
 	, mCamera(nullptr)
-
-	, mHwnd(hWnd)
+	, mWindow(window)
 {
-	//////////////////////////////////////////////////////////////////////////
-	w = a = s = d = space = c = shift = false;
+	w = a = s = d = space = c = shift = moveDuck = resetDuck = false;
+	rightMouseDown = leftMouseDown = mQuit = false;
 
-	Log::init(pantheios::SEV_DEBUG);
-	Log::logMessage("Initializing application", pantheios::SEV_NOTICE);
+	bsLog::init(pantheios::SEV_DEBUG);
+	bsLog::logMessage("Initializing application", pantheios::SEV_NOTICE);
 
-	mDx11Renderer = new Dx11Renderer(hWnd, renderWindowWidth, renderWindowHeight);
-	//mDx11Renderer->init(hWnd, renderWindowWidth, renderWindowHeight);
+	mDx11Renderer = new bsDx11Renderer(mWindow->getHwnd(), mWindow->getWindowWidth(),
+		mWindow->getWindowHeight());
 
 	//OIS
 	{
-		Log::logMessage("Initializing OIS");
+		bsLog::logMessage("Initializing OIS");
 
 		OIS::ParamList paramList;;
-		paramList.insert(OIS::ParamList::value_type("WINDOW", STR(unsigned long(hWnd))));
+		
+		paramList.insert(OIS::ParamList::value_type("WINDOW",
+			bsStringUtils::toString(unsigned long(mWindow->getHwnd()))));
 		paramList.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_FOREGROUND"))); 
 		paramList.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_NONEXCLUSIVE"))); 
 		paramList.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_NOWINKEY")));
@@ -49,36 +59,35 @@ Application::Application(HWND hWnd, int renderWindowWidth, int renderWindowHeigh
 		mKeyboard = static_cast<OIS::Keyboard*>(mInputManager->createInputObject(OIS::OISKeyboard, true));
 		mMouse = static_cast<OIS::Mouse*>(mInputManager->createInputObject(OIS::OISMouse, true));
 		
-		mMouse->getMouseState().height = renderWindowHeight;
-		mMouse->getMouseState().width = renderWindowWidth;
+		mMouse->getMouseState().height = mWindow->getWindowHeight();
+		mMouse->getMouseState().width = mWindow->getWindowWidth();
 
 		mKeyboard->setEventCallback(this);
 		mMouse->setEventCallback(this);
 	}
 
-	mResourceManager = new ResourceManager();
+	mResourceManager = new bsResourceManager();
 	mResourceManager->initAll("../assets", mDx11Renderer);
-	/*
-	mResourceManager->initFileSystem("../assets");
-	mResourceManager->initShaderManager(mDx11Renderer);
-	mResourceManager->initMeshManager(mDx11Renderer);
-	*/
-	mSceneGraph = new SceneGraph();
-	mSceneGraph->init(4, mDx11Renderer, mResourceManager);
 
-	mCamera = new Camera(ProjectionInfo(45.0f, 1000.0f, 0.1f, 1280.0f/720.0f), mSceneGraph);
+	mSceneGraph = new bsSceneGraph(4, mDx11Renderer, mResourceManager);
 
-	Log::logMessage("Initialization completed successfully", pantheios::SEV_NOTICE);
+	mCamera = new bsCamera(bsProjectionInfo(45.0f, 1000.0f, 0.1f, 1280.0f/720.0f), mSceneGraph);
+
+	bsLog::logMessage("Initialization completed successfully", pantheios::SEV_NOTICE);
 }
 
 Application::~Application()
 {
-	Log::logMessage("Shutting down", pantheios::SEV_NOTICE);
+	bsLog::logMessage("Shutting down", pantheios::SEV_NOTICE);
 
 	mInputManager->destroyInputObject(mKeyboard);
 	mInputManager->destroyInputObject(mMouse);
 	mInputManager->destroyInputSystem(mInputManager);
 
+	if (mWindow)
+	{
+		delete mWindow;
+	}
 	if (mCamera)
 	{
 		delete mCamera;
@@ -99,6 +108,12 @@ Application::~Application()
 
 void Application::update(float deltaTime)
 {
+	if (!mWindow->checkForMessages())
+	{
+		mQuit = true;
+		return;
+	}
+
 	mDx11Renderer->preRender();
 
 	mKeyboard->capture();
@@ -170,24 +185,29 @@ void Application::update(float deltaTime)
 	static auto gourd = mResourceManager->getMeshManager()->getMesh("gourd.bsm");
 
 
-	static SceneNode* testNode1 = mSceneGraph->createSceneNode(hkVector4(0.0f, 50.0f, 0.0f));
-	static SceneNode* testNode2 = mSceneGraph->createSceneNode(hkVector4(50.0f, 0.0f, 50.0f));
-	static SceneNode* testNode3 = mSceneGraph->createSceneNode(hkVector4(50.0f, 0.0f, 0.0f));
-	static SceneNode* testNode4 = mSceneGraph->createSceneNode(hkVector4(0.0f, 0.0f, -50.0f));
+	static bsSceneNode* testNode1 = mSceneGraph->createSceneNode(hkVector4(0.0f, 0.0f, 0.0f));
+	static bsSceneNode* testNode2 = mSceneGraph->createSceneNode(hkVector4(50.0f, 0.0f, 50.0f));
+	static bsSceneNode* testNode3 = mSceneGraph->createSceneNode(hkVector4(50.0f, 0.0f, 0.0f));
+	static bsSceneNode* testNode4 = mSceneGraph->createSceneNode(hkVector4(0.0f, 0.0f, -50.0f));
 
 	static bool once = false;
 	if (!once)
 	{
-		testNode1->attachRenderable(roi);
 		testNode1->attachRenderable(duck);
-		testNode2->attachRenderable(teapot);
-		testNode2->attachRenderable(gourd);
-		testNode2->attachRenderable(roi);
-		testNode3->attachRenderable(duck);
-		testNode4->attachRenderable(gourd);
-		testNode4->attachRenderable(duck);
-		testNode4->attachRenderable(teapot);
-		testNode4->attachRenderable(gourd);
+		bool disable = false;
+		if (!disable)
+		{
+			testNode1->attachRenderable(roi);
+			testNode2->attachRenderable(teapot);
+			testNode2->attachRenderable(gourd);
+			testNode2->attachRenderable(roi);
+			testNode3->attachRenderable(duck);
+			testNode4->attachRenderable(gourd);
+			testNode4->attachRenderable(duck);
+			testNode4->attachRenderable(teapot);
+			testNode4->attachRenderable(gourd);
+		}
+		
 		once = true;
 	}
 
@@ -195,12 +215,40 @@ void Application::update(float deltaTime)
 	wave += 0.02f;
 	float waveSin = sinf(wave);
 	float waveCos = cosf(wave);
-	float mulFactor = 1.2f;
+	//float mulFactor = 1.2f;
+	float mulFactor = 1.0f;
 
-	testNode1->setTranslation( waveSin * mulFactor,  waveCos * mulFactor, -waveSin * mulFactor);
+	if (moveDuck)
+	{
+		testNode1->setTranslation( waveSin * mulFactor,  waveCos * mulFactor, -waveSin * mulFactor);
+	}
+	if (resetDuck)
+	{
+		auto& dt = const_cast<hkVector4&>(testNode1->getDerivedTranslation());
+		dt.setAll3(0.0f);
+		testNode1->setTranslation(0.0f, 0.0f, 0.0f);
+	}
+
+//	testNode1->setTranslation( waveSin * mulFactor,  waveCos * mulFactor, -waveSin * mulFactor);
 	testNode2->setTranslation(-waveSin * mulFactor, -waveCos * mulFactor,  waveSin * mulFactor);
 	testNode3->setTranslation( waveCos * mulFactor,  waveSin * mulFactor, -waveCos * mulFactor);
 	testNode4->setTranslation( waveSin * mulFactor, -waveSin * mulFactor,  waveCos * mulFactor);
+
+	static float rotWave = 0.0f;
+	rotWave += 0.1f;
+	waveSin = sinf(rotWave);
+	waveCos = cosf(rotWave);
+	hkQuaternion rot(hkVector4(0.0f, 1.0f, 0.0f), waveSin);
+	rot.mul(hkQuaternion(hkVector4(1.0f, 0.0f, 0.0f), waveCos));
+	//rot.mul(hkQuaternion(hkVector4(0.0f, 0.0f, 1.0f), -waveSin));
+	//testNode4->setRotation(rot);
+	static hkVector4 unit(0.0f, 1.0f, 0.0f);
+	hkVector4 angle(waveSin, waveCos, -waveSin);
+	angle.normalize3();
+	unit.addMul4(0.1f, angle);
+	unit.normalize3();
+	hkQuaternion q2(unit, waveSin * 0.1f);
+	testNode4->setRotation(q2);
 	/*
 	testNode1->setTranslation(bsMath::randomRange(-50.0f, 50.0f), bsMath::randomRange(-50.0f, 50.0f), bsMath::randomRange(-50.0f, 50.0f));
 	testNode2->setTranslation(bsMath::randomRange(-50.0f, 50.0f), bsMath::randomRange(-50.0f, 50.0f), bsMath::randomRange(-50.0f, 50.0f));
@@ -213,15 +261,16 @@ void Application::update(float deltaTime)
 	const hkTransform& trans4 = testNode4->getDerivedTransformation();
 */
 
-	context->IASetInputLayout(vs->getInputLayout());
-	context->VSSetShader(vs->getVertexShader(), nullptr, 0u);
-	context->PSSetShader(ps->getPixelShader(), nullptr, 0u);
+	
 	
 	mSceneGraph->drawAABBs(mDx11Renderer);
 
+	context->IASetInputLayout(vs->getInputLayout());
+	context->VSSetShader(vs->getVertexShader(), nullptr, 0u);
+	context->PSSetShader(ps->getPixelShader(), nullptr, 0u);
 	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	RenderQueue rq(mDx11Renderer, mResourceManager->getShaderManager());
+	bsRenderQueue rq(mDx11Renderer, mResourceManager->getShaderManager());
 //	rq.addRenderables(renderables);
 	rq.addSceneNode(testNode1);
 	rq.addSceneNode(testNode2);
@@ -237,7 +286,7 @@ void Application::update(float deltaTime)
 	//snowman->addFlags(FW1_ALIASED);
 	POINT pt;
 	GetCursorPos(&pt);
-	ScreenToClient(mHwnd, &pt);
+	ScreenToClient(mWindow->getHwnd(), &pt);
 	snowman->setPosition((float)pt.x, (float)pt.y);
 	//snowman->draw();
 
@@ -246,6 +295,7 @@ void Application::update(float deltaTime)
 	stats.setFrameTime(deltaTime);
 
 	static auto statsText = textManager->createText(L"");
+	statsText->setPosition(2.5f, 2.5f);
 	statsText->setColor(0xff0000ff);
 	statsText->setFontSize(16.0f);
 	statsText->addFlags(FW1_RESTORESTATE);
@@ -254,7 +304,55 @@ void Application::update(float deltaTime)
 	//statsText->addFlags(FW1_ALIASED);
 	//statsText->draw();
 
-	textManager->drawAllTexts();
+	static std::shared_ptr<bsTextBox> textBox = textManager->createTextBox(4500.0f, 10);
+	textBox->getText()->setPosition(10.0f, 350.0f);
+	textBox->getText()->addFlags(FW1_BOTTOM | FW1_RESTORESTATE);
+	textBox->getText()->setFontSize(14.0f);
+
+	static int wait = 0;
+	static int freq = 50;
+	++wait;
+	if (wait % freq == 0)
+	{
+		std::stringstream randomString;
+		
+		unsigned int charCount = bsMath::randomRange(1, 6);
+		for (unsigned int i = 0u; i < charCount; ++i)
+		{
+			unsigned int stringCount = bsMath::randomRange(1, 7);
+			for (unsigned int i = 0u; i < stringCount; ++i)
+			{
+				randomString << (char)bsMath::randomRange(65, 122);
+			}
+			randomString << " ";
+		}
+	
+		//bsLog::logMessage(randomString.str().c_str(), pantheios::SEV_DEBUG);
+
+		randomString.str("");
+		randomString << (deltaTime / 16.66666666666f);
+		bsLog::logMessage(randomString.str().c_str());
+	}
+	auto tb = *textBox.get();
+
+	
+
+	auto lmbd = [=](const char* text) {textBox->addTextLine(text);};
+	//auto nff = boost::bind<void>(&not_functor::foo, &nf, _1);
+//	auto func3 = boost::bind<void>(&bsTextBox::addTextLine, &tb, _1);
+//	auto func2 = boost::bind<void>(&bsTextBox::addTextLine, &textBox);
+	//auto func = boost::bind<void>(&bsTextBox::addTextLine, boost::ref(textBox));
+	std::string utf8("hola senor!");
+	std::wstring utf16 = bsStringUtils::utf8ToUtf16(utf8);
+	
+	static bool logCallBackOnce = false;
+	if (!logCallBackOnce)
+	{
+		bsLog::addCallback(lmbd);
+		logCallBackOnce = true;
+	}
+
+	textManager->drawAllTexts(deltaTime);
 	
 
 	context->GSSetShader(nullptr, nullptr, 0u);
@@ -315,6 +413,14 @@ bool Application::keyPressed(const OIS::KeyEvent &arg)
 			mCamera->setProjectionInfo(pi);
 		}
 		break;
+
+	case OIS::KC_M:
+		moveDuck = true;
+		break;
+
+	case OIS::KC_R:
+		resetDuck = true;
+		break;
 	}
 
 
@@ -352,25 +458,59 @@ bool Application::keyReleased(const OIS::KeyEvent &arg)
 		shift = false;
 	}
 
+	switch(arg.key)
+	{
+	case OIS::KC_M:
+		moveDuck = false;
+		break;
+
+	case OIS::KC_R:
+		resetDuck = false;
+		break;
+	}
+
 	return true;
 }
 
-bool Application::mouseMoved( const OIS::MouseEvent &arg )
+bool Application::mouseMoved(const OIS::MouseEvent &arg)
 {
+	if (leftMouseDown)
+	{
+		mCamera->rotateAboutAxis(bsCamera::AXIS_Y, -((float)arg.state.X.rel * 0.01f));
+		mCamera->rotateAboutAxis(bsCamera::AXIS_X, -((float)arg.state.Y.rel * 0.01f));
+	}
 	
-	mCamera->rotateAboutAxis(Camera::AXIS_Y, -((float)arg.state.X.rel * 0.01f));
-	mCamera->rotateAboutAxis(Camera::AXIS_X, -((float)arg.state.Y.rel * 0.01f));
+	return true;
+}
+
+bool Application::mousePressed(const OIS::MouseEvent &arg, OIS::MouseButtonID id)
+{
+	switch (id)
+	{
+	case OIS::MB_Left:
+		leftMouseDown = true;
+		break;
+
+	case OIS::MB_Right:
+		rightMouseDown = true;
+		break;
+	}
 	
-
 	return true;
 }
 
-bool Application::mousePressed( const OIS::MouseEvent &arg, OIS::MouseButtonID id )
+bool Application::mouseReleased(const OIS::MouseEvent &arg, OIS::MouseButtonID id)
 {
-	return true;
-}
+	switch (id)
+	{
+	case OIS::MB_Left:
+		leftMouseDown = false;
+		break;
 
-bool Application::mouseReleased( const OIS::MouseEvent &arg, OIS::MouseButtonID id )
-{
+	case OIS::MB_Right:
+		rightMouseDown = false;
+		break;
+	}
+
 	return true;
 }

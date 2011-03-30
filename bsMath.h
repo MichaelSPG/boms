@@ -7,12 +7,25 @@
 #define XM_NO_OPERATOR_OVERLOADS//http://msdn.microsoft.com/en-us/library/ee418732%28v=VS.85%29.aspx#AvoidOverLoad
 #include <xnamath.h>
 
+#include <Common/Base/hkBase.h>
+#include <Common/Base/Math/hkMath.h>
+
+#include "bsConvert.h"
+
 namespace bsMath
 {
 	inline float randomRange(const float min, const float max)
 	{
-		float r = (float)rand() / (float)RAND_MAX;
+		float r = (float)rand() * 3.0518509475997192297128208258309e-5f;// 1 / MAX_RAND
 		return min + r * (max - min);
+	}
+
+	inline int randomRange(const int min, const int max)
+	{
+		float r = (float)rand() * 3.0518509475997192297128208258309e-5f;// 1 / MAX_RAND
+		r = min + r * (max - min);
+		//Add this so that the value will be correct after float to int conversion.
+		return (int)(r + (r < 0.0f ? -0.5f : 0.5f));
 	}
 
 

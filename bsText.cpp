@@ -1,14 +1,14 @@
-#include "bsText.h"
+#include "bsText2D.h"
 
 #include <assert.h>
 #include <sstream>
-#include "Log.h"
-#include "Timer.h"
+#include "bsLog.h"
+#include "bsTimer.h"
 
-#include "Dx11Renderer.h"
+#include "bsDx11Renderer.h"
 
 
-bsText::bsText(Dx11Renderer* dx11Renderer, const std::wstring& text)
+bsText2D::bsText2D(bsDx11Renderer* dx11Renderer, const std::wstring& text)
 	: mEnabled(true)
 	, mText(text)
 	, mFontWrapper(nullptr)
@@ -21,7 +21,7 @@ bsText::bsText(Dx11Renderer* dx11Renderer, const std::wstring& text)
 {
 }
 
-bsText::~bsText()
+bsText2D::~bsText2D()
 {
 	if (mFontWrapper)
 	{
@@ -29,7 +29,7 @@ bsText::~bsText()
 	}
 }
 
-void bsText::draw()
+void bsText2D::draw()
 {
 	if (!mEnabled)
 	{

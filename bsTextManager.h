@@ -7,28 +7,33 @@
 
 #include <FW1FontWrapper.h>
 
-#include "bsText.h"
+#include "bsText2D.h"
 
-class Dx11Renderer;
+class bsDx11Renderer;
+class bsTextBox;
 
 class bsTextManager
 {
 public:
-	bsTextManager(Dx11Renderer* dx11Renderer);
+	bsTextManager(bsDx11Renderer* dx11Renderer);
 	~bsTextManager();
 	
-	std::shared_ptr<bsText> createText(const std::wstring& text,
+	std::shared_ptr<bsText2D> createText(const std::wstring& text,
 		const std::wstring& font = L"Consolas");
+
+	std::shared_ptr<bsTextBox> createTextBox(const float fadeDelay,
+		const unsigned int maxLineCount, const std::wstring& font = L"Consolas");
 
 	void destroyUnused();
 
-	void drawAllTexts();
+	void drawAllTexts(const float deltaTime);
 	
 private:
-	Dx11Renderer*	mDx11Renderer;
+	bsDx11Renderer*	mDx11Renderer;
 	IFW1Factory*	mFw1Factory;
 
-	std::vector<std::shared_ptr<bsText>>	mTexts;
+	std::vector<std::shared_ptr<bsText2D>>	mTexts;
+	std::vector<std::shared_ptr<bsTextBox>>	mTextBoxes;
 };
 
 #endif // BSTEXTMANAGER_H

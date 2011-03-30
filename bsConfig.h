@@ -23,5 +23,8 @@
 //Disables all logging to log file.
 //#define BS_DISABLE_LOGGING
 
+//Disables all callbacks from logging. Has no effect if BS_DISABLE_LOGGING is defined.
+//#define BS_DISABLE_LOG_CALLBACKS
+
 
 #endif // BS_CONFIG_H
