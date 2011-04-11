@@ -41,18 +41,25 @@ bsWindow::bsWindow(const int windowWidth, const int windowHeight, const char* na
 
 	RegisterClassEx(&wndClassex);
 
-	RECT rect = { 0, 0, windowWidth, windowHeight };
+	int additionalWidth = GetSystemMetrics(SM_CXFIXEDFRAME) * 2;
+	int additionalHeight = (GetSystemMetrics(SM_CYFIXEDFRAME) * 2)
+		+ GetSystemMetrics(SM_CYCAPTION);
+
+	RECT rect = { 0, 0, windowWidth + additionalWidth, windowHeight + additionalHeight };
 
 	DWORD winStyleEx = WS_EX_CLIENTEDGE;
 	DWORD winStyle = WS_CAPTION | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
 
+	
+	//WS_EX_CLIENTEDGE
+
 	AdjustWindowRectEx(&rect, winStyle, false, winStyleEx);
 
-	mHwnd = CreateWindowEx(winStyleEx, name, name, winStyle, CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left,
-		rect.bottom - rect.top, nullptr, nullptr, hInstance, nullptr);
+	mHwnd = CreateWindowEx(winStyleEx, name, name, winStyle, CW_USEDEFAULT, CW_USEDEFAULT,
+		rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr, hInstance, nullptr);
 
 	ShowWindow(mHwnd, showCmd);
-	//UpdateWindow(mHwnd);
+	UpdateWindow(mHwnd);
 }
 
 bsWindow::~bsWindow()

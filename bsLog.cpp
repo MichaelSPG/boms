@@ -53,7 +53,7 @@ void bsLog::logMessage(const char *message,
 	pantheios::log(severity, message);
 
 #ifndef BS_DISABLE_LOG_CALLBACKS
-	for (unsigned int i = 0u, count = mCallbacks.size(); i < count; ++i)
+	for (unsigned int i = 0, count = mCallbacks.size(); i < count; ++i)
 	{
 		mCallbacks[i](message);
 	}

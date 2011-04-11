@@ -3,6 +3,8 @@
 #include <sstream>
 #include <algorithm>
 
+#include "bsTemplates.h"
+
 
 std::wstring bsRenderStats::getStatsString() const
 {
@@ -14,15 +16,13 @@ std::wstring bsRenderStats::getStatsString() const
 	statsString.precision(3);
 
 	statsString << "\nFrame time: " << mFrameTimeMs << " ms"
-		<< "\nAverage frame time: " << mAverageTimeMs << " ms"
-		<< "\nMax frame time: " << mMaxFrameTimeMs << " ms"
-		<< "\nMin frame time: " << mMinFrameTimeMs << " ms";
+		<< "\nAverage frame time: " << mAverageTimeMs << " ms";
 	statsString.precision(0);
-	statsString << '\n' << mDurationToTrack * 0.001f;
+	statsString << '\n' << mHistoryDuration * 0.001f;
 	statsString.precision(3);
 	statsString << " second min: " << mCurrentMin.first << " ms";
 	statsString.precision(0);
-	statsString << '\n' << mDurationToTrack * 0.001f;
+	statsString << '\n' << mHistoryDuration * 0.001f;
 	statsString.precision(3);
 	statsString << " second max: " << mCurrentMax.first << " ms";
 
@@ -32,57 +32,45 @@ std::wstring bsRenderStats::getStatsString() const
 void bsRenderStats::setFrameTime(const float timeMs)
 {
 	mFrameTimeMs = timeMs;
-
 	mAverageTimeMs = mAverageTimeMs * (1.0f - mAverageWeight) + timeMs * mAverageWeight;
 
-	if (timeMs > mMaxFrameTimeMs)
-	{
-		mMaxFrameTimeMs = timeMs;
-	}
-	if (timeMs < mMinFrameTimeMs)
-	{
-		mMinFrameTimeMs = timeMs;
-	}
+	mTrackedTimes.insert(std::make_pair<float, float>(timeMs, 0.0f));
 
 	//Increase age
-	for (unsigned int i = 0u; i < mTrackedTimes.size(); ++i)
+	for (auto itr = mTrackedTimes.begin(), end = mTrackedTimes.end(); itr != end; ++itr)
 	{
-		mTrackedTimes[i].second += timeMs;
+		itr->second += timeMs;
 	}
+
 	mCurrentMin.second += timeMs;
 	mCurrentMax.second += timeMs;
-	if (mCurrentMin.second > mDurationToTrack)
+
+	//Update current if expired
+	if (mCurrentMin.second > mHistoryDuration)
 	{
-		mCurrentMin.first = 1e5f;
+		mCurrentMin = *mTrackedTimes.begin();
 	}
-	if (mCurrentMax.second > mDurationToTrack)
+	if (mCurrentMax.second > mHistoryDuration)
 	{
-		mCurrentMax.first = 0.0f;
+		mCurrentMax = *mTrackedTimes.rbegin();
 	}
 
 	//Remove expired
-	auto itr = std::remove_if(mTrackedTimes.begin(), mTrackedTimes.end(), 
-		[&](const std::pair<float, float>& fp)
+	bsT::map_remove_if(mTrackedTimes, [&](const std::pair<float, float>& time)
 		{
-			return fp.second > mDurationToTrack;
+			return time.second > mHistoryDuration;
 		});
 
-	mTrackedTimes.erase(itr, mTrackedTimes.end());
-
-	mTrackedTimes.push_back(std::pair<float, float>(timeMs, 0.0f));
-
-
-	for (unsigned int i = 0u; i < mTrackedTimes.size(); ++i)
+	//Check if current is actually the value it should be, and update it if not
+	if (!mTrackedTimes.empty())
 	{
-		const auto& current = mTrackedTimes[i];
-
-		if (current.first > mCurrentMax.first)
+		if (mCurrentMax.first < mTrackedTimes.rbegin()->first)
 		{
-			mCurrentMax = current;
+			mCurrentMax = *mTrackedTimes.rbegin();
 		}
-		else if (current.first < mCurrentMin.first)
+		if (mCurrentMin.first > mTrackedTimes.begin()->first)
 		{
-			mCurrentMin = current;
+			mCurrentMin = *mTrackedTimes.begin();
 		}
 	}
 }

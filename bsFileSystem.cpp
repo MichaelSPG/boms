@@ -40,7 +40,7 @@ void bsFileSystem::buildFileSystem()
 			if (findResult == mFilePaths.end())
 			{
 				mFilePaths[fileName] = pathName;
-#if BS_DEBUG_LEVEL > 4
+#if BS_DEBUG_LEVEL > 1
 				std::string message("Adding file '");
 				message += fileName + "' to resource locations (path: '"
 					+ pathName + "'";

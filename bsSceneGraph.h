@@ -4,52 +4,45 @@
 #include <vector>
 #include <memory>
 
-#include "bsNode.h"
-#include "bsOctNode.h"
-#include "bsSceneNode.h"
-#include "bsDx11Renderer.h"
-#include "bsConvert.h"
+#include "bsMath.h"
 
 class bsResourceManager;
 class bsSceneNode;
 class bsCamera;
 class bsDx11Renderer;
-
+class bsRenderable;
+class bsHavokManager;
+class hkpWorld;
+struct bsCoreCInfo;
 
 class bsSceneGraph
 {
-	friend class bsNode;
 	friend class bsSceneNode;
-	friend class bsOctNode;
 
 public:
 	/*	Tree depth is the maximum node depth to be created. Total number of oct nodes may
 		be as high as 8^n + 8^(n-1) + ... 8^1 + 8^0.
 	*/
-	bsSceneGraph(unsigned short treeDepth, bsDx11Renderer* renderer,
-		bsResourceManager* resourceManager);
+	bsSceneGraph(bsDx11Renderer* renderer, bsResourceManager* resourceManager,
+		bsHavokManager* havokManager, const bsCoreCInfo& cInfo);
 
 	~bsSceneGraph();
 
 	bsSceneNode* createSceneNode(const hkVector4& position = hkVector4(0.0f, 0.0f, 0.0f, 0.0f));
 
-	//Puts a scene node in the oct node it belongs in (the smallest one that contains it).
-	//Leave depth at 1 if calling from an external class.
-	void placeSceneNode(bsSceneNode* sceneNode, bsOctNode* octNode, unsigned short depth = 1);
-	
 	/**	Increments the amount of created objects and returns it.
 		Used to assign unique IDs to objects.
 	*/
-	inline const int getNumCreatedObjects()
+	inline const int getNewId()
 	{
-		return ++mNumCreatedObjects;
+		return ++mNumCreatedNodes;
 	}
 
 	/**	Returns the amount of created objects without incrementing the value.
 	*/
-	inline const int getNumCreatedObjectsNoIncrement() const
+	inline const int getNumCreatedNodes() const
 	{
-		return mNumCreatedObjects;
+		return mNumCreatedNodes;
 	}
 
 	inline bsDx11Renderer* getRenderer() const 
@@ -57,29 +50,27 @@ public:
 		return mDx11Renderer;
 	}
 
-	inline bsOctNode* getRootNode() const
+	inline bsCamera* getCamera() const
 	{
-		return mRootNode;
+		return mCamera;
 	}
 
-	void drawAABBs(bsDx11Renderer* dx11Renderer) const;
+	void update(float deltaTime);
 
-	const std::vector<std::shared_ptr<bsRenderable>> getVisibleRenderables() const;
-
-
-	bool displayEmptyAabbs;
+	
 
 private:
-	bsOctNode*	mRootNode;
+	bsCamera*	mCamera;
 
 	std::vector<bsSceneNode*>	mSceneNodes;
-	std::vector<bsOctNode*>	mOctNodes;
 
-	int					mNumCreatedObjects;
+	int					mNumCreatedNodes;
 	bsDx11Renderer*		mDx11Renderer;
 	bsResourceManager*	mResourceManager;
-	bsCamera*				mCamera;
 	unsigned short		mMaxTreeDepth;
+
+	bsHavokManager*		mHavokManager;
+	hkpWorld*			mGraphicsWorld;
 };
 
 #endif // BS_SCENE_GRAPH_H

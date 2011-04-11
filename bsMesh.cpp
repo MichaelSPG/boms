@@ -4,19 +4,18 @@
 
 
 bsMesh::bsMesh()
-	: mID(~0u)
+	: mID(0)
 	, mVertexBuffer(nullptr)
 	, mIndexBuffer(nullptr)
 	, mIndices(0)
-	, mAabb(hkVector4(0.0f, 0.0f, 0.0f, 0.0f), hkVector4(0.0f, 0.0f, 0.0f, 0.0f))
-	, mDrawableAabbActive(false)
-	, mAabbPrimitive(nullptr)
+	, mFinished(nullptr)
 {
+	mAabb.setEmpty();
 }
 
 bsMesh::~bsMesh()
 {
-	for (unsigned int i = 0u; i < mSubMeshes.size(); ++i)
+	for (unsigned int i = 0; i < mSubMeshes.size(); ++i)
 	{
 		delete mSubMeshes[i];
 	}
@@ -27,10 +26,6 @@ bsMesh::~bsMesh()
 	if (mIndexBuffer)
 	{
 		mIndexBuffer->Release();
-	}
-	if (mAabbPrimitive)
-	{
-		delete mAabbPrimitive;
 	}
 }
 
@@ -48,21 +43,18 @@ void bsMesh::draw(bsDx11Renderer* dx11Renderer) const
 		//context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		context->DrawIndexed(mIndices, 0, 0);
+		//context->DrawIndexedInstanced(mIndices, 5, 0, 0, 0);
 	}
 
-	for (unsigned int i = 0u; i < mSubMeshes.size(); ++i)
+	for (unsigned int i = 0; i < mSubMeshes.size(); ++i)
 	{
 		mSubMeshes[i]->draw(dx11Renderer);
-	}
-	if (mDrawableAabbActive)
-	{
-	//	mAabbPrimitive->draw(dx11Renderer);
 	}
 }
 
 void bsMesh::updateAABB()
 {
-	for (unsigned int i = 0u; i < mSubMeshes.size(); ++i)
+	for (unsigned int i = 0; i < mSubMeshes.size(); ++i)
 	{
 		mSubMeshes[i]->updateAABB();
 
@@ -75,14 +67,6 @@ void bsMesh::updateAABB()
 	}
 }
 
-void bsMesh::createDrawableAabb(bsDx11Renderer* dx11Renderer, bsShaderManager* shaderManager)
-{
-	mAabbPrimitive = new bsPrimitive();
-	mAabbPrimitive->createPrimitive(dx11Renderer, shaderManager, mAabb, false);
-
-	mDrawableAabbActive = true;
-}
-
 bool bsMesh::operator<(const bsMesh& other)
 {
 	if (other.mID < mID)
@@ -93,9 +77,5 @@ bool bsMesh::operator<(const bsMesh& other)
 	else
 	{
 		return false;
-	}
-//	else
-	{
-//		return other.mSceneNode < mSceneNode;
 	}
 }

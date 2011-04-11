@@ -62,6 +62,16 @@ public:
 	HRESULT compileShader(const char* fileName, const char* entryPoint,
 		const char* shaderModel, ID3DBlob** blobOut);
 
+	inline void setVsyncEnabled(bool enabled)
+	{
+		mVsyncEnabled = enabled;
+	}
+
+	inline bool getVsyncEnabled() const
+	{
+		return mVsyncEnabled;
+	}
+
 
 private:
 	IDXGISwapChain*			mSwapChain;
@@ -71,6 +81,8 @@ private:
 
 	ID3D11Texture2D*		mDepthStencil;
 	ID3D11DepthStencilView*	mDepthStencilView;
+
+	bool mVsyncEnabled;
 };
 
 #endif // BS_DX11_RENDERER_H

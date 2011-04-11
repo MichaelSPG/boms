@@ -1,10 +1,21 @@
 #ifndef BS_CAMERA_H
 #define BS_CAMERA_H
 
+#include "bsConfig.h"
+
+#include <Common/Base/hkBase.h>
+#include <Physics/Dynamics/Phantom/hkpCachingShapePhantom.h>
+#include <Physics/Collide/Shape/Convex/ConvexVertices/hkpConvexVerticesShape.h>
+#include <Common/Base/Types/Geometry/hkStridedVertices.h>
+#include <Physics/Dynamics/Entity/hkpRigidBody.h>
+
 #include "bsDx11Renderer.h"
 #include "bsSceneGraph.h"
+#include "bsNodeCollectorPhantom.h"
 
 class bsSceneGraph;
+class bsHavokManager;
+
 
 struct bsProjectionInfo
 {
@@ -22,38 +33,31 @@ struct bsProjectionInfo
 	float	mAspectRatio;	//Aspect ratio of view space x:y
 };
 
-
 class bsCamera
 {
 public:
-	enum Axis
-	{
-		AXIS_X,
-		AXIS_Y,
-		AXIS_Z
-	};
-
-	bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGraph);
+	bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGraph,
+		bsHavokManager* havokManager);
 
 	~bsCamera();
 
 	inline void lookAt(const XMFLOAT3& position);
 
-	void rotateAboutAxis(Axis axis, float degrees);
+	void rotateAboutAxis(const hkVector4& axis, float degrees);
 
 	inline void translate(const XMFLOAT3& translation)
 	{
 		translate(translation.x, translation.y, translation.z);
 	}
 
-	inline void translate(float x, float y, float z)
-	{
-		mPosition.x += x;
-		mPosition.y += y;
-		mPosition.z += z;
+	void translate(float x, float y, float z);
 
-		mViewNeedsUpdate = true;
+	inline void translateRelative(const XMFLOAT3& translation)
+	{
+		translateRelative(translation.x, translation.y, translation.z);
 	}
+
+	void translateRelative(float x, float y, float z);
 
 	inline void setPosition(const XMFLOAT3& translation)
 	{
@@ -61,11 +65,6 @@ public:
 	}
 
 	inline void setPosition(float x, float y, float z);
-
-	inline const XMFLOAT3& getPosition() const
-	{
-		return mPosition;
-	}
 
 	inline const bsProjectionInfo& getProjectionInfo() const
 	{
@@ -79,8 +78,20 @@ public:
 		mProjectionNeedsUpdate = true;
 	}
 
+	inline std::vector<bsSceneNode*> getVisibleSceneNodes() const
+	{
+		return mPhantom->getOverlappingSceneNodes();
+	}
+
 	//Updates and uploads transformation matrix to the GPU if it has changed.
 	void update();
+
+	inline const XMFLOAT4X4& getViewProjectionMatrix()
+	{
+		update();
+
+		return mViewProjection;
+	}
 
 private:
 	//Updates the view matrix and then updates the view projection matrix.
@@ -100,24 +111,23 @@ private:
 
 	
 	XMFLOAT4X4	mProjection;
-	XMFLOAT4X4	mView;
 	XMFLOAT4X4	mViewProjection;
 
 	bool		mProjectionNeedsUpdate;
 	bool		mViewNeedsUpdate;
 	bool		mViewProjectionNeedsUpdate;
 
-
-	XMFLOAT3	mLookAt;
-	XMFLOAT3	mUp;
-	XMFLOAT3	mPosition;
-
 	bsProjectionInfo	mProjectionInfo;
 
 	ID3D11Buffer*	mViewProjectionBuffer;
 
-	bsSceneGraph*				mSceneGraph;
+	bsSceneGraph*			mSceneGraph;
 	ID3D11DeviceContext*	mDeviceContext;
+
+	bsNodeCollectorPhantom*		mPhantom;
+	hkpRigidBody*				mRigidBody;
+
+	hkTransform		mTransform;
 };
 
 #endif // BS_CAMERA_H

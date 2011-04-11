@@ -1,7 +1,6 @@
 #include "bsMeshSerializer.h"
 
 #include <fstream>
-#include <sstream>
 
 #include "bsLog.h"
 
@@ -21,7 +20,11 @@ bool bsMeshSerializer::load(const std::string& meshName, bsSerializedMesh& mesh)
 			"unsupported file (only .bsm is supported)";
 		bsLog::logMessage(message.c_str(), pantheios::SEV_ERROR);
 
+		inStream.close();
+
 		return false;
 	}
+	inStream.close();
+
 	return true;
 }

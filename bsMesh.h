@@ -1,20 +1,12 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include <memory>
+#include "bsConfig.h"
+
 #include <string>
 
-#include <Common/Base/Types/Geometry/Aabb/hkAabb.h>
-#include <Common/Base/Types/Geometry/Aabb/hkAabbUtil.h>
-
 #include "bsRenderable.h"
-
 #include "bsDx11Renderer.h"
-#include "bsPrimitive.h"
-
-class bsShaderManager;
-class bsVertexShader;
-class bsPixelShader;
 
 
 class bsMesh : public bsRenderable
@@ -30,17 +22,9 @@ public:
 
 	void draw(bsDx11Renderer* dx11Renderer) const;
 
-	void createDrawableAabb(bsDx11Renderer* dx11Renderer, bsShaderManager* shaderManager);
-
 	inline std::vector<bsMesh*> getSubMeshes()
 	{
 		return mSubMeshes;
-	}
-
-	//nullptr if not created
-	inline bsPrimitive* getDrawablePrimitive()
-	{
-		return mAabbPrimitive;
 	}
 
 	inline const RenderableIdentifier getRenderableIdentifier() const
@@ -49,6 +33,11 @@ public:
 	}
 
 	bool operator<(const bsMesh& other);
+
+	bool isOkForRendering() const
+	{
+		return mFinished;
+	}
 
 private:
 	//Updates this mesh' AABB so that it contains all of this mesh' submeshes' AABBs.
@@ -62,16 +51,15 @@ private:
 	ID3D11Buffer*		mIndexBuffer;
 	unsigned int		mIndices;
 	std::vector<bsMesh*>	mSubMeshes;
-	
-	std::shared_ptr<bsVertexShader>	mVertexShader;
-	std::shared_ptr<bsPixelShader>	mPixelShader;
 
-	hkAabb			mAabb;
 	unsigned int	mID;
-	std::string	mName;
+#if BS_DEBUG_LEVEL > 1
+	//Contains the mesh' file name. For debugging purposes only, never rely on this
+	//variable existing.
+	std::string		mName;
+#endif
 
-	bool			mDrawableAabbActive;
-	bsPrimitive*	mAabbPrimitive;
+	bool			mFinished;
 };
 
 #endif // MESH_H

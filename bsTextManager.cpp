@@ -65,12 +65,12 @@ std::shared_ptr<bsTextBox> bsTextManager::createTextBox(const float fadeDelay,
 
 void bsTextManager::destroyUnused()
 {
-	for (unsigned int i = 0u; i < mTexts.size(); ++i)
+	for (unsigned int i = 0; i < mTexts.size(); ++i)
 	{
 		//Use count will be 1 if referenced only by this class
 		if (mTexts[i].use_count() == 1)
 		{
-			unordered_erase(mTexts, mTexts[i]);
+			bsT::unordered_erase(mTexts, mTexts[i]);
 
 			--i;
 		}
@@ -79,13 +79,13 @@ void bsTextManager::destroyUnused()
 
 void bsTextManager::drawAllTexts(const float deltaTime)
 {
-	for (unsigned int i = 0u, count = mTextBoxes.size(); i < count; ++i)
+	for (unsigned int i = 0, count = mTextBoxes.size(); i < count; ++i)
 	{
 		mTextBoxes[i]->update(deltaTime);
 		mTextBoxes[i]->updateText();
 	}
 
-	for (unsigned int i = 0u, count = mTexts.size(); i < count; ++i)
+	for (unsigned int i = 0, count = mTexts.size(); i < count; ++i)
 	{
 		if (mTexts[i]->getEnabled())
 		{

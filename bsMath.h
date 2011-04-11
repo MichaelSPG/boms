@@ -14,12 +14,14 @@
 
 namespace bsMath
 {
+	//Uses C rand(). Remember to call srand().
 	inline float randomRange(const float min, const float max)
 	{
 		float r = (float)rand() * 3.0518509475997192297128208258309e-5f;// 1 / MAX_RAND
 		return min + r * (max - min);
 	}
 
+	//Uses C rand(). Remember to call srand().
 	inline int randomRange(const int min, const int max)
 	{
 		float r = (float)rand() * 3.0518509475997192297128208258309e-5f;// 1 / MAX_RAND
@@ -83,6 +85,13 @@ namespace bsMath
 		const float aspectRatio, const float nearZ, const float farZ, XMFLOAT4X4& out)
 	{
 		XMStoreFloat4x4(&out, XMMatrixPerspectiveFovLH(fovAngleY, aspectRatio, nearZ, farZ));
+	}
+
+	inline XMFLOAT4X4 XMFloat4x4Identity()
+	{
+		XMFLOAT4X4 identity;
+		XMStoreFloat4x4(&identity, XMMatrixIdentity());
+		return identity;
 	}
 }
 

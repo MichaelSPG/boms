@@ -20,6 +20,11 @@ public:
 		return mHwnd;
 	}
 
+	inline HINSTANCE getHinstance() const
+	{
+		return mHInstance;
+	}
+
 	inline int getWindowWidth() const
 	{
 		return mWindowWidth;

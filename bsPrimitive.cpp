@@ -6,10 +6,10 @@
 #include <Common/Base/Types/Geometry/Aabb/hkAabb.h>
 
 #include "bsShaderManager.h"
-#include "bsNode.h"
 #include "bsPixelShader.h"
 #include "bsVertexShader.h"
 #include "bsLog.h"
+#include "bsVertexTypes.h"
 
 
 bsPrimitive::bsPrimitive()
@@ -17,6 +17,7 @@ bsPrimitive::bsPrimitive()
 	, mIndexBuffer(nullptr)
 	, mVertexBuffer(nullptr)
 	, mColor(0.0f, 1.0f, 0.0f, 0.0f)
+	, mFinished(false)
 {
 
 }
@@ -53,11 +54,11 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer, bsShaderManager*
 	d.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	d.InstanceDataStepRate = 0;
 	inputLayout.push_back(d);
-
+	/*
 	d.SemanticName = "COLOR";
 	d.AlignedByteOffset = 12;
 	inputLayout.push_back(d);
-
+	*/
 	mVertexShader = shaderManager->getVertexShader("Wireframe.fx", inputLayout);
 	mPixelShader  = shaderManager->getPixelShader("Wireframe.fx");
 
@@ -86,24 +87,24 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer, bsShaderManager*
 	hkQuadReal maxQuad(aabb.m_max.getQuad());
 	hkQuadReal minQuad(aabb.m_min.getQuad());
 	
-	std::vector<Vertex> vertices;
+	std::vector<XMFLOAT3> vertices;
 	if (nodeAabb)
 	{
 		//Vertex buffer
-		Vertex verticesAabb[] =
+		XMFLOAT3 verticesAabb[] =
 		{
-			{ XMFLOAT3(-halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Upper left, front
-			{ XMFLOAT3( halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Upper right, front
-			{ XMFLOAT3( halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Lower right, front
-			{ XMFLOAT3(-halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)) },//Lower left, front
+			XMFLOAT3(-halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)),//Upper left, front
+			XMFLOAT3( halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)),//Upper right, front
+			XMFLOAT3( halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)),//Lower right, front
+			XMFLOAT3(-halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)),//Lower left, front
 
-			{ XMFLOAT3(-halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Upper left, back
-			{ XMFLOAT3( halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Upper right, back
-			{ XMFLOAT3( halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Lower right, back
-			{ XMFLOAT3(-halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)) },//Lower left, back
+			XMFLOAT3(-halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)),//Upper left, back
+			XMFLOAT3( halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)),//Upper right, back
+			XMFLOAT3( halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)),//Lower right, back
+			XMFLOAT3(-halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)),//Lower left, back
 		};
 
-		for (unsigned int i = 0u; i < ARRAYSIZE(verticesAabb); ++i)
+		for (unsigned int i = 0; i < ARRAYSIZE(verticesAabb); ++i)
 		{
 			vertices.push_back(verticesAabb[i]);
 		}
@@ -111,20 +112,20 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer, bsShaderManager*
 	else
 	{
 		//Vertex buffer
-		Vertex verticesNotAabb[] =
+		XMFLOAT3 verticesNotAabb[] =
 		{
-			{ XMFLOAT3(minQuad.x, maxQuad.y, minQuad.z) },//Upper left, front
-			{ XMFLOAT3(maxQuad.x, maxQuad.y, minQuad.z) },//Upper right, front
-			{ XMFLOAT3(maxQuad.x, minQuad.y, minQuad.z) },//Lower right, front
-			{ XMFLOAT3(minQuad.x, minQuad.y, minQuad.z) },//Lower left, front
+			XMFLOAT3(minQuad.x, maxQuad.y, minQuad.z),//Upper left, front
+			XMFLOAT3(maxQuad.x, maxQuad.y, minQuad.z),//Upper right, front
+			XMFLOAT3(maxQuad.x, minQuad.y, minQuad.z),//Lower right, front
+			XMFLOAT3(minQuad.x, minQuad.y, minQuad.z),//Lower left, front
 
-			{ XMFLOAT3(minQuad.x, maxQuad.y, maxQuad.z) },//Upper left, back
-			{ XMFLOAT3(maxQuad.x, maxQuad.y, maxQuad.z) },//Upper right, back
-			{ XMFLOAT3(maxQuad.x, minQuad.y, maxQuad.z) },//Lower right, back
-			{ XMFLOAT3(minQuad.x, minQuad.y, maxQuad.z) },//Lower left, back
+			XMFLOAT3(minQuad.x, maxQuad.y, maxQuad.z),//Upper left, back
+			XMFLOAT3(maxQuad.x, maxQuad.y, maxQuad.z),//Upper right, back
+			XMFLOAT3(maxQuad.x, minQuad.y, maxQuad.z),//Lower right, back
+			XMFLOAT3(minQuad.x, minQuad.y, maxQuad.z),//Lower left, back
 		};
 
-		for (unsigned int i = 0u; i < ARRAYSIZE(verticesNotAabb); ++i)
+		for (unsigned int i = 0; i < ARRAYSIZE(verticesNotAabb); ++i)
 		{
 			vertices.push_back(verticesNotAabb[i]);
 		}
@@ -134,7 +135,7 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer, bsShaderManager*
 	
 	
 	//Vertex buffer
-	bufferDescription.ByteWidth = sizeof(Vertex) * vertices.size();
+	bufferDescription.ByteWidth = sizeof(XMFLOAT3) * vertices.size();
 	bufferDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
 	D3D11_SUBRESOURCE_DATA initData;
@@ -195,19 +196,22 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer, bsShaderManager*
 	mIndexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof(indexBufferName) - 1,
 		indexBufferName);
 #endif // _DEBUG
+
+	mFinished = true;
 }
 
 void bsPrimitive::draw(bsDx11Renderer* dx11Renderer)
 {
 	assert(dx11Renderer);
+	assert(mFinished);
 
 	auto context = dx11Renderer->getDeviceContext();
 
 
-	UINT offsets =  0u;
-	UINT stride = sizeof(Vertex);
+	UINT offsets =  0;
+	UINT stride = sizeof(XMFLOAT3);
 	context->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offsets);
-	context->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0u);
+	context->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
 
 	context->IASetInputLayout(mVertexShader->getInputLayout());
 

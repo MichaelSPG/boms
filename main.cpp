@@ -5,7 +5,6 @@
 
 #include "Application.h"
 #include "bsTimer.h"
-#include "bsWindow.h"
 
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, int showCmd)
@@ -13,8 +12,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 	const int windowWidth = 1280;
 	const int windowHeight = 720;
 
-	Application application(new bsWindow(windowWidth, windowHeight, "Direct3D",
-		hInstance, showCmd));
+	Application application(hInstance, showCmd, windowWidth, windowHeight);
 
 	bsTimer timer;
 	float startTime = 0.0f;

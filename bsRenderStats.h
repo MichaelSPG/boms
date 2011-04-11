@@ -2,7 +2,7 @@
 #define BS_RENDERSTATS_H
 
 #include <string>
-#include <vector>
+#include <map>
 
 
 class bsRenderStats
@@ -13,10 +13,11 @@ public:
 		: mFps(0.0f)
 		, mAverageFps(1.0f)
 		, mFrameTimeMs(0.0f)
-		, mMaxFrameTimeMs(0.0f)
-		, mMinFrameTimeMs(1e5f) //Should always be overwritten by the first call to setFrameTime()
 		, mAverageWeight(1.0f)
-		, mDurationToTrack(10000.0f)
+		, mHistoryDuration(10000.0f)
+
+		//These 2 will be updated by the setFrameTime functions so we can just set them to
+		//silly values here to force the update to happen during the first function call
 		, mCurrentMin(1e5f, 0.0f)
 		, mCurrentMax(0.0f, 0.0f)
 	{}
@@ -34,9 +35,9 @@ public:
 	void setFrameTime(const float timeMs);
 
 	//Default: 10000.0f (10 seconds)
-	inline void setDurationToTrack(const float durationMs)
+	inline void setHistoryLength(const float durationMs)
 	{
-		mDurationToTrack = durationMs;
+		mHistoryDuration = durationMs;
 	}
 
 private:
@@ -45,17 +46,13 @@ private:
 	float	mFrameTimeMs;
 	float	mAverageTimeMs;
 
-	float	mMaxFrameTimeMs;
-	float	mMinFrameTimeMs;
-
 	float	mAverageWeight;
+	float	mHistoryDuration;
 
-	float	mDurationToTrack;
-	//pair<value, age in ms>
+	//pair<frame time, age in ms>
 	std::pair<float, float>	mCurrentMin;
 	std::pair<float, float>	mCurrentMax;
-
-	std::vector<std::pair<float, float>>	mTrackedTimes;
+	std::map<float, float>	mTrackedTimes;
 };
 
 #endif // BS_RENDERSTATS_H

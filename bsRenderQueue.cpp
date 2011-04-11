@@ -4,21 +4,26 @@
 #include <map>
 #include <unordered_map>
 
+#include "bsCamera.h"
+
 #include "bsSceneNode.h"
 #include "bsRenderable.h"
 #include "bsMesh.h"
 #include "bsPrimitive.h"
+#include "bsLine3D.h"
+
 #include "bsDx11Renderer.h"
 #include "bsShaderManager.h"
 #include "bsVertexShader.h"
 #include "bsPixelShader.h"
 #include "bsLog.h"
+#include "bsTimer.h"
 
+#include "bsMath.h"
 
 bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shaderManager)
 	: mDx11Renderer(dx11Renderer)
 	, mShaderManager(shaderManager)
-	, mWorldBufferSet(false)
 {
 	assert(dx11Renderer);
 	assert(shaderManager);
@@ -29,8 +34,8 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
 	bufferDescription.ByteWidth = sizeof(CBWorld);
 	bufferDescription.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	bufferDescription.CPUAccessFlags = 0u;
-	bufferDescription.MiscFlags = 0u;
+	bufferDescription.CPUAccessFlags = 0;
+	bufferDescription.MiscFlags = 0;
 
 	HRESULT hres = mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr,
 		&mWorldBuffer);
@@ -41,138 +46,130 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 		bsLog::logMessage("bsRenderQueue::bsRenderQueue failed to create world buffer",
 			pantheios::SEV_CRITICAL);
 	}
+
+	bufferDescription.ByteWidth = sizeof(CBWireFrame);
+	hres = mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr, &mWireframeWorldBuffer);
+	assert(SUCCEEDED(hres));
+
+	//Shaders
+	//Wireframe
+	std::vector<D3D11_INPUT_ELEMENT_DESC> inputLayout;
+	D3D11_INPUT_ELEMENT_DESC d;
+	ZeroMemory(&d, sizeof(d));
+	d.SemanticName = "POSITION";
+	d.SemanticIndex = 0;
+	d.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	d.InputSlot = 0;
+	d.AlignedByteOffset = 0;
+	d.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	d.InstanceDataStepRate = 0;
+	inputLayout.push_back(d);
+	/*d.SemanticName = "COLOR";
+	d.AlignedByteOffset = 12;
+	inputLayout.push_back(d);
+	*/
+
+	mWireframeVertexShader = mShaderManager->getVertexShader("Wireframe.fx", inputLayout);
+	mWireframePixelShader = mShaderManager->getPixelShader("Wireframe.fx");
+
+
+	//Mesh
+	inputLayout.clear();
+	d.SemanticName = "POSITION";
+	d.SemanticIndex = 0;
+	d.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	d.InputSlot = 0;
+	d.AlignedByteOffset = 0;
+	d.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	d.InstanceDataStepRate = 0;
+	inputLayout.push_back(d);
+
+	d.SemanticName = "NORMAL";
+	d.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	d.AlignedByteOffset = 12u;
+	inputLayout.push_back(d);
+
+	d.SemanticName = "TEXCOORD";
+	d.AlignedByteOffset = 24u;
+	d.Format = DXGI_FORMAT_R32G32_FLOAT;
+	inputLayout.push_back(d);
+
+	mMeshVertexShader = mShaderManager->getVertexShader("HLSL_Basic.fx", inputLayout);
+	mMeshPixelShader = mShaderManager->getPixelShader("HLSL_Basic.fx");
 }
 
 bsRenderQueue::~bsRenderQueue()
 {
-
+	mWorldBuffer->Release();
+	mWireframeWorldBuffer->Release();
 }
 
 void bsRenderQueue::reset()
 {
-	mRenderables.clear();
-	mMeshes.clear();
-	mWireframePrimitives.clear();
-	mWorldBufferSet = false;
+	mFrameStats.reset();
 }
 
-void bsRenderQueue::addRenderables(const std::vector<std::shared_ptr<bsRenderable>>& renderables)
+void bsRenderQueue::draw()
 {
-	mRenderables.insert(mRenderables.end(), renderables.cbegin(), renderables.cend());
-}
+	mFrameStats.reset();
+	bsTimer timer;
+	float start = timer.getTimeMilliSeconds(), end;
 
-void bsRenderQueue::splitRenderables()
-{
-	unsigned int count = mRenderables.size();
-
-	for (unsigned int i = 0u; i < count; ++i)
-	{
-		switch (mRenderables[i]->getRenderableIdentifier())
-		{
-		case bsRenderable::MESH:
-			mMeshes.push_back(static_cast<bsMesh*>(mRenderables[i].get()));
-			break;
-
-		case bsRenderable::WIREFRAME_PRIMITIVE:
-			mWireframePrimitives.push_back(static_cast<bsPrimitive*>(mRenderables[i].get()));
-			break;
-
-		default:
-			//If this is reached the switch statement needs to be updated.
-			assert(!"bsRenderQueue::sort encountered an unknown renderable");
-			break;
-		}
-	}
-
-	sortMeshes();
-}
-
-void bsRenderQueue::sortMeshes()
-{
-	std::sort(mMeshes.begin(), mMeshes.end());
-}
-
-void bsRenderQueue::draw(bsDx11Renderer* dx11Renderer)
-{
 	//Unbind geometry shader
 	setGS(nullptr);
-	//splitRenderables();
 	sortSceneNodes();
 
-	return;
-
-	std::vector<D3D11_INPUT_ELEMENT_DESC> desc;
-	desc.push_back(D3D11_INPUT_ELEMENT_DESC());
-	static auto ps = mShaderManager->getPixelShader("HLSL_Basic.fx");
-	static auto vs = mShaderManager->getVertexShader("HLSL_Basic.fx", desc);
-
-	mShaderManager->setPixelShader(ps);
-	mShaderManager->setVertexShader(vs);
-
-	unsigned int meshCount = mMeshes.size();
-	for (unsigned int i = 0u; i < meshCount; ++i)
-	{
-		drawMesh(mMeshes[i], dx11Renderer->getDeviceContext());
-	}
-}
-
-void bsRenderQueue::drawMesh(bsMesh* mesh, ID3D11DeviceContext* deviceContext)
-{
-	mesh->mVertexBuffer;
-//	mesh->mSceneNode;
-
-	unsigned int offset = 0u;
-	unsigned int stride = sizeof(VertexNormalTex);
-	deviceContext->IASetVertexBuffers(0u, 1u, &mesh->mVertexBuffer, &stride, &offset);
-	deviceContext->IASetIndexBuffer(mesh->mIndexBuffer, DXGI_FORMAT_R32_UINT, 0u);
-	
-	
-
-	deviceContext->DrawIndexed(mesh->mIndices, 0u, 0);
-	//mesh->
+	end = timer.getTimeMilliSeconds() - start;
+	mFrameStats.timeTakenMs = end;
 }
 
 void bsRenderQueue::setWorldConstantBuffer(const XMFLOAT4X4& world)
 {
 	ID3D11DeviceContext* context = mDx11Renderer->getDeviceContext();
 
-//	if (!mWorldBufferSet)
-	{
-		context->VSSetConstantBuffers(1u, 1u, &mWorldBuffer);
-		context->PSSetConstantBuffers(1u, 1u, &mWorldBuffer);
-		mWorldBufferSet = true;
-	}
+	context->VSSetConstantBuffers(1, 1, &mWorldBuffer);
+	context->PSSetConstantBuffers(1, 1, &mWorldBuffer);
 
 	CBWorld cbWorld;
 	cbWorld.world = world;
 
-	context->UpdateSubresource(mWorldBuffer, 0u, nullptr, &cbWorld.world, 0u, 0u);
+	context->UpdateSubresource(mWorldBuffer, 0, nullptr, &cbWorld.world, 0, 0);
 }
 
-void bsRenderQueue::addSceneNode(bsSceneNode* sceneNode)
+void bsRenderQueue::setWireframeConstantBuffer(const XMFLOAT4X4& world, const XMFLOAT4& color)
 {
-	mSceneNodes.push_back(sceneNode);
+	ID3D11DeviceContext* context = mDx11Renderer->getDeviceContext();
+
+	context->VSSetConstantBuffers(1, 1, &mWireframeWorldBuffer);
+	context->PSSetConstantBuffers(1, 1, &mWireframeWorldBuffer);
+
+	CBWireFrame cbWireFrame;
+	cbWireFrame.world = world;
+	cbWireFrame.color = color;
+
+	context->UpdateSubresource(mWireframeWorldBuffer, 0, nullptr, &cbWireFrame, 0, 0);
 }
 
 void bsRenderQueue::sortSceneNodes()
 {
-	mRenderablePairs;
+	std::unordered_map<bsMesh*, std::vector<bsSceneNode*>>		meshPairs;
+	std::unordered_map<bsLine3D*, std::vector<bsSceneNode*>>	lines;
+	std::vector<std::pair<bsSceneNode*, bsPrimitive*>>			primitivePairs;
 
-	//////////////////////////////////////////////////////////////////////////
-	//vector of scene nodes that include each mesh. Probably good for instancing
-	std::vector<std::pair<bsMesh*, std::vector<bsSceneNode*>>> yep;
-	//////////////////////////////////////////////////////////////////////////
+	const std::vector<bsSceneNode*>& sceneNodes = mCamera->getVisibleSceneNodes();
 
-	std::unordered_map<bsMesh*, std::vector<bsSceneNode*>> meshPairs;
-	//std::vector<std::pair<bsSceneNode*, bsMesh*>>		meshPairs;
-	//std::set<std::pair<bsSceneNode*, bsMesh*>> meshPairs;
-	std::vector<std::pair<bsSceneNode*, bsPrimitive*>>	primitivePairs;
-
-	for (unsigned int i = 0u, count = mSceneNodes.size(); i < count; ++i)
+	mFrameStats.visibleSceneNodeCount = sceneNodes.size();
+	if (sceneNodes.empty())
 	{
-		const auto& renderables = mSceneNodes[i]->getRenderables();
+		//Nothing to render
+		return;
+	}
 
-		for (unsigned int j = 0u; j < renderables.size(); ++j)
+	for (unsigned int i = 0, count = sceneNodes.size(); i < count; ++i)
+	{
+		const auto& renderables = sceneNodes[i]->getRenderables();
+
+		for (unsigned int j = 0; j < renderables.size(); ++j)
 		{
 			bsRenderable::RenderableIdentifier identifier = renderables[j]
 				->getRenderableIdentifier();
@@ -186,34 +183,59 @@ void bsRenderQueue::sortSceneNodes()
 				{
 					//Not found, create it
 					std::vector<bsSceneNode*> nodes(1);
-					nodes[0] = mSceneNodes[i];
+					nodes[0] = sceneNodes[i];
 					meshPairs.insert(std::make_pair(mesh, nodes));
 				}
 				else
 				{
 					//Found
-					finder->second.push_back(mSceneNodes[i]);
+					finder->second.push_back(sceneNodes[i]);
 				}
-				
-				//meshPairs.insert(std::make_pair(mSceneNodes[i],
-				//	static_cast<bsMesh*>(renderables[j].get())));
-
-				//meshPairs.push_back(std::make_pair(mSceneNodes[i],
-				//	static_cast<bsMesh*>(renderables[j].get())));
 			}
 			else if (identifier == bsRenderable::WIREFRAME_PRIMITIVE)
 			{
-				primitivePairs.push_back(std::make_pair(mSceneNodes[i],
+				primitivePairs.push_back(std::make_pair(sceneNodes[i],
 					static_cast<bsPrimitive*>(renderables[j].get())));
+			}
+			else if (identifier == bsRenderable::LINES)
+			{
+				bsLine3D* line = static_cast<bsLine3D*>(renderables[j].get());
+				auto finder = lines.find(line);
+
+				if (finder == lines.end())
+				{
+					//Not found, create it
+					std::vector<bsSceneNode*> nodes(1);
+					nodes[0] = sceneNodes[i];
+					lines.insert(std::make_pair(line, nodes));
+				}
+				else
+				{
+					//Found
+					finder->second.push_back(sceneNodes[i]);
+				}
 			}
 		}
 	}
-	for (auto itr = meshPairs.begin(); itr != meshPairs.end(); ++itr)
+
+	ID3D11DeviceContext* context = mDx11Renderer->getDeviceContext();
+
+	//Meshes
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	mShaderManager->setPixelShader(mMeshPixelShader.get());
+	mShaderManager->setVertexShader(mMeshVertexShader.get());
+
+	mFrameStats.uniqueMeshesDrawn = meshPairs.size();
+
+	for (auto itr = meshPairs.begin(), end = meshPairs.end(); itr != end; ++itr)
 	{
 		bsMesh* mesh = itr->first;
 		const std::vector<bsSceneNode*>& sceneNodes = itr->second;
 
-		for (unsigned int i = 0u; i < sceneNodes.size(); ++i)
+		mFrameStats.totalMeshesDrawn += sceneNodes.size();
+
+		for (unsigned int i = 0, count = sceneNodes.size(); i < count; ++i)
 		{
 			const hkTransform& transform = sceneNodes[i]->getDerivedTransformation();
 			float f4x4[16];
@@ -225,24 +247,35 @@ void bsRenderQueue::sortSceneNodes()
 			mesh->draw(mDx11Renderer);
 		}
 	}
-	for (unsigned int i = 0u; i < meshPairs.size(); ++i)
-	{
-		
-	}
-
-	mRenderablePairs;
-
-
-	/*
-	bsSceneNode* test;
 	
 
-	std::sort(mSceneNodes.begin(), mSceneNodes.end(),
-		[](const bsSceneNode* lhs, const bsSceneNode* rhs)
+	//Lines
+
+	mShaderManager->setPixelShader(mWireframePixelShader.get());
+	mShaderManager->setVertexShader(mWireframeVertexShader.get());
+
+	context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+
+	for (auto itr = lines.begin(), end = lines.end(); itr != end; ++itr)
+	{
+		bsLine3D* currentLine = itr->first;
+		const std::vector<bsSceneNode*>& sceneNodes = itr->second;
+
+		mFrameStats.linesDrawn += sceneNodes.size();
+
+		for (unsigned int i = 0, count = sceneNodes.size(); i < count; ++i)
 		{
-			if (lhs->)
-		});
-	*/
+			const hkTransform& transform = sceneNodes[i]->getDerivedTransformation();
+			float f4x4[16];
+			transform.get4x4ColumnMajor(f4x4);
+			XMFLOAT4X4 world(f4x4);
+			bsMath::XMFloat4x4Transpose(world);
+
+			setWireframeConstantBuffer(world, currentLine->mColor);
+
+			currentLine->draw(mDx11Renderer);
+		}
+	}
 }
 
 void bsRenderQueue::setVS(bsVertexShader* vs)
@@ -266,15 +299,5 @@ void bsRenderQueue::setPS(bsPixelShader* ps)
 
 void bsRenderQueue::setGS(void* gs)
 {
-	mDx11Renderer->getDeviceContext()->GSSetShader(nullptr, nullptr, 0u);
+	mDx11Renderer->getDeviceContext()->GSSetShader(nullptr, nullptr, 0);
 }
-
-//Draw primitive
-
-/*
-context->VSSetConstantBuffers(1, 1, &mBuffer);
-context->PSSetConstantBuffers(1, 1, &mBuffer);
-
-
-context->DrawIndexed(24, 0, 0);
-*/

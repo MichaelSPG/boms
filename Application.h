@@ -13,12 +13,13 @@
 class bsLog;
 class bsCamera;
 class bsWindow;
+class bsCore;
 
 
 class Application : public OIS::KeyListener, public OIS::MouseListener
 {
 public:
-	Application(bsWindow* window);
+	Application(HINSTANCE hInstance, int showCmd, const int windowWidth, const int windowHeight);
 
 	~Application();
 
@@ -41,23 +42,14 @@ public:
 	}
 
 private:
-	bsDx11Renderer*	mDx11Renderer;
-
-	bsResourceManager*	mResourceManager;
-
 	OIS::InputManager	*mInputManager;
 	OIS::Keyboard		*mKeyboard;
 	OIS::Mouse			*mMouse;
 
-	bsSceneGraph*	mSceneGraph;
-	bsCamera*		mCamera;
-
 	bool w, a, s, d, space, c, shift, moveDuck, resetDuck, rightMouseDown, leftMouseDown,
 		mQuit;
 
-	std::vector<bsNode*>	mSceneNodes;
-	HWND mHwnd;
-	bsWindow*	mWindow;
+	bsCore*		mCore;
 };
 
 #endif // APPLICATION_H

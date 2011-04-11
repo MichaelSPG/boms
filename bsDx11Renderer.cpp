@@ -14,6 +14,8 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 
 	, mDepthStencil(nullptr)
 	, mDepthStencilView(nullptr)
+
+	, mVsyncEnabled(true)
 {
 	bsLog::logMessage("Starting initialization of Direct3D 11");
 
@@ -201,7 +203,7 @@ void bsDx11Renderer::preRender()
 
 void bsDx11Renderer::present()
 {
-	if (FAILED(mSwapChain->Present(1, 0)))
+	if (FAILED(mSwapChain->Present(mVsyncEnabled ? 1 : 0, 0)))
 	{
 		bsLog::logMessage("IDXGISwapChain::Present failed", pantheios::SEV_ERROR);
 

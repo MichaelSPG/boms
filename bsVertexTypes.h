@@ -4,17 +4,6 @@
 #include "bsConfig.h"
 #include "bsMath.h"
 
-#define SVertexType D3DFVF_XYZRHW | D3DFVF_DIFFUSE
-
-
-class SVertex
-{
-public:
-	float x, y, z, w;
-
-	//Diffuse color
-	DWORD color;
-};
 
 //Vertex with normal
 struct VertexNormal

@@ -10,7 +10,7 @@
 
 
 bsMeshManager::bsMeshManager(bsDx11Renderer* dx11Renderer, bsResourceManager* resourceManager)
-	: mNumCreatedMeshes(0u)
+	: mNumCreatedMeshes(0)
 	, mDx11Renderer(dx11Renderer)
 	, mResourceManager(resourceManager)
 {
@@ -19,7 +19,14 @@ bsMeshManager::bsMeshManager(bsDx11Renderer* dx11Renderer, bsResourceManager* re
 
 bsMeshManager::~bsMeshManager()
 {
-
+#if BS_DEBUG_LEVEL > 1
+	//Check that there are no meshes being referenced elsewhere when the mesh manager is
+	//shut down.
+	for (auto itr = mMeshes.begin(), end = mMeshes.end(); itr != end; ++itr)
+	{
+		assert(itr->second.use_count() == 1);
+	}
+#endif
 }
 
 std::shared_ptr<bsMesh> bsMeshManager::getMesh(const std::string& meshName)
@@ -58,7 +65,11 @@ std::shared_ptr<bsMesh> bsMeshManager::getMesh(const std::string& meshName)
 
 		return nullptr;
 	}
+
+#if BS_DEBUG_LEVEL > 1
 	mesh->mName = meshName;
+#endif
+	mesh->mFinished = true;
 
 	return mesh;
 }
@@ -81,7 +92,7 @@ std::shared_ptr<bsMesh> bsMeshManager::loadMesh(const std::string& meshName)
 	std::vector<ID3D11Buffer*> vertexBuffers(meshCount);
 	std::vector<ID3D11Buffer*> indexBuffers(meshCount);
 
-	for (unsigned int i = 0u; i < meshCount; ++i)
+	for (unsigned int i = 0; i < meshCount; ++i)
 	{
 		if (!createBuffers(serializedMesh.vertices[i], serializedMesh.indices[i],
 			vertexBuffers[i], indexBuffers[i], meshName))
@@ -102,7 +113,7 @@ std::shared_ptr<bsMesh> bsMeshManager::loadMesh(const std::string& meshName)
 	mesh->mID = getNumCreatedMeshes();
 	mesh->mSubMeshes.resize(meshCount);
 
-	for (unsigned int i = 0u; i < meshCount; ++i)
+	for (unsigned int i = 0; i < meshCount; ++i)
 	{
 		mesh->mSubMeshes[i] = new bsMesh();
 		mesh->mSubMeshes[i]->mID = getNumCreatedMeshes();
@@ -117,9 +128,6 @@ std::shared_ptr<bsMesh> bsMeshManager::loadMesh(const std::string& meshName)
 	}
 
 	mesh->updateAABB();
-#if BS_DEBUG_LEVEL > 4
-	mesh->createDrawableAabb(mDx11Renderer, mResourceManager->getShaderManager());
-#endif
 
 	mMeshes[meshName] = mesh;
 	return mesh;

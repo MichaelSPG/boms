@@ -11,15 +11,9 @@ class hkAabb;
 class bsPixelShader;
 class bsVertexShader;
 
-struct Vertex
-{
-	XMFLOAT3 Pos;
-};
 
 class bsPrimitive : public bsRenderable
 {
-	friend class bsNode;
-	friend class bsOctNode;
 	friend class bsSceneNode;
 	friend class bsSceneGraph;
 
@@ -37,17 +31,24 @@ public:
 	{
 		return WIREFRAME_PRIMITIVE;
 	}
+
+	bool isOkForRendering() const
+	{
+		return mFinished;
+	}
 	
 //private://TODO: uncomment
 	std::shared_ptr<bsVertexShader>	mVertexShader;
 	std::shared_ptr<bsPixelShader>	mPixelShader;
 
-	ID3D11Buffer*		mBuffer;
+	ID3D11Buffer*	mBuffer;
 
-	ID3D11Buffer*		mVertexBuffer;
-	ID3D11Buffer*		mIndexBuffer;
+	ID3D11Buffer*	mVertexBuffer;
+	ID3D11Buffer*	mIndexBuffer;
 
-	XMFLOAT4			mColor;
+	XMFLOAT4		mColor;
+
+	bool			mFinished;
 };
 
 #endif // BS_PRIMITIVE_H
