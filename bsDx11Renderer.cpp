@@ -1,16 +1,16 @@
 #include "bsDx11Renderer.h"
 
-#include <assert.h>
+#include <cassert>
 #include <string>
 
 #include "bsLog.h"
+#include "bsRenderTarget.h"
 
 
 bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindowHeight)
 	: mSwapChain(nullptr)
 	, mDevice(nullptr)
 	, mDeviceContext(nullptr)
-	, mRenderTargetView(nullptr)
 
 	, mDepthStencil(nullptr)
 	, mDepthStencilView(nullptr)
@@ -18,10 +18,16 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 	, mVsyncEnabled(true)
 {
 	bsLog::logMessage("Starting initialization of Direct3D 11");
+	/*
+	RECT rect;
+	GetWindowRect(hWnd, &rect);
+	renderWindowWidth = rect.right - rect.left;
+	renderWindowHeight = rect.bottom - rect.top;
+	*/
 
 	//Swap chain & device
 	DXGI_SWAP_CHAIN_DESC swapChainDesc;
-	ZeroMemory(&swapChainDesc, sizeof(swapChainDesc));
+	memset(&swapChainDesc, 0, sizeof(swapChainDesc));
 	swapChainDesc.BufferCount = 1;
 	swapChainDesc.BufferDesc.Width = renderWindowWidth;
 	swapChainDesc.BufferDesc.Height = renderWindowHeight;
@@ -35,7 +41,7 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 	swapChainDesc.Windowed = true;
 
 	unsigned int deviceFlags = 0;
-#ifdef _DEBUG
+#if BS_DEBUG_LEVEL > 0
 	deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
@@ -57,7 +63,7 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 	}
 
 	//Back buffer
-	ID3D11Texture2D *backBuffer = nullptr;
+	ID3D11Texture2D* backBuffer = nullptr;
 	bsLog::logMessage("Creating back buffer");
 	if (FAILED(mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer)))
 	{
@@ -65,19 +71,21 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 		assert(!"Failed to create back buffer");
 	}
 
+	
 	//D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
-	bsLog::logMessage("Creating render target view");
-	if (FAILED(mDevice->CreateRenderTargetView(backBuffer, nullptr, &mRenderTargetView)))
+	bsLog::logMessage("Creating back buffer render target view");
+	if (FAILED(mDevice->CreateRenderTargetView(backBuffer, nullptr, &mBackBufferRenderTargetView)))
 	{
-		bsLog::logMessage("Failed to create render target view", pantheios::SEV_CRITICAL);
-		assert(!"Failed to create render target view");
+		bsLog::logMessage("Failed to create back buffer render target view",
+			pantheios::SEV_CRITICAL);
+		assert(!"Failed to create back buffer render target view");
 	}
-
+	
 	backBuffer->Release();
 
 	//Depth stencil
 	D3D11_TEXTURE2D_DESC depthDesc;
-	ZeroMemory(&depthDesc, sizeof(depthDesc));
+	memset(&depthDesc, 0, sizeof(depthDesc));
 	depthDesc.Width = renderWindowWidth;
 	depthDesc.Height = renderWindowHeight;
 	depthDesc.MipLevels = 1;
@@ -98,8 +106,12 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 	}
 
 	//Depth stencil view
+
+	D3D11_DEPTH_STENCIL_DESC dsd;
+	dsd.DepthEnable;
+
 	D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDesc;
-	ZeroMemory(&depthViewDesc, sizeof(depthViewDesc));
+	memset(&depthViewDesc, 0, sizeof(depthViewDesc));
 	depthViewDesc.Format = depthDesc.Format;
 	depthViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	depthViewDesc.Texture2D.MipSlice = 0;
@@ -112,8 +124,6 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 		assert(!"Failed to create depth stencil view");
 	}
 
-	mDeviceContext->OMSetRenderTargets(1, &mRenderTargetView, mDepthStencilView);
-
 	//Viewport
 	D3D11_VIEWPORT viewport;
 	viewport.Width = (float)renderWindowWidth;
@@ -125,7 +135,11 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 
 	mDeviceContext->RSSetViewports(1, &viewport);
 
-#ifdef _DEBUG
+	mRenderTargetClearColor[0] = mRenderTargetClearColor[1] = mRenderTargetClearColor[2] = 0.3f;
+	mRenderTargetClearColor[3] = 0.0f;
+
+
+#if BS_DEBUG_LEVEL > 0
 	//Set debug info in D3D objects to help debugging their lifetimes if necessary.
 	std::string debugString("IDXGISwapChain");
 	mSwapChain->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
@@ -138,11 +152,11 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 	debugString = "ID3D11DeviceContext";
 	mDeviceContext->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
 		debugString.c_str());
-
-	debugString = "ID3D11RenderTargetView";
-	mRenderTargetView->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+	
+	debugString = "ID3D11RenderTargetView Back buffer";
+	mBackBufferRenderTargetView->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
 		debugString.c_str());
-
+		
 	debugString = "ID3D11Texture2D_DepthStencil";
 	mDepthStencil->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
 		debugString.c_str());
@@ -167,10 +181,10 @@ bsDx11Renderer::~bsDx11Renderer()
 	{
 		mDepthStencilView->Release();
 	}
-
-	if (mRenderTargetView)
+	
+	if (mBackBufferRenderTargetView)
 	{
-		mRenderTargetView->Release();
+		mBackBufferRenderTargetView->Release();
 	}
 
 	if (mSwapChain)
@@ -190,15 +204,6 @@ bsDx11Renderer::~bsDx11Renderer()
 	}
 
 	bsLog::logMessage("DirectX successfully uninitialized");
-}
-
-void bsDx11Renderer::preRender()
-{
-	float ClearColor[4] = { 0.0f, 0.125f, 0.3f, 1.0f };
-	mDeviceContext->ClearRenderTargetView(mRenderTargetView, ClearColor);
-	
-	//Clear depth buffer to max (1.0)
-	mDeviceContext->ClearDepthStencilView(mDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
 void bsDx11Renderer::present()
@@ -256,4 +261,47 @@ HRESULT bsDx11Renderer::compileShader(const char* fileName, const char* entryPoi
 	}
 
 	return hResult;
+}
+
+void bsDx11Renderer::setRenderTargets(bsRenderTarget** renderTargets,
+	unsigned int renderTargetCount)
+{
+	assert(renderTargetCount > 0 && renderTargetCount <= D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT);
+
+	//Array of render targets to be set.
+	ID3D11RenderTargetView* renderTargetViews[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT] = { nullptr };
+
+	//If renderTargets is null, nothing will be copied, will unbind render targets instead.
+	if (renderTargets)
+	{
+		for (unsigned int i = 0; i < renderTargetCount; ++i)
+		{
+			renderTargetViews[i] = renderTargets[i]->mRenderTargetView;
+		}
+	}
+
+	mDeviceContext->OMSetRenderTargets(renderTargetCount, renderTargetViews, mDepthStencilView);
+}
+
+void bsDx11Renderer::setBackBufferAsRenderTarget()
+{
+	mDeviceContext->OMSetRenderTargets(1, &mBackBufferRenderTargetView, mDepthStencilView);
+}
+
+void bsDx11Renderer::clearRenderTargets(bsRenderTarget** renderTargets, unsigned int count,
+	float* colorRgba)
+{
+	//Set every render target to provided color, or default color if one is not provided.
+	for (unsigned int i = 0; i < count; ++i)
+	{
+		mDeviceContext->ClearRenderTargetView(renderTargets[i]->mRenderTargetView,
+			colorRgba ? colorRgba : mRenderTargetClearColor);
+	}
+}
+
+void bsDx11Renderer::clearBackBuffer()
+{
+	mDeviceContext->ClearRenderTargetView(mBackBufferRenderTargetView, mRenderTargetClearColor);
+	//Clear depth buffer to 1.0 (max depth)
+	mDeviceContext->ClearDepthStencilView(mDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }

@@ -11,7 +11,7 @@
 class bsTimer
 {
 public:
-	bsTimer()
+	inline bsTimer()
 	{
 		LARGE_INTEGER frequency;
 		QueryPerformanceFrequency(&frequency);
@@ -20,12 +20,12 @@ public:
 		QueryPerformanceCounter(&mStart);
 	}
 
-	void reset()
+	inline void reset()
 	{
 		QueryPerformanceCounter(&mStart);
 	}
 
-	float getTimeMilliSeconds()
+	inline float getTimeMilliSeconds() const
 	{
 		QueryPerformanceCounter(&mEnd);
 		return (1e3f * (mEnd.QuadPart - mStart.QuadPart)) * mOneOverFrequency;
@@ -33,7 +33,7 @@ public:
 
 private:
 	LARGE_INTEGER mStart;
-	LARGE_INTEGER mEnd;
+	mutable LARGE_INTEGER mEnd;
 	float mOneOverFrequency;
 };
 

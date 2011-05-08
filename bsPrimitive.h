@@ -1,15 +1,22 @@
 #ifndef BS_PRIMITIVE_H
 #define BS_PRIMITIVE_H
 
-#include "bsRenderable.h"
+#include "bsConfig.h"
 
-#include "bsDx11Renderer.h"
+#include <memory>
+
+#include <d3d11.h>
+#include <Windows.h>
+#include <xnamath.h>
+
+#include "bsRenderable.h"
 
 class bsShaderManager;
 class bsVertexShader;
 class hkAabb;
 class bsPixelShader;
 class bsVertexShader;
+class bsDx11Renderer;
 
 
 class bsPrimitive : public bsRenderable
@@ -27,7 +34,7 @@ public:
 
 	void draw(bsDx11Renderer* dx11Renderer);
 
-	inline const RenderableIdentifier getRenderableIdentifier() const
+	inline RenderableIdentifier getRenderableIdentifier() const
 	{
 		return WIREFRAME_PRIMITIVE;
 	}

@@ -1,12 +1,13 @@
 #include "bsShaderManager.h"
 
-#include <assert.h>
+#include <cassert>
 #include <string>
 
 #include <D3Dcompiler.h>
 
 #include "bsResourceManager.h"
 #include "bsLog.h"
+#include "bsDx11Renderer.h"
 
 
 bsShaderManager::bsShaderManager(bsDx11Renderer* dx11Renderer, bsResourceManager* resourceManager)
@@ -20,7 +21,7 @@ bsShaderManager::~bsShaderManager()
 {
 }
 
-const std::shared_ptr<bsVertexShader> bsShaderManager::getVertexShader(const std::string& fileName,
+std::shared_ptr<bsVertexShader> bsShaderManager::getVertexShader(const std::string& fileName,
 	const std::vector<D3D11_INPUT_ELEMENT_DESC>& inputDesc)
 {
 	assert(fileName.length());
@@ -54,7 +55,7 @@ const std::shared_ptr<bsVertexShader> bsShaderManager::getVertexShader(const std
 	return createVertexShader(filePath, inputDesc);
 }
 
-const std::shared_ptr<bsPixelShader> bsShaderManager::getPixelShader(const std::string& fileName)
+std::shared_ptr<bsPixelShader> bsShaderManager::getPixelShader(const std::string& fileName)
 {
 	assert(fileName.length());
 
@@ -148,17 +149,17 @@ std::shared_ptr<bsVertexShader> bsShaderManager::createVertexShader(const std::s
 	}
 
 	auto vs = std::make_pair(fileName, std::make_shared<bsVertexShader>(vertexShader,
-		vertexLayout, getNumCreatedShaders()));
+		vertexLayout, getUniqueShaderID()));
 	vs.second->mInputLayoutDescriptions = inputDesc;
 
-#ifdef _DEBUG
+#if BS_DEBUG_LEVEL > 0
 	//Set debug data in the D3D objects.
-	std::string bufferName("VertexShader_");
+	std::string bufferName("VS ");
 	bufferName.append(fileName);
 	vs.second->mVertexShader->SetPrivateData(WKPDID_D3DDebugObjectName,
 		bufferName.size(), bufferName.c_str());
 
-	bufferName = "InputLayout_";
+	bufferName = "IL ";
 	bufferName.append(fileName);
 	vs.second->mInputLayout->SetPrivateData(WKPDID_D3DDebugObjectName,
 		bufferName.size(), bufferName.c_str());
@@ -210,12 +211,12 @@ std::shared_ptr<bsPixelShader> bsShaderManager::createPixelShader(const std::str
 	}
 
 	auto ps = std::make_pair(fileName, std::make_shared<bsPixelShader>(pixelShader,
-		getNumCreatedShaders()));
+		getUniqueShaderID()));
 
-#ifdef _DEBUG
+#if BS_DEBUG_LEVEL > 0
 	//Set debug data in the D3D object.
 
-	std::string bufferName("PixelShader_");
+	std::string bufferName("PS ");
 	bufferName.append(fileName);
 	ps.second->mPixelShader->SetPrivateData(WKPDID_D3DDebugObjectName,
 		bufferName.size(), bufferName.c_str());
@@ -231,7 +232,7 @@ std::shared_ptr<bsPixelShader> bsShaderManager::createPixelShader(const std::str
 	return ps.second;
 }
 
-void bsShaderManager::setVertexShader(bsVertexShader* vertexShader)
+void bsShaderManager::setVertexShader(const std::shared_ptr<bsVertexShader>& vertexShader)
 {
 	assert(vertexShader);
 
@@ -241,7 +242,7 @@ void bsShaderManager::setVertexShader(bsVertexShader* vertexShader)
 	context->VSSetShader(vertexShader->getVertexShader(), nullptr, 0);
 }
 
-void bsShaderManager::setPixelShader(bsPixelShader* pixelShader)
+void bsShaderManager::setPixelShader(const std::shared_ptr<bsPixelShader>& pixelShader)
 {
 	assert(pixelShader);
 

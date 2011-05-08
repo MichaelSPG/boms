@@ -33,14 +33,14 @@ public:
 	/**	Increments the amount of created objects and returns it.
 		Used to assign unique IDs to objects.
 	*/
-	inline const int getNewId()
+	inline int getNewId()
 	{
 		return ++mNumCreatedNodes;
 	}
 
 	/**	Returns the amount of created objects without incrementing the value.
 	*/
-	inline const int getNumCreatedNodes() const
+	inline int getNumCreatedNodes() const
 	{
 		return mNumCreatedNodes;
 	}

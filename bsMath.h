@@ -15,14 +15,14 @@
 namespace bsMath
 {
 	//Uses C rand(). Remember to call srand().
-	inline float randomRange(const float min, const float max)
+	inline float randomRange(float min, float max)
 	{
 		float r = (float)rand() * 3.0518509475997192297128208258309e-5f;// 1 / MAX_RAND
 		return min + r * (max - min);
 	}
 
 	//Uses C rand(). Remember to call srand().
-	inline int randomRange(const int min, const int max)
+	inline int randomRange(int min, int max)
 	{
 		float r = (float)rand() * 3.0518509475997192297128208258309e-5f;// 1 / MAX_RAND
 		r = min + r * (max - min);
@@ -81,8 +81,8 @@ namespace bsMath
 	}
 	
 	//The result will be put into the out parameter.
-	inline void XMFloat4x4PerspectiveFovLH(const float fovAngleY,
-		const float aspectRatio, const float nearZ, const float farZ, XMFLOAT4X4& out)
+	inline void XMFloat4x4PerspectiveFovLH(float fovAngleY, float aspectRatio,
+		float nearZ, float farZ, XMFLOAT4X4& out)
 	{
 		XMStoreFloat4x4(&out, XMMatrixPerspectiveFovLH(fovAngleY, aspectRatio, nearZ, farZ));
 	}

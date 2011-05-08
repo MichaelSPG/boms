@@ -6,7 +6,9 @@
 #include <sstream>
 #include <string>
 
-#include "bsDx11Renderer.h"
+#include <D3DX11.h>
+#include <Windows.h>
+#include <xnamath.h>
 
 class bsSceneNode;
 class bsRenderable;
@@ -19,6 +21,7 @@ class bsPixelShader;
 class bsCamera;
 struct ID3D11DeviceContext;
 struct ID3D11Buffer;
+
 
 struct bsFrameStats
 {
@@ -100,15 +103,8 @@ private:
 
 	void setWireframeConstantBuffer(const XMFLOAT4X4& world, const XMFLOAT4& color);
 
-	//null to unbind
-	//Sets both vertex shader and input layout.
-	void setVS(bsVertexShader* vs);
-
-	//null to unbind
-	void setPS(bsPixelShader* ps);
-
 	//Unbinds only.
-	void setGS(void* gs);
+	void unbindGeometryShader();
 
 	bsCamera*		mCamera;
 	

@@ -2,6 +2,9 @@
 
 #include <sstream>
 
+#include <d3d11.h>
+#include <D3DX11.h>
+
 #include "bsResourceManager.h"
 #include "bsLog.h"
 #include "bsDx11Renderer.h"
@@ -175,12 +178,12 @@ bool bsMeshManager::createBuffers(const std::vector<VertexNormalTex>& vertices,
 		return false;
 	}
 #ifdef _DEBUG
-	std::string debugString("VertexBuffer_");
+	std::string debugString("VB ");
 	debugString.append(meshName);
 	vertexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
 		debugString.c_str());
 
-	debugString = "IndexBuffer_";
+	debugString = "IB ";
 	debugString.append(meshName);
 	indexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
 		debugString.c_str());

@@ -16,7 +16,7 @@ class bsTextBox
 {
 	friend class bsTextManager;
 
-	bsTextBox(const float fadeDelay = 10000.0f, const unsigned int maxLineCount = 10);
+	bsTextBox(float fadeDelay = 10000.0f, unsigned int maxLineCount = 10);
 
 public:
 	~bsTextBox();
@@ -32,11 +32,11 @@ public:
 	}
 
 private:
-	void update(const float deltaTime);
+	void update(float deltaTime);
 
 	void updateText();
 
-	std::shared_ptr<bsText2D>		mText;
+	std::shared_ptr<bsText2D>	mText;
 	unsigned int				mMaxLineCount;
 	//pair<string, lifeTimeMs>
 	std::list<std::pair<std::wstring, float>>		mTextLines;

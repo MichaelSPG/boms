@@ -9,7 +9,10 @@
 #include <Common/Base/Types/Geometry/hkStridedVertices.h>
 #include <Physics/Dynamics/Entity/hkpRigidBody.h>
 
-#include "bsDx11Renderer.h"
+#include <D3DX11.h>
+#include <Windows.h>
+#include <xnamath.h>
+
 #include "bsSceneGraph.h"
 #include "bsNodeCollectorPhantom.h"
 
@@ -93,6 +96,10 @@ public:
 		return mViewProjection;
 	}
 
+	void rotateX(float angleRadians);
+
+	void rotateY(float angleRadians);
+
 private:
 	//Updates the view matrix and then updates the view projection matrix.
 	void updateView();
@@ -110,6 +117,7 @@ private:
 
 
 	
+	XMFLOAT4X4	mView;
 	XMFLOAT4X4	mProjection;
 	XMFLOAT4X4	mViewProjection;
 
@@ -119,7 +127,10 @@ private:
 
 	bsProjectionInfo	mProjectionInfo;
 
+	ID3D11Buffer*	mViewBuffer;
+	ID3D11Buffer*	mProjectionBuffer;
 	ID3D11Buffer*	mViewProjectionBuffer;
+
 
 	bsSceneGraph*			mSceneGraph;
 	ID3D11DeviceContext*	mDeviceContext;
@@ -128,6 +139,9 @@ private:
 	hkpRigidBody*				mRigidBody;
 
 	hkTransform		mTransform;
+
+	float	mRotationX;
+	float	mRotationY;
 };
 
 #endif // BS_CAMERA_H

@@ -53,6 +53,7 @@ private:
 	inline static void addCallback(const std::function<void(const char*)>&) {}
 #endif
 
+private:
 	//Non-copyable
 	bsLog(const bsLog&);
 	void operator=(const bsLog&);
@@ -74,7 +75,7 @@ public:
 
 	inline static int getSeverityLevel() {return 0;}
 
-	inline static void addCallback(const std::function<void()>&) {}
+	inline static void addCallback(const std::function<void(const char*)>&) {}
 
 private:
 	//Non-copyable

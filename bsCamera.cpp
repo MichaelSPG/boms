@@ -1,12 +1,14 @@
 #include "bsCamera.h"
 
-#include <assert.h>
+#include <cassert>
 #include <memory>
 
 #include "bsSceneGraph.h"
 #include "bsLog.h"
 #include "bsHavokManager.h"
 #include "bsNodeCollectorPhantom.h"
+#include "bsDx11Renderer.h"
+#include "bsConstantBuffers.h"
 
 
 bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGraph,
@@ -20,6 +22,8 @@ bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGr
 	, mSceneGraph(sceneGraph)
 	, mDeviceContext(mSceneGraph->getRenderer()->getDeviceContext())
 	, mTransform(hkTransform::getIdentity())
+	, mRotationX(0.0f)
+	, mRotationY(0.0f)
 {
 	assert(sceneGraph);
 	assert(havokManager);
@@ -34,7 +38,7 @@ bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGr
 	D3D11_BUFFER_DESC bufferDescription;
 	ZeroMemory(&bufferDescription, sizeof(bufferDescription));
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
-	bufferDescription.ByteWidth = sizeof(CBViewProjection);
+	bufferDescription.ByteWidth = sizeof(CBCamera);
 	bufferDescription.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bufferDescription.CPUAccessFlags = 0;
 
@@ -139,6 +143,24 @@ void bsCamera::updateView()
 {
 	mViewNeedsUpdate = false;
 	//View projection matrix needs to be rebuilt.
+
+	//const hkVector4 currentTranslation = mTransform.getTranslation();
+	hkRotation rotationX;
+	rotationX.setAxisAngle(hkVector4(1.0f, 0.0f, 0.0f), mRotationY);
+	hkRotation rotationY;
+	rotationY.setAxisAngle(hkVector4(0.0f, 1.0f, 0.0f), mRotationX);
+
+	rotationX.mul(rotationY);
+	mTransform.setRotation(rotationX);
+
+
+	hkTransform rotatedTransform(mTransform);
+	rotatedTransform.getRotation().invert(0.00001f);
+	rotatedTransform.getTranslation().mul4(-1.0f);
+
+	mPhantom->setTransform(rotatedTransform);
+	mRigidBody->setTransform(rotatedTransform);
+
 	mViewProjectionNeedsUpdate = true;
 }
 
@@ -161,10 +183,17 @@ void bsCamera::updateViewProjection()
 	bsMath::XMFloat4x4Multiply(bsMath::toXM(transform), mProjection, mViewProjection);
 	bsMath::XMFloat4x4Transpose(mViewProjection);
 
-	CBViewProjection viewProjection;
-	viewProjection.viewProjection = mViewProjection;
+	CBCamera cbCamera;
+	cbCamera.view = bsMath::toXM(transform);
+	cbCamera.projection = mProjection;
+	cbCamera.viewProjection = mViewProjection;
+	bsMath::XMFloat4x4Transpose(cbCamera.view);
+	bsMath::XMFloat4x4Transpose(cbCamera.projection);
+
+	cbCamera.farClip = mProjectionInfo.mFarClip;
+
 	mDeviceContext->UpdateSubresource(mViewProjectionBuffer, 0, nullptr,
-		&viewProjection, 0, 0);
+		&cbCamera, 0, 0);
 
 	mViewProjectionNeedsUpdate = false;
 }
@@ -206,6 +235,13 @@ void bsCamera::translateRelative(float x, float y, float z)
 	//TODO: Fix or remove this function
 	assert(false);
 
+	hkVector4 translation(x, y, z);
+	//mTransform.getRotation().multiplyVector(translation, translation);
+	
+	translation.setMul3(mTransform.getRotation(), translation);
+	mTransform.getTranslation().add3clobberW(translation);
+
+
 	/*
 	hkVector4 newPosition(x, y, -z);
 	hkTransform trns = mPhantom->getTransform();
@@ -214,14 +250,14 @@ void bsCamera::translateRelative(float x, float y, float z)
 	mPhantom->setTransform(trns);
 	mRigidBody->setTransform(trns);
 	*/
-	
+	/*
 	hkVector4 newTranslation(0.0f, 0.0f, 0.0f);// = transform.getTranslation();
 	//newTranslation.setTransformedPos(transform, hkVector4(x, y, z));
 	newTranslation.setMul3(mTransform.getRotation(), hkVector4(-x, -y, -z));
 
 	
 	mTransform.getTranslation().add3clobberW(newTranslation);
-
+	*/
 	//transform.setTranslation(newTranslation);
 
 
@@ -236,13 +272,8 @@ void bsCamera::translateRelative(float x, float y, float z)
 	*/
 
 	hkTransform rotatedTransform(mTransform);
-	hkRotation rot;
-	rot.setAxisAngle(hkVector4(0.0f, 1.0f, 0.0f), 6.28f);
-	rotatedTransform.getRotation().mul(rot);
-	hkVector4& rotatedTranslation = rotatedTransform.getTranslation();
-	rotatedTranslation(0) *= -1.0f;
-	rotatedTranslation(1) *= -1.0f;
-	rotatedTranslation(2) *= -1.0f;
+	rotatedTransform.getRotation().invert(0.00001f);
+	rotatedTransform.getTranslation().mul4(-1.0f);
 
 	mPhantom->setTransform(rotatedTransform);
 	mRigidBody->setTransform(rotatedTransform);
@@ -266,4 +297,18 @@ void bsCamera::translateRelative(float x, float y, float z)
 	mRigidBody->setTransform(transform);
 
 	mViewNeedsUpdate = true;*/
+}
+
+void bsCamera::rotateX(float angleRadians)
+{
+	mRotationX += angleRadians;
+
+	mViewNeedsUpdate = true;
+}
+
+void bsCamera::rotateY(float angleRadians)
+{
+	mRotationY += angleRadians;
+
+	mViewNeedsUpdate = true;
 }

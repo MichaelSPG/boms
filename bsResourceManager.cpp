@@ -1,9 +1,11 @@
 #include "bsResourceManager.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include "bsLog.h"
 
+
+//TODO: Replace debug checks with asserts.
 
 bsResourceManager::bsResourceManager()
 	: mFileSystem(nullptr)
@@ -33,7 +35,8 @@ bsResourceManager::~bsResourceManager()
 	}
 }
 
-void bsResourceManager::initAll( const char* fileSystemBasePath, bsDx11Renderer* dx11Renderer )
+void bsResourceManager::initAll(const std::string& fileSystemBasePath,
+	bsDx11Renderer* dx11Renderer)
 {
 	initFileSystem(fileSystemBasePath);
 	initShaderManager(dx11Renderer);
@@ -41,9 +44,9 @@ void bsResourceManager::initAll( const char* fileSystemBasePath, bsDx11Renderer*
 	initTextManager(dx11Renderer);
 }
 
-void bsResourceManager::initFileSystem(const char* basePath)
+void bsResourceManager::initFileSystem(const std::string& basePath)
 {
-	assert(basePath);
+	assert(basePath.length());
 
 #if BS_DEBUG_LEVEL > 0
 	if (mFileSystem)

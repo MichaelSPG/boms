@@ -59,30 +59,24 @@ public:
 
 	//Local space
 	//Gets local translation.
-	inline const hkVector4& getTranslation() const
+	inline const hkVector4& getPosition() const
 	{
 		return mTransform.getTranslation();
 	}
 
 	//Calls setPosition with translation's x, y and z elements.
-	inline void setTranslation(const hkVector4& translation)
-	{
-		setTranslation(translation.getSimdAt(0), translation.getSimdAt(1),
+	void setPosition(const hkVector4& newPosition);
+	/*{
+		setPosition(translation.getSimdAt(0), translation.getSimdAt(1),
 			translation.getSimdAt(2));
-	}
+	}*/
 
-	void setTranslation(const float x, const float y, const float z);
-
-	//Calls the hkVector4 version of the same function
-	inline void translate(const float x, const float y, const float z)
-	{
-		translate(hkVector4(x, y, z, 0.0f));
-	}
+	//void setPosition(float x, float y, float z);
 
 	void translate(const hkVector4& translation);
 
 	//Sets local rotation.
-	void setRotation(const hkRotation& rotation)
+	inline void setRotation(const hkRotation& rotation)
 	{
 		mTransform.setRotation(rotation);
 
@@ -90,7 +84,7 @@ public:
 	}
 
 	//Sets local rotation.
-	void setRotation(const hkQuaternion& rotation)
+	inline void setRotation(const hkQuaternion& rotation)
 	{
 		mTransform.setRotation(rotation);
 

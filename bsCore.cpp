@@ -9,6 +9,7 @@
 #include "bsHavokManager.h"
 #include "bsLog.h"
 #include "bsRenderQueue.h"
+#include "bsRenderSystem.h"
 
 
 bsCore::bsCore(const bsCoreCInfo& cInfo)
@@ -46,6 +47,8 @@ bsCore::bsCore(const bsCoreCInfo& cInfo)
 
 bsCore::~bsCore()
 {
+	delete mRenderQueue;
+
 	delete mSceneGraph;
 
 	delete mHavokManager;
@@ -57,7 +60,7 @@ bsCore::~bsCore()
 	delete mWindow;
 }
 
-bool bsCore::update(const float deltaTimeMs)
+bool bsCore::update(float deltaTimeMs)
 {
 	if (!mWindow->checkForMessages())
 	{
@@ -67,19 +70,17 @@ bool bsCore::update(const float deltaTimeMs)
 	mHavokManager->stepGraphicsWorld(deltaTimeMs);
 	//mHavokManager->stepPhysicsWorld(deltaTimeMs);
 
-	mDx11Renderer->preRender();
+	mRenderSystem->renderOneFrame();
 
-	mRenderQueue->reset();
-	mRenderQueue->draw();
+	//mDx11Renderer->clearBackBuffer();
+	//mDx11Renderer->clearRenderTargets()
 
-	mResourceManager->getTextManager()->drawAllTexts(deltaTimeMs);
+	//mRenderQueue->reset();
+	//mRenderQueue->draw();
 
-	mDx11Renderer->present();
+	//mResourceManager->getTextManager()->drawAllTexts(deltaTimeMs);
+
+	//mDx11Renderer->present();
 
 	return true;
-}
-
-void bsCore::preRender()
-{
-	//mDx11Renderer->preRender();
 }

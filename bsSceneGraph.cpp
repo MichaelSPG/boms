@@ -1,9 +1,8 @@
 #include "bsSceneGraph.h"
 
-#include <assert.h>
+#include <cassert>
 #include <vector>
 
-#include "bsDx11Renderer.h"
 #include "bsSceneNode.h"
 #include "bsTimer.h"
 #include "bsResourceManager.h"
@@ -29,7 +28,7 @@ bsSceneGraph::bsSceneGraph(bsDx11Renderer* renderer, bsResourceManager* resource
 	mHavokManager->createGraphicsWorld(true);
 	mGraphicsWorld = mHavokManager->getGraphicsWorld();
 
-	mCamera = new bsCamera(bsProjectionInfo(45.0f, 5000.0f, 0.1f,
+	mCamera = new bsCamera(bsProjectionInfo(45.0f, 1000.0f, 0.1f,
 		(float)cInfo.windowWidth / (float)cInfo.windowHeight), this, mHavokManager);
 
 	bsLog::logMessage("Scene graph initialized successfully");

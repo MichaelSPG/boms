@@ -12,7 +12,7 @@
 class bsFileSystem
 {
 public:
-	bsFileSystem(const char* basePath);
+	bsFileSystem(const std::string& basePath);
 	~bsFileSystem();
 
 	/*	Returns the full path of the file.
@@ -21,6 +21,8 @@ public:
 	std::string getPath(const std::string& fileName) const;
 
 private:
+	//Builds the file system by scanning the base path and all the folders it contains
+	//and maps file names to file paths.
 	void buildFileSystem();
 
 	std::string	mBasePath;

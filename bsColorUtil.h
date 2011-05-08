@@ -56,8 +56,7 @@ public:
 		return res;
 	}
 
-	inline static unsigned char getColorFromRgba(const unsigned int color,
-		const rgbaOffsets offset)
+	inline static unsigned char getColorFromRgba(unsigned int color, rgbaOffsets offset)
 	{
 		unsigned char col;
 		col = (unsigned char)(color >> offset);
@@ -66,8 +65,7 @@ public:
 		//return color >> offset;
 	}
 
-	inline static unsigned char getColorFromAbgr(const unsigned int color,
-		const abgrOffsets offset)
+	inline static unsigned char getColorFromAbgr(unsigned int color, abgrOffsets offset)
 	{
 		unsigned char col;
 		col = (unsigned char)(color >> offset);
@@ -119,14 +117,14 @@ public:
 			(unsigned char)(colorFloat.w * 255.0f));
 	}
 
-	inline static XMFLOAT4 toFloatFromRgba(const unsigned int rgba)
+	inline static XMFLOAT4 toFloatFromRgba(unsigned int rgba)
 	{
 		return XMFLOAT4(getColorFromRgba(rgba, rgbaOffsetRed),
 			getColorFromRgba(rgba, rgbaOffsetGreen), getColorFromRgba(rgba, rgbaOffsetBlue),
 			getColorFromRgba(rgba, rgbaOffsetAlpha));
 	}
 
-	inline static XMFLOAT4 toFloatFromAbgr(const unsigned int abgr)
+	inline static XMFLOAT4 toFloatFromAbgr(unsigned int abgr)
 	{
 		return XMFLOAT4(getColorFromAbgr(abgr, abgrOffsetRed),
 			getColorFromAbgr(abgr, abgrOffsetGreen), getColorFromAbgr(abgr, abgrOffsetBlue),

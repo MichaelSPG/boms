@@ -98,12 +98,13 @@ void bsSceneNode::updateDerivedTransform() const
 	*/
 }
 
-void bsSceneNode::setTranslation(const float x, const float y, const float z)
+void bsSceneNode::setPosition(const hkVector4& newPosition)
 {
 	hkVector4 translation(mTransform.getTranslation());
-	translation.sub3clobberW(hkVector4(x, y, z, 0.0f));
+	translation.sub3clobberW(newPosition);
 
-	mTransform.getTranslation().set(x, y, z, 0.0f);
+	mTransform.setTranslation(newPosition);
+	//mTransform.getTranslation().set(x, y, z, 0.0f);
 
 	//Get translation
 	translation.sub3clobberW(mTransform.getTranslation());

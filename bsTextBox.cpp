@@ -5,9 +5,10 @@
 
 #include "bsText2D.h"
 #include "bsStringUtils.h"
+#include "bsTemplates.h"
 
 
-bsTextBox::bsTextBox(const float fadeDelay /*= 10000.0f*/, const unsigned int maxLineCount /*= 10*/)
+bsTextBox::bsTextBox(float fadeDelay /*= 10000.0f*/, unsigned int maxLineCount /*= 10*/)
 	: mText(nullptr)
 	, mMaxLineCount(maxLineCount)
 	, mFadeDelay(fadeDelay)
@@ -49,12 +50,14 @@ void bsTextBox::updateText()
 	}
 }
 
-void bsTextBox::update(const float deltaTime)
+void bsTextBox::update(float deltaTime)
 {
 	if (mTextLines.empty())
 	{
 		return;
 	}
+
+	//Add time to the texts.
 	for (auto itr = mTextLines.begin(), end = mTextLines.end(); itr != end; ++itr)
 	{
 		itr->second += deltaTime;

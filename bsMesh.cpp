@@ -1,6 +1,12 @@
 #include "bsMesh.h"
 
+#include <Windows.h>
+#include <xnamath.h>
+
 #include "bsShaderManager.h"
+#include "bsConstantBuffers.h"
+#include "bsVertexTypes.h"
+#include "bsDx11Renderer.h"
 
 
 bsMesh::bsMesh()
@@ -33,7 +39,7 @@ void bsMesh::draw(bsDx11Renderer* dx11Renderer) const
 {
 	if (mVertexBuffer && mIndices)
 	{
-		auto context = dx11Renderer->getDeviceContext();
+		ID3D11DeviceContext* const context = dx11Renderer->getDeviceContext();
 
 		UINT offsets =  0;
 		UINT stride = sizeof(VertexNormalTex);

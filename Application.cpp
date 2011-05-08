@@ -26,6 +26,10 @@
 #include "bsSceneNode.h"
 #include "bsLine3D.h"
 #include "bsGeometryUtils.h"
+#include "bsRenderTarget.h"
+#include "bsFullScreenQuad.h"
+
+#include "bsDeferredRenderer.h"
 
 
 Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth,
@@ -35,38 +39,89 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 	, mMouse(nullptr)
 {
 	w = a = s = d = space = c = shift = moveDuck = resetDuck = false;
-	rightMouseDown = leftMouseDown = mQuit = false;
+	rightMouseDown = leftMouseDown = mQuit = pause = false;
 
 	bsCoreCInfo coreCInfo;
 	coreCInfo.hInstance = hInstance;
-	//coreCInfo.hWnd = window->getHwnd();
 	coreCInfo.showCmd = showCmd;
 	mCore = new bsCore(coreCInfo);
 
+	bsLog::logMessage("Initializing OIS");
 
-	//OIS
+	//OIS initialization
+	OIS::ParamList paramList;
+	paramList.insert(OIS::ParamList::value_type("WINDOW",
+		bsStringUtils::toString((unsigned long)mCore->getWindow()->getHwnd())));
+	paramList.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_FOREGROUND"))); 
+	paramList.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_NONEXCLUSIVE"))); 
+	paramList.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_NOWINKEY")));
+
+	mInputManager = OIS::InputManager::createInputSystem(paramList);
+
+	mKeyboard = static_cast<OIS::Keyboard*>(mInputManager->createInputObject(OIS::OISKeyboard, true));
+	mMouse = static_cast<OIS::Mouse*>(mInputManager->createInputObject(OIS::OISMouse, true));
+
+	mMouse->getMouseState().width = windowWidth;
+	mMouse->getMouseState().height = windowHeight;
+
+	mKeyboard->setEventCallback(this);
+	mMouse->setEventCallback(this);
+
+
+	RECT rect;
+	GetWindowRect(mCore->getWindow()->getHwnd(), &rect);
+	int x = rect.right - rect.left;
+	int y = rect.bottom - rect.top;
+
+	bsWindow* window = mCore->getWindow();
+
+	for (unsigned int i = 0; i < 2; ++i)
 	{
-		bsLog::logMessage("Initializing OIS");
-
-		OIS::ParamList paramList;;
-		
-		paramList.insert(OIS::ParamList::value_type("WINDOW",
-			bsStringUtils::toString((unsigned long)mCore->getWindow()->getHwnd())));
-		paramList.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_FOREGROUND"))); 
-		paramList.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_NONEXCLUSIVE"))); 
-		paramList.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_NOWINKEY")));
-
-		mInputManager = OIS::InputManager::createInputSystem(paramList);
-
-		mKeyboard = static_cast<OIS::Keyboard*>(mInputManager->createInputObject(OIS::OISKeyboard, true));
-		mMouse = static_cast<OIS::Mouse*>(mInputManager->createInputObject(OIS::OISMouse, true));
-
-		mMouse->getMouseState().width = windowWidth;
-		mMouse->getMouseState().height = windowHeight;
-
-		mKeyboard->setEventCallback(this);
-		mMouse->setEventCallback(this);
+		mRenderTargets.push_back(new bsRenderTarget(window->getWindowWidth(),
+			window->getWindowHeight(), mCore->getDx11Renderer()->getDevice()));
 	}
+	
+	//mCore->getDx11Renderer()->setRenderTargets(&mRenderTarget, 1);
+	bsRenderTarget* rts[2];
+	rts[0] = mRenderTargets[0];
+	rts[1] = mRenderTargets[1];
+	
+	mCore->getDx11Renderer()->setRenderTargets(rts, 2);
+
+	//////////////////////////////////////////////////////////////////////////
+	mFullScreenQuad = new bsFullScreenQuad(mCore->getDx11Renderer()->getDevice());
+
+	std::vector<D3D11_INPUT_ELEMENT_DESC> inputLayout;
+
+	D3D11_INPUT_ELEMENT_DESC inputDesc;
+	memset(&inputDesc, 0, sizeof(inputDesc));
+	inputDesc.SemanticName = "POSITION";
+	inputDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	inputDesc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	inputLayout.push_back(inputDesc);
+
+	inputDesc.SemanticName = "TEXCOORD";
+	inputDesc.AlignedByteOffset = 12;
+	inputDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
+	inputLayout.push_back(inputDesc);
+
+	mFullscreenVS = mCore->getResourceManager()->getShaderManager()->getVertexShader("Merger.fx", inputLayout);
+	mFullscreenPS = mCore->getResourceManager()->getShaderManager()->getPixelShader("Merger.fx");
+
+	
+	mDeferredRenderer = new bsDeferredRenderer(mCore->getDx11Renderer(),
+		mCore->getSceneGraph()->getCamera(), mCore->getResourceManager()->getShaderManager(),
+		window);
+
+	mCore->setRenderSystem(mDeferredRenderer);
+
+	bsTextManager* textManager = mCore->getResourceManager()->getTextManager();
+
+	//Register the text manager with the rendering system so that it'll get drawn.
+	mDeferredRenderer->registerEndOfRenderCallback(boost::bind(&bsTextManager::drawAllTexts, textManager));
+
+	//////////////////////////////////////////////////////////////////////////
+	
 
 	bsLog::logMessage("Initialization completed successfully", pantheios::SEV_NOTICE);
 }
@@ -82,38 +137,10 @@ Application::~Application()
 
 void Application::update(float deltaTime)
 {
-	mCore->preRender();
-
 	mKeyboard->capture();
 	mMouse->capture();
 	
 	bsCamera* camera = mCore->getSceneGraph()->getCamera();
-	/*
-	if (w)
-	{
-		camera->translate(0.0f, 0.0f, shift ? 6.0f : 1.2f);
-	}
-	if (s)
-	{
-		camera->translate(0.0f, 0.0f, shift ? -6.0f : -1.2f);
-	}
-	if (a)
-	{
-		camera->translate(shift ? -6.0f : -1.2f, 0.0f, 0.0f);
-	}
-	if (d)
-	{
-		camera->translate(shift ? 6.0f : 1.2f, 0.0f, 0.0f);
-	}
-	if (space)
-	{
-		camera->translate(0.0f, shift ? 6.0f : 1.2f, 0.0f);
-	}
-	if (c)
-	{
-		camera->translate(0.0f, shift ? -6.0f : -1.2f, 0.0f);
-	}
-	*/
 
 	if (w)
 	{
@@ -141,9 +168,6 @@ void Application::update(float deltaTime)
 	}
 	camera->update();
 	
-	
-//	mSceneGraph->getRootNode()->drawAABB(mDx11Renderer);
-
 
 	static std::vector<D3D11_INPUT_ELEMENT_DESC> inputLayout;
 	D3D11_INPUT_ELEMENT_DESC d;
@@ -158,19 +182,20 @@ void Application::update(float deltaTime)
 
 	d.SemanticName = "NORMAL";
 	d.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	d.AlignedByteOffset = 12u;
+	d.AlignedByteOffset = 12;
 	inputLayout.push_back(d);
 
 	d.SemanticName = "TEXCOORD";
-	d.AlignedByteOffset = 24u;
+	d.AlignedByteOffset = 24;
 	d.Format = DXGI_FORMAT_R32G32_FLOAT;
 	inputLayout.push_back(d);
 
 	bsResourceManager* resourceManager = mCore->getResourceManager();
-	static auto vs = resourceManager->getShaderManager()->getVertexShader("HLSL_Basic.fx", inputLayout);
+	static auto vs = resourceManager->getShaderManager()->getVertexShader("HLSL_Basic.fx",
+		inputLayout);
 	static auto ps = resourceManager->getShaderManager()->getPixelShader("HLSL_Basic.fx");
 
-	//////////////////////////////////////////////////////////////////////////
+
 	static auto context = mCore->getDx11Renderer()->getDeviceContext();
 	static bsMeshManager* meshManager = resourceManager->getMeshManager();
 
@@ -178,6 +203,7 @@ void Application::update(float deltaTime)
 	static auto duck = meshManager->getMesh("duck.bsm");
 	static auto teapot = meshManager->getMesh("teapot.bsm");
 	static auto gourd = meshManager->getMesh("gourd.bsm");
+	static auto greeble = meshManager->getMesh("greeble.bsm");
 
 	static auto cubeWithOffset = meshManager->getMesh("cubeWithOffset.bsm");
 
@@ -190,8 +216,6 @@ void Application::update(float deltaTime)
 	static bsSceneNode* derivedNode1 = testNode1->createChildSceneNode(hkVector4(50.0f, 0.0f, 0.0f));
 	static bsSceneNode* derivedNode2 = derivedNode1->createChildSceneNode(hkVector4(50.0f, 0.0f, 0.0f));
 	static bsSceneNode* derivedNode3 = derivedNode2->createChildSceneNode(hkVector4(50.0f, 0.0f, 0.0f));
-
-	static bsSceneNode* cubeWithOffsetNode = sceneGraph->createSceneNode(hkVector4(0.0f, 0.0f, -20.0f));
 	
 
 	static std::vector<bsSceneNode*> derivedNodes;
@@ -215,22 +239,6 @@ void Application::update(float deltaTime)
 
 	if (createNodes)
 	{
-		/*
-		for (unsigned int i = 0; i < 5; ++i)
-		{
-			bsSceneNode* node = sceneGraph->createSceneNode(hkVector4((i * 50.0f) - 125.0f, 0.0f, 0.0f));
-			node->attachRenderable(duck);
-			sceneNodes.push_back(node);
-		}
-
-		for (unsigned int i = 0; i < 5; ++i)
-		{
-			bsSceneNode* node = sceneGraph->createSceneNode(hkVector4((i * 50.0f) - 125.0f, 0.0f, 100.0f));
-			node->attachRenderable(teapot);
-			sceneNodes.push_back(node);
-		}
-		*/
-		
 		const unsigned int iters = 10;
 		const float factor = 50.0f;
 
@@ -255,53 +263,13 @@ void Application::update(float deltaTime)
 	static bool once = false;
 	if (!once)
 	{
-		std::vector<XMFLOAT3> points;
-		for (unsigned int i = 0; i < 26; ++i)
-		{
-			points.push_back(XMFLOAT3(i % 2 * 5.0f, i % 4 * 5.0f, i % 8 * 5.0f));
-		}
-		//line3d->addPoints(points);
-		//line3d->create(mCore->getDx11Renderer());
-		//testNode1->attachRenderable(line3d);
-
 		bool disable = false;
 		if (!disable)
-		{/*
-			testNode1->attachRenderable(mesh_1);
-			testNode2->attachRenderable(mesh_2);
-			testNode3->attachRenderable(mesh_3);
-			testNode4->attachRenderable(mesh_4);
-			*/
-			
-			//testNode1->attachRenderable(duck);
-			/*//testNode1->attachRenderable(roi);
-			testNode2->attachRenderable(teapot);
-			testNode2->attachRenderable(gourd);
-			testNode2->attachRenderable(roi);
-			testNode3->attachRenderable(duck);
-			testNode4->attachRenderable(gourd);
-			testNode4->attachRenderable(duck);
-			testNode4->attachRenderable(teapot);
-			testNode4->attachRenderable(gourd);
-
-			*/
-			//hkpBoxShape* shape = new hkpBoxShape(hkVector4(5.0f, 5.0f, 5.0f), 2.5f);
-			//std::shared_ptr<bsLine3D> line = std::make_shared<bsLine3D>(XMFLOAT4(1.0f, 0.0f, 1.0f, 0.0f));
-			//bsGeometryUtils::createLinesFromShape(shape, line.get());
-			//bsGeometryUtils::createLinesFromAabb(testNode1->mAABB, line.get());
-			//line->create(mCore->getDx11Renderer());
-			//testNode1->attachRenderable(line);
-			/*
-			derivedNode1->attachRenderable(duck);
-			derivedNode2->attachRenderable(duck);
-			derivedNode3->attachRenderable(duck);
-			*/
+		{
 			for (unsigned int i = 0; i < derivedNodes.size(); ++i)
 			{
-				derivedNodes[i]->attachRenderable(duck);
+				derivedNodes[i]->attachRenderable((i & 1) == 0 ? duck : greeble);
 			}
-
-			cubeWithOffsetNode->attachRenderable(cubeWithOffset);
 		}
 		
 		once = true;
@@ -311,64 +279,58 @@ void Application::update(float deltaTime)
 	wave += 0.02f;
 	float waveSin = sinf(wave);
 	float waveCos = cosf(wave);
-	//float mulFactor = 1.2f;
 	float mulFactor = 1.0f;
 
 	if (moveDuck)
 	{
-		testNode1->setTranslation( waveSin * mulFactor,  waveCos * mulFactor, -waveSin * mulFactor);
+		testNode1->setPosition(hkVector4(waveSin * mulFactor,  waveCos * mulFactor, -waveSin * mulFactor));
 
 		hkRotation rot;
 		rot.setAxisAngle(hkVector4(0.0f, 1.0f, 0.0f), wave);
-
-		cubeWithOffsetNode->setRotation(rot);
 	}
 	if (resetDuck)
 	{
 		auto& dt = const_cast<hkVector4&>(testNode1->getDerivedTranslation());
 		dt.setAll3(0.0f);
-		testNode1->setTranslation(0.0f, 0.0f, 0.0f);
+		testNode1->setPosition(hkVector4(0.0f, 0.0f, 0.0f));
 	}
-	/*
-	testNode1->setTranslation( waveSin * mulFactor,  waveCos * mulFactor, -waveSin * mulFactor);
-	testNode2->setTranslation(-waveSin * mulFactor, -waveCos * mulFactor,  waveSin * mulFactor);
-	testNode3->setTranslation( waveCos * mulFactor,  waveSin * mulFactor, -waveCos * mulFactor);
-	testNode4->setTranslation( waveSin * mulFactor, -waveSin * mulFactor,  waveCos * mulFactor);
-	*/
+	
 	static float rotWave = 0.0f;
 	rotWave += 0.1f;
 	waveSin = sinf(rotWave);
 	waveCos = cosf(rotWave);
 	hkQuaternion rot(hkVector4(0.0f, 1.0f, 0.0f), waveSin);
 	rot.mul(hkQuaternion(hkVector4(1.0f, 0.0f, 0.0f), waveCos));
-	//rot.mul(hkQuaternion(hkVector4(0.0f, 0.0f, 1.0f), -waveSin));
-	//testNode4->setRotation(rot);
+
 	static hkVector4 unit(0.0f, 1.0f, 0.0f);
 	hkVector4 angle(waveSin, waveCos, -waveSin);
 	angle.normalize3();
-	//unit.addMul4(0.1f, angle);
-	//unit.normalize3();
 
 	static float increaseForever = 0.0f;
 	increaseForever += 0.01f;
 	hkQuaternion q2(unit, increaseForever);
-	/*testNode1->setRotation(q2);
 
-	derivedNode1->setRotation(q2);
-	derivedNode2->setRotation(q2);
-	derivedNode3->setRotation(q2);
-	*/
-	for (unsigned int i = 0; i < derivedNodes.size(); ++i)
+	if (!pause)
 	{
-		derivedNodes[i]->setRotation(q2);
-		derivedNodes[i]->setTranslation(sinf(increaseForever) * 100.0f, 0.0f, 0.0f);
+		for (unsigned int i = 0; i < derivedNodes.size(); ++i)
+		{
+			derivedNodes[i]->setPosition(hkVector4(sinf(increaseForever) * 100.0f, 0.0f, 0.0f));
+			if ((i & 3) == 0)
+			{
+				continue;
+			}
+
+			derivedNodes[i]->setRotation(hkQuaternion(unit, (float)(increaseForever * (i * 0.2f))));
+		}
 	}
 
 	
-	static auto textManager = resourceManager->getTextManager();
+	static bsTextManager* textManager = resourceManager->getTextManager();
+
+	textManager->updateTexts(deltaTime);
 
 	static bsRenderStats stats;
-	stats.setFps(1.0f/deltaTime * 1000.0f);
+	stats.setFps(1.0f / deltaTime * 1000.0f);
 	stats.setFrameTime(deltaTime);
 
 	static auto statsText = textManager->createText(L"");
@@ -376,11 +338,7 @@ void Application::update(float deltaTime)
 	statsText->setColor(0xff0000ff);
 	statsText->setFontSize(16.0f);
 	statsText->addFlags(FW1_RESTORESTATE);
-	//statsText->setPosition(0.5f, 0.5f);
 	statsText->setText(stats.getStatsString());
-	//statsText->setText(rq.getFrameStats().getFrameStatsWideString());
-	//statsText->addFlags(FW1_ALIASED);
-	//statsText->draw();
 
 	static std::shared_ptr<bsTextBox> textBox = textManager->createTextBox(4500.0f, 10);
 	textBox->getText()->setPosition(10.0f, 350.0f);
@@ -393,22 +351,16 @@ void Application::update(float deltaTime)
 	frameStats->setColor(0xff00ff00);
 	frameStats->setFontSize(14.0f);
 	
-	frameStats->setText(mCore->getRenderQueue()->getFrameStats().getFrameStatsWideString());
-	
-	auto lmbd = [=](const char* text)
-	{
-		textBox->addTextLine(text);
-	};
-	//auto nff = boost::bind<void>(&not_functor::foo, &nf, _1);
-//	auto func3 = boost::bind<void>(&bsTextBox::addTextLine, &tb, _1);
-//	auto func2 = boost::bind<void>(&bsTextBox::addTextLine, &textBox);
-	//auto func = boost::bind<void>(&bsTextBox::addTextLine, boost::ref(textBox));
-	std::string utf8("hola senor!");
-	std::wstring utf16 = bsStringUtils::utf8ToUtf16(utf8);
+	frameStats->setText(mDeferredRenderer->getRenderQueue()->getFrameStats().getFrameStatsWideString());
 	
 	static bool logCallBackOnce = false;
 	if (!logCallBackOnce)
 	{
+		//No implicit conversion from const char* to std::string, must use functor/lambda
+		auto lmbd = [=](const char* text)
+		{
+			textBox->addTextLine(text);
+		};
 		bsLog::addCallback(lmbd);
 		logCallBackOnce = true;
 	}
@@ -416,13 +368,16 @@ void Application::update(float deltaTime)
 //	context->GSSetShader(nullptr, nullptr, 0);
 //	context->HSSetShader(nullptr, nullptr, 0);
 
+
+
+
 	if (!mCore->update(deltaTime))
 	{
 		mQuit = true;
 	}
 }
 
-bool Application::keyPressed(const OIS::KeyEvent &arg)
+bool Application::keyPressed(const OIS::KeyEvent& arg)
 {
 	if (arg.key == OIS::KC_W)
 	{
@@ -483,13 +438,19 @@ bool Application::keyPressed(const OIS::KeyEvent &arg)
 		mCore->getSceneGraph()->getCamera()->rotateAboutAxis(hkVector4(0.0f, 1.0f, 0.0f), 22.5f);
 		break;
 
+	case OIS::KC_V:
+		mCore->getDx11Renderer()->setVsyncEnabled(!mCore->getDx11Renderer()->getVsyncEnabled());
+
+	case OIS::KC_P:
+		pause = !pause;
+		break;
 	}
 
 
 	return true;
 }
 
-bool Application::keyReleased(const OIS::KeyEvent &arg)
+bool Application::keyReleased(const OIS::KeyEvent& arg)
 {
 	if (arg.key == OIS::KC_W)
 	{
@@ -534,21 +495,20 @@ bool Application::keyReleased(const OIS::KeyEvent &arg)
 	return true;
 }
 
-bool Application::mouseMoved(const OIS::MouseEvent &arg)
+bool Application::mouseMoved(const OIS::MouseEvent& arg)
 {
 	if (leftMouseDown)
 	{
-		mCore->getSceneGraph()->getCamera()->rotateAboutAxis(hkVector4(0.0f, 1.0f, 0.0f),
-			-((float)arg.state.X.rel));
+		bsCamera* camera = mCore->getSceneGraph()->getCamera();
 
-		mCore->getSceneGraph()->getCamera()->rotateAboutAxis(hkVector4(1.0f, 0.0f, 0.0f),
-			-((float)arg.state.Y.rel));
+		camera->rotateX(-(float)arg.state.X.rel * 0.01f);
+		camera->rotateY(-(float)arg.state.Y.rel * 0.01f);
 	}
 	
 	return true;
 }
 
-bool Application::mousePressed(const OIS::MouseEvent &arg, OIS::MouseButtonID id)
+bool Application::mousePressed(const OIS::MouseEvent& arg, OIS::MouseButtonID id)
 {
 	switch (id)
 	{

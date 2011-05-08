@@ -18,9 +18,9 @@ public:
 	~bsResourceManager();
 
 	//Initiates all resource managers
-	void initAll(const char* fileSystemBasePath, bsDx11Renderer* dx11Renderer);
+	void initAll(const std::string& fileSystemBasePath, bsDx11Renderer* dx11Renderer);
 
-	void initFileSystem(const char* basePath);
+	void initFileSystem(const std::string& basePath);
 
 	void initShaderManager(bsDx11Renderer* dx11Renderer);
 

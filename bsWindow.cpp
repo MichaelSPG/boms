@@ -23,7 +23,7 @@ LRESULT CALLBACK WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 
-bsWindow::bsWindow(const int windowWidth, const int windowHeight, const char* name,
+bsWindow::bsWindow(int windowWidth, int windowHeight, const std::string& name,
 	HINSTANCE hInstance, int showCmd)
 	: mHwnd(nullptr)
 	, mHInstance(hInstance)
@@ -36,7 +36,7 @@ bsWindow::bsWindow(const int windowWidth, const int windowHeight, const char* na
 	wndClassex.style = CS_HREDRAW | CS_VREDRAW;
 	wndClassex.lpfnWndProc = WinProc;
 	wndClassex.hInstance = hInstance;
-	wndClassex.lpszClassName = name;
+	wndClassex.lpszClassName = name.c_str();
 	//wndClassex.hCursor = (HCURSOR)LoadImage(nullptr, MAKEINTRESOURCE(IDC_ARROW), IMAGE_CURSOR, 0, 0, LR_SHARED);
 
 	RegisterClassEx(&wndClassex);
@@ -55,8 +55,9 @@ bsWindow::bsWindow(const int windowWidth, const int windowHeight, const char* na
 
 	AdjustWindowRectEx(&rect, winStyle, false, winStyleEx);
 
-	mHwnd = CreateWindowEx(winStyleEx, name, name, winStyle, CW_USEDEFAULT, CW_USEDEFAULT,
-		rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr, hInstance, nullptr);
+	mHwnd = CreateWindowEx(winStyleEx, name.c_str(), name.c_str(), winStyle, CW_USEDEFAULT,
+		CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr,
+		hInstance, nullptr);
 
 	ShowWindow(mHwnd, showCmd);
 	UpdateWindow(mHwnd);

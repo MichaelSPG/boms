@@ -26,7 +26,10 @@ public:
 
 	void destroyUnused();
 
-	void drawAllTexts(const float deltaTime);
+	void drawAllTexts();
+
+	//Updates all the texts, making them scroll or other effects if applicable.
+	void updateTexts(float deltaTime);
 	
 private:
 	bsDx11Renderer*	mDx11Renderer;

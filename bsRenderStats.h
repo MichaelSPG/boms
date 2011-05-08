@@ -24,7 +24,7 @@ public:
 
 	std::wstring getStatsString() const;
 
-	inline void setFps(const float fps)
+	inline void setFps(float fps)
 	{
 		mFps = fps;
 
@@ -32,10 +32,10 @@ public:
 		mAverageFps = mAverageFps * (1.0f - mAverageWeight) + fps * mAverageWeight;
 	}
 
-	void setFrameTime(const float timeMs);
+	void setFrameTime(float timeMs);
 
 	//Default: 10000.0f (10 seconds)
-	inline void setHistoryLength(const float durationMs)
+	inline void setHistoryLength(float durationMs)
 	{
 		mHistoryDuration = durationMs;
 	}

@@ -1,6 +1,6 @@
 #include "bsPrimitive.h"
 
-#include <assert.h>
+#include <cassert>
 #include <vector>
 
 #include <Common/Base/Types/Geometry/Aabb/hkAabb.h>
@@ -10,6 +10,8 @@
 #include "bsVertexShader.h"
 #include "bsLog.h"
 #include "bsVertexTypes.h"
+#include "bsConstantBuffers.h"
+#include "bsDx11Renderer.h"
 
 
 bsPrimitive::bsPrimitive()
@@ -205,7 +207,7 @@ void bsPrimitive::draw(bsDx11Renderer* dx11Renderer)
 	assert(dx11Renderer);
 	assert(mFinished);
 
-	auto context = dx11Renderer->getDeviceContext();
+	ID3D11DeviceContext* const context = dx11Renderer->getDeviceContext();
 
 
 	UINT offsets =  0;

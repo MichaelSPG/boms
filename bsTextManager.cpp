@@ -1,6 +1,6 @@
 #include "bsTextManager.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include "bsDx11Renderer.h"
 #include "bsLog.h"
@@ -72,24 +72,25 @@ void bsTextManager::destroyUnused()
 		{
 			bsT::unordered_erase(mTexts, mTexts[i]);
 
+			//Item at end is now i'th element, decrement i to make sure it is also evaluated
 			--i;
 		}
 	}
 }
 
-void bsTextManager::drawAllTexts(const float deltaTime)
+void bsTextManager::drawAllTexts()
+{
+	for (unsigned int i = 0, count = mTexts.size(); i < count; ++i)
+	{
+		mTexts[i]->draw();
+	}
+}
+
+void bsTextManager::updateTexts(float deltaTime)
 {
 	for (unsigned int i = 0, count = mTextBoxes.size(); i < count; ++i)
 	{
 		mTextBoxes[i]->update(deltaTime);
 		mTextBoxes[i]->updateText();
-	}
-
-	for (unsigned int i = 0, count = mTexts.size(); i < count; ++i)
-	{
-		if (mTexts[i]->getEnabled())
-		{
-			mTexts[i]->draw();
-		}
 	}
 }

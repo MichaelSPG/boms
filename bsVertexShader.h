@@ -1,6 +1,10 @@
 #ifndef BS_VERTEX_SHADER_H
 #define BS_VERTEX_SHADER_H
 
+#include "bsConfig.h"
+
+#include <d3d11.h>
+
 struct ID3D11VertexShader;
 struct ID3D11InputLayout;
 

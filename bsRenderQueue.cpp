@@ -1,11 +1,10 @@
 #include "bsRenderQueue.h"
 
-#include <assert.h>
+#include <cassert>
 #include <map>
 #include <unordered_map>
 
 #include "bsCamera.h"
-
 #include "bsSceneNode.h"
 #include "bsRenderable.h"
 #include "bsMesh.h"
@@ -20,6 +19,8 @@
 #include "bsTimer.h"
 
 #include "bsMath.h"
+#include "bsConstantBuffers.h"
+
 
 bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shaderManager)
 	: mDx11Renderer(dx11Renderer)
@@ -115,8 +116,8 @@ void bsRenderQueue::draw()
 	bsTimer timer;
 	float start = timer.getTimeMilliSeconds(), end;
 
-	//Unbind geometry shader
-	setGS(nullptr);
+	unbindGeometryShader();
+
 	sortSceneNodes();
 
 	end = timer.getTimeMilliSeconds() - start;
@@ -223,8 +224,8 @@ void bsRenderQueue::sortSceneNodes()
 	//Meshes
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	mShaderManager->setPixelShader(mMeshPixelShader.get());
-	mShaderManager->setVertexShader(mMeshVertexShader.get());
+	mShaderManager->setPixelShader(mMeshPixelShader);
+	mShaderManager->setVertexShader(mMeshVertexShader);
 
 	mFrameStats.uniqueMeshesDrawn = meshPairs.size();
 
@@ -251,8 +252,8 @@ void bsRenderQueue::sortSceneNodes()
 
 	//Lines
 
-	mShaderManager->setPixelShader(mWireframePixelShader.get());
-	mShaderManager->setVertexShader(mWireframeVertexShader.get());
+	mShaderManager->setPixelShader(mWireframePixelShader);
+	mShaderManager->setVertexShader(mWireframeVertexShader);
 
 	context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
 
@@ -278,26 +279,7 @@ void bsRenderQueue::sortSceneNodes()
 	}
 }
 
-void bsRenderQueue::setVS(bsVertexShader* vs)
-{
-	if (vs)
-	{
-		auto context = mDx11Renderer->getDeviceContext();
-		context->VSSetShader(vs->getVertexShader(), nullptr, 0);
-		context->IASetInputLayout(vs->getInputLayout());
-	}
-	else
-	{
-		mDx11Renderer->getDeviceContext()->VSSetShader(nullptr, nullptr, 0);
-	}
-}
-
-void bsRenderQueue::setPS(bsPixelShader* ps)
-{
-	mDx11Renderer->getDeviceContext()->PSSetShader(ps->getPixelShader(), nullptr, 0);
-}
-
-void bsRenderQueue::setGS(void* gs)
+void bsRenderQueue::unbindGeometryShader()
 {
 	mDx11Renderer->getDeviceContext()->GSSetShader(nullptr, nullptr, 0);
 }

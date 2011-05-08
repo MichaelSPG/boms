@@ -23,7 +23,7 @@ public:
 
 	virtual ~bsRenderable() {}
 
-	virtual inline const RenderableIdentifier getRenderableIdentifier() const = 0;
+	virtual inline RenderableIdentifier getRenderableIdentifier() const = 0;
 
 	//Whether this renderable is ready for rendering
 	virtual bool isOkForRendering() const = 0;

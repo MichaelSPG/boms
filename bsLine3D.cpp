@@ -83,11 +83,11 @@ bool bsLine3D::create(bsDx11Renderer* dx11Renderer)
 		return false;
 	}
 
-#ifdef _DEBUG
-	const char vertexBufferName[] = "Line3D vertex buffer";
+#if BS_DEBUG_LEVEL > 0
+	const char vertexBufferName[] = "VB Line3D";
 	mVertexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof(vertexBufferName) - 1,
 		vertexBufferName);
-#endif // _DEBUG
+#endif // BS_DEBUG_LEVEL > 0
 
 	///Index buffer
 	std::vector<unsigned int> indices(pointCount);
@@ -113,11 +113,11 @@ bool bsLine3D::create(bsDx11Renderer* dx11Renderer)
 	}
 	
 
-#ifdef _DEBUG
-	const char indexBufferName[] = "bsLine3D index buffer";
+#if BS_DEBUG_LEVEL > 0
+	const char indexBufferName[] = "IB Line3D";
 	mIndexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof(indexBufferName) - 1,
 		indexBufferName);
-#endif // _DEBUG
+#endif // BS_DEBUG_LEVEL > 0
 
 	mFinished = true;
 

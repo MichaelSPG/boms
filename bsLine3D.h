@@ -25,7 +25,7 @@ public:
 
 	~bsLine3D();
 
-	inline const RenderableIdentifier getRenderableIdentifier() const
+	inline RenderableIdentifier getRenderableIdentifier() const
 	{
 		return LINES;
 	}

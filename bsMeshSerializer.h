@@ -49,7 +49,7 @@ void serialize(Archive& ar, VertexNormalTex& vnt, const unsigned int)
 {
 	ar & vnt.position;
 	ar & vnt.normal;
-	ar & vnt.texCoord;
+	ar & vnt.textureCoord;
 }
 
 template<class Archive>

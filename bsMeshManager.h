@@ -8,6 +8,7 @@
 #include <string>
 
 #include "bsMesh.h"
+#include "bsVertexTypes.h"
 
 class bsResourceManager;
 class bsDx11Renderer;

@@ -4,9 +4,15 @@
 #include "bsConfig.h"
 
 #include <string>
+#include <vector>
+
+#include <Windows.h>
+#include <d3d11.h>
+#include <D3DX11.h>
 
 #include "bsRenderable.h"
-#include "bsDx11Renderer.h"
+
+class bsDx11Renderer;
 
 
 class bsMesh : public bsRenderable
@@ -27,7 +33,7 @@ public:
 		return mSubMeshes;
 	}
 
-	inline const RenderableIdentifier getRenderableIdentifier() const
+	inline RenderableIdentifier getRenderableIdentifier() const
 	{
 		return MESH;
 	}

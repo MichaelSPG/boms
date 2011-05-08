@@ -3,38 +3,13 @@
 
 #include "bsConfig.h"
 
+#include <Windows.h>
 #include <d3d11.h>
 #include <D3DX11.h>
 #include <D3Dcompiler.h>
 
-#include "bsMath.h"
+class bsRenderTarget;
 
-#include <vector>
-#include <exception>
-
-#include "bsVertexTypes.h"
-
-struct SimpleVertex 
-{
-	XMFLOAT3 Pos;
-	XMFLOAT2 Tex;
-};
-
-struct CBWireFrame
-{
-	XMFLOAT4X4	world;
-	XMFLOAT4	color;
-};
-
-struct CBWorld
-{
-	XMFLOAT4X4	world;
-};
-
-struct CBViewProjection
-{
-	XMFLOAT4X4 viewProjection;
-};
 
 class bsDx11Renderer
 {
@@ -43,10 +18,7 @@ public:
 
 	~bsDx11Renderer();
 
-	//Clears render view target and depth stencil.
-	void preRender();
-
-	//Presents drawn primitives.
+	//Presents drawn primitives, waits for v-sync if enabled.
 	void present();
 
 	inline ID3D11DeviceContext* getDeviceContext() const
@@ -72,17 +44,34 @@ public:
 		return mVsyncEnabled;
 	}
 
+	/*	Sets an array of render targets to be used as current render targets.
+		Can be used to unbind by setting renderTargets to null and renderTargetCount to
+		the amount of render targets to unbind.
+	*/
+	void setRenderTargets(bsRenderTarget** renderTargets, unsigned int renderTargetCount);
+
+	//Sets the back buffer as the active render target.
+	void setBackBufferAsRenderTarget();
+
+	//Clears render targets, making it possible to draw on them again.
+	//color should be a pointer to an array of 4 floats (RGBA), or null.
+	void clearRenderTargets(bsRenderTarget** renderTargets, unsigned int count,
+		float* colorRgba);
+
+	void clearBackBuffer();
+
 
 private:
 	IDXGISwapChain*			mSwapChain;
 	ID3D11Device*			mDevice;
 	ID3D11DeviceContext*	mDeviceContext;
-	ID3D11RenderTargetView*	mRenderTargetView;
+	ID3D11RenderTargetView*	mBackBufferRenderTargetView;
 
 	ID3D11Texture2D*		mDepthStencil;
 	ID3D11DepthStencilView*	mDepthStencilView;
 
-	bool mVsyncEnabled;
+	bool	mVsyncEnabled;
+	float	mRenderTargetClearColor[4];
 };
 
 #endif // BS_DX11_RENDERER_H

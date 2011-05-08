@@ -11,6 +11,12 @@
 class bsSceneNode;
 
 
+/*	Keeps track of overlapping phantoms which are created by scene nodes only.
+	The scene nodes that are in the collection at any given time may only overlap in
+	the broadphase (AABB vs AABB), so additional checks are done every frame to
+	return a vector which only contains scene nodes which overlap after narrowphase
+	checks.
+*/
 class bsNodeCollectorPhantom : public hkpCachingShapePhantom//hkpSimpleShapePhantom
 {
 public:
@@ -30,16 +36,14 @@ public:
 	virtual void addOverlappingCollidable(hkpCollidable* collidable);
 
 	virtual void removeOverlappingCollidable(hkpCollidable* collidable);
-	/*
-	inline const std::vector<hkpCollidable*>& getOverlappingCollidables() const
-	{
-		return mCollidables;
-	}
+	
+	/*	Returns a new vector consisting of scene nodes that overlap this phantom.
+		Performs narrowphase collision detection on all potential overlaps (AABB vs AABB
+		overlaps).
 	*/
 	std::vector<bsSceneNode*> getOverlappingSceneNodes();
 
 private:
-	//std::vector<hkpCollidable*>		mCollidables;
 	std::vector<bsSceneNode*>		mSceneNodes;
 };
 

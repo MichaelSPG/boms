@@ -11,15 +11,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, 
 {
 	const int windowWidth = 1280;
 	const int windowHeight = 720;
-
-	Application application(hInstance, showCmd, windowWidth, windowHeight);
-
-	bsTimer timer;
-	float startTime = 0.0f;
-	float deltaTime = 16.67f;
-
 	try
 	{
+		Application application(hInstance, showCmd, windowWidth, windowHeight);
+
+		bsTimer timer;
+		float startTime = 0.0f;
+		float deltaTime = 16.67f;
+
 		while (!application.quit())
 		{
 			startTime = timer.getTimeMilliSeconds();

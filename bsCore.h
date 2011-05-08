@@ -2,6 +2,9 @@
 #define BS_CORE_H
 
 #include "bsConfig.h"
+
+#include <cassert>
+
 #include "bsCoreCInfo.h"
 
 class bsSceneGraph;
@@ -10,6 +13,7 @@ class bsResourceManager;
 class bsHavokManager;
 class bsWindow;
 class bsRenderQueue;
+class bsRenderSystem;
 
 
 class bsCore
@@ -21,9 +25,7 @@ public:
 
 	//Updates all the component of the engine.
 	//Returns false if the program should exit (Alt+F4, close button, etc).
-	bool update(const float deltaTimeMs);
-
-	void preRender();
+	bool update(float deltaTimeMs);
 	
 	inline bsSceneGraph* getSceneGraph() const
 	{
@@ -55,6 +57,18 @@ public:
 		return mRenderQueue;
 	}
 
+	inline bsRenderSystem* getRenderSystem() const
+	{
+		return mRenderSystem;
+	}
+
+	inline void setRenderSystem(bsRenderSystem* renderSystem)
+	{
+		assert(renderSystem);
+
+		mRenderSystem = renderSystem;
+	}
+
 private:
 	//Non-copyable.
 	bsCore(const bsCore&);
@@ -67,6 +81,8 @@ private:
 	bsResourceManager*	mResourceManager;
 	bsHavokManager*		mHavokManager;
 	bsRenderQueue*		mRenderQueue;
+
+	bsRenderSystem*		mRenderSystem;
 
 	bsCoreCInfo			mCInfo;
 };

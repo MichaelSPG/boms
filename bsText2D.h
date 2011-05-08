@@ -46,7 +46,7 @@ public:
 	}
 
 	//Default: true
-	inline void setEnabled(const bool enabled)
+	inline void setEnabled(bool enabled)
 	{
 		mEnabled = enabled;
 	}
@@ -70,7 +70,7 @@ public:
 	}
 
 	//Default: 0.0f, 0.0f
-	inline void setPosition(const float x, const float y)
+	inline void setPosition(float x, float y)
 	{
 		mPosition.x = x;
 		mPosition.y = y;
@@ -82,7 +82,7 @@ public:
 	}
 
 	//Default: 12.0f
-	inline void setFontSize(const float size)
+	inline void setFontSize(float size)
 	{
 		mFontSize = size;
 	}
@@ -93,7 +93,7 @@ public:
 	}
 
 	//Default: 0xFFFFFFFF (white)
-	inline void setColor(const unsigned int colorAbgr)
+	inline void setColor(unsigned int colorAbgr)
 	{
 		mColorAbgr = colorAbgr;
 	}
@@ -106,14 +106,14 @@ public:
 
 	//See FW1_TEXT_FLAG enum
 	//Default: 0
-	inline void setFlags(const unsigned int flags)
+	inline void setFlags(unsigned int flags)
 	{
 		mFlags = flags;
 	}
 
 	//See FW1_TEXT_FLAG enum
 	//Default: 0
-	inline void addFlags(const unsigned int flags)
+	inline void addFlags(unsigned int flags)
 	{
 		mFlags |= flags;
 	}

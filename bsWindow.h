@@ -10,7 +10,7 @@
 class bsWindow
 {
 public:
-	bsWindow(const int windowWidth, const int windowHeight, const char* name,
+	bsWindow(int windowWidth, int windowHeight, const std::string& name,
 		HINSTANCE hInstance, int showCmd);
 
 	~bsWindow();

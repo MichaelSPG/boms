@@ -6,12 +6,14 @@
 #include <string>
 #include <vector>
 
-#include "bsDx11Renderer.h"
+#include <d3d11.h>
 
 #include "bsVertexShader.h"
 #include "bsPixelShader.h"
 
 class bsResourceManager;
+class bsDx11Renderer;
+
 
 class bsShaderManager
 {
@@ -22,39 +24,20 @@ class bsShaderManager
 
 public:
 	//Get a shader or create it if it doesn't exist
-	const std::shared_ptr<bsVertexShader> getVertexShader(const std::string& fileName,
+	std::shared_ptr<bsVertexShader> getVertexShader(const std::string& fileName,
 		const std::vector<D3D11_INPUT_ELEMENT_DESC>& inputDesc);
 
 	//Get a shader or create it if it doesn't exist
-	const std::shared_ptr<bsPixelShader> getPixelShader(const std::string& fileName);
-	
-	//Returns number of created shaders, but does not increment the stored value.
-	inline int getNumCreatedShadersNoIncr() const
-	{
-		return mNumCreatedShaders;
-	}
+	std::shared_ptr<bsPixelShader> getPixelShader(const std::string& fileName);
 
 	/*	Set a vertex shader for rendering.
 		Will also set the input layout.
 	*/
-	inline void setVertexShader(const std::shared_ptr<bsVertexShader>& vertexShader)
-	{
-		setVertexShader(vertexShader.get());
-	}
-
-	/*	Set a vertex shader for rendering.
-		Will also set the input layout.
-	*/
-	void setVertexShader(bsVertexShader* vertexShader);
+	void setVertexShader(const std::shared_ptr<bsVertexShader>& vertexShader);
 
 	//Set a pixel shader for rendering.
-	inline void setPixelShader(const std::shared_ptr<bsPixelShader>& pixelShader)
-	{
-		setPixelShader(pixelShader.get());
-	}
+	void setPixelShader(const std::shared_ptr<bsPixelShader>& pixelShader);
 
-	//Set a pixel shader for rendering.
-	void setPixelShader(bsPixelShader* pixelShader);
 
 private:
 	//Creation
@@ -66,7 +49,7 @@ private:
 
 
 	//Increments number of created shaders and returns it.
-	inline unsigned int getNumCreatedShaders()
+	inline unsigned int getUniqueShaderID()
 	{
 		return ++mNumCreatedShaders;
 	}

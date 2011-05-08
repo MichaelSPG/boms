@@ -1,11 +1,12 @@
 #include "bsText2D.h"
 
-#include <assert.h>
+#include <cassert>
 #include <sstream>
 #include "bsLog.h"
 #include "bsTimer.h"
 
 #include "bsDx11Renderer.h"
+#include <D3DX11.h>
 
 
 bsText2D::bsText2D(bsDx11Renderer* dx11Renderer, const std::wstring& text)

@@ -1,16 +1,16 @@
 #include "bsFileSystem.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include <boost/filesystem.hpp>
 
 #include "bsLog.h"
 
 
-bsFileSystem::bsFileSystem(const char* basePath)
+bsFileSystem::bsFileSystem(const std::string& basePath)
 	: mBasePath(basePath)
 {
-	assert(basePath);
+	assert(basePath.length());
 
 	buildFileSystem();
 }
@@ -35,7 +35,7 @@ void bsFileSystem::buildFileSystem()
 			std::string fileName = itr->path().filename().string();
 			std::string pathName = itr->path().relative_path().string();
 
-			//Check if file already exists in the map, and log an error message if so.
+			//Check if file already exists in the map, and log a warning message if so.
 			auto findResult = mFilePaths.find(fileName);
 			if (findResult == mFilePaths.end())
 			{
@@ -50,7 +50,7 @@ void bsFileSystem::buildFileSystem()
 #if BS_DEBUG_LEVEL > 0
 			else
 			{
-
+				//Duplicate file name name found
 				std::string message("Duplicate file found, file name: '");
 				message += fileName + "' with path '" + pathName
 					+ "'. Will use previously found path '" + findResult->second
