@@ -1,15 +1,16 @@
 #include "bsLine3D.h"
 
 #include <cassert>
+#include <string>
 
 #include "bsDx11Renderer.h"
 #include "bsVertexTypes.h"
 #include "bsLog.h"
 
 
-bsLine3D::bsLine3D(const XMFLOAT4& color)
+bsLine3D::bsLine3D(const XMFLOAT4& colorRgba)
 	: mFinished(false)
-	, mColor(color)
+	, mColor(colorRgba)
 	, mVertexBuffer(nullptr)
 	, mIndexBuffer(nullptr)
 {
@@ -84,9 +85,9 @@ bool bsLine3D::create(bsDx11Renderer* dx11Renderer)
 	}
 
 #if BS_DEBUG_LEVEL > 0
-	const char vertexBufferName[] = "VB Line3D";
-	mVertexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof(vertexBufferName) - 1,
-		vertexBufferName);
+	std::string vertexBufferName("VB Line3D");
+	mVertexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, vertexBufferName.length(),
+		vertexBufferName.c_str());
 #endif // BS_DEBUG_LEVEL > 0
 
 	///Index buffer
@@ -114,9 +115,9 @@ bool bsLine3D::create(bsDx11Renderer* dx11Renderer)
 	
 
 #if BS_DEBUG_LEVEL > 0
-	const char indexBufferName[] = "IB Line3D";
-	mIndexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof(indexBufferName) - 1,
-		indexBufferName);
+	std::string indexBufferName("IB Line3D");
+	mIndexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, indexBufferName.length(),
+		indexBufferName.c_str());
 #endif // BS_DEBUG_LEVEL > 0
 
 	mFinished = true;
@@ -129,7 +130,7 @@ void bsLine3D::draw(bsDx11Renderer* dx11Renderer)
 	assert(dx11Renderer);
 	assert(mFinished && "Trying to draw a bsLine3D which has not had its buffers created");
 
-	auto context = dx11Renderer->getDeviceContext();
+	ID3D11DeviceContext* context = dx11Renderer->getDeviceContext();
 
 	UINT offsets =  0;
 	UINT stride = sizeof(XMFLOAT3);
@@ -137,5 +138,4 @@ void bsLine3D::draw(bsDx11Renderer* dx11Renderer)
 	context->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
 	context->DrawIndexed(mPoints.size(), 0, 0);
-	//context->DrawIndexedInstanced(mPoints.size(), 1, 0, 0, 0);
 }

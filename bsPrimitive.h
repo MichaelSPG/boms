@@ -19,6 +19,9 @@ class bsVertexShader;
 class bsDx11Renderer;
 
 
+/**	Class for wireframe drawing of primitive objects.
+	Currently only supports creation from AABBs.
+*/
 class bsPrimitive : public bsRenderable
 {
 	friend class bsSceneNode;
@@ -28,23 +31,23 @@ public:
 	bsPrimitive();
 	~bsPrimitive();
 
-	//nodeAabb should be set to false for anything but scene nodes and oct nodes.
+	//Creates a primitive from an AABB.
 	void createPrimitive(bsDx11Renderer* dx11Renderer, bsShaderManager* shaderManager,
-		const hkAabb& aabb, bool nodeAabb = true);
+		const hkAabb& aabb);
 
 	void draw(bsDx11Renderer* dx11Renderer);
 
-	inline RenderableIdentifier getRenderableIdentifier() const
+	inline RenderableType getRenderableType() const
 	{
 		return WIREFRAME_PRIMITIVE;
 	}
 
-	bool isOkForRendering() const
+	inline bool isOkForRendering() const
 	{
 		return mFinished;
 	}
 	
-//private://TODO: uncomment
+private:
 	std::shared_ptr<bsVertexShader>	mVertexShader;
 	std::shared_ptr<bsPixelShader>	mPixelShader;
 

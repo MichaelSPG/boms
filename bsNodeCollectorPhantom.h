@@ -27,7 +27,7 @@ public:
 	~bsNodeCollectorPhantom()
 	{}
 
-	//HK_PHANTOM_USER0
+	//Returns HK_PHANTOM_USER0
 	inline virtual hkpPhantomType getType() const
 	{
 		return HK_PHANTOM_USER0;

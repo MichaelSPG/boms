@@ -22,7 +22,7 @@ public:
 	~bsTextBox();
 
 	//Will be treated as a single line of text regardless of newlines.
-	void addTextLine(const std::wstring& textLine);
+	void addTextLineWide(const std::wstring& textLine);
 
 	void addTextLine(const std::string& textLine);
 	

@@ -52,6 +52,8 @@ bsCore::~bsCore()
 	delete mSceneGraph;
 
 	delete mHavokManager;
+	hkMemoryInitUtil::quit();
+	hkBaseSystem::quit();
 
 	delete mResourceManager;
 

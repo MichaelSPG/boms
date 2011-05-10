@@ -34,34 +34,60 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 	mGBuffer.position	= new bsRenderTarget(windowWidth, windowHeight, device);
 	mGBuffer.normal		= new bsRenderTarget(windowWidth, windowHeight, device);
 	mGBuffer.diffuse	= new bsRenderTarget(windowWidth, windowHeight, device);
+	mLightRenderTarget	= new bsRenderTarget(windowWidth, windowHeight, device);
 
 #if BS_DEBUG_LEVEL > 0
 	//Set names for debugging purposes
 	//Position
-	std::string debugData = "GBuffer Position SRV";
+	std::string debugData = "SRV GBuffer Position";
 	mGBuffer.position->getShaderResourceView()->SetPrivateData(WKPDID_D3DDebugObjectName,
 		debugData.size(), debugData.c_str());
 
-	debugData = "GBuffer Position RTV";
+	debugData = "RTV GBuffer Position";
 	mGBuffer.position->getRenderTargetView()->SetPrivateData(WKPDID_D3DDebugObjectName,
 		debugData.size(), debugData.c_str());
 
+	debugData = "RTT GBuffer Position";
+	mGBuffer.position->getRenderTargetTexture()->SetPrivateData(WKPDID_D3DDebugObjectName,
+		debugData.size(), debugData.c_str());
+
 	//Normal
-	debugData = "GBuffer Normal SRV";
+	debugData = "SRV GBuffer Normal";
 	mGBuffer.normal->getShaderResourceView()->SetPrivateData(WKPDID_D3DDebugObjectName,
 		debugData.size(), debugData.c_str());
 
-	debugData = "GBuffer Normal RTV";
+	debugData = "RTV GBuffer Normal";
 	mGBuffer.normal->getRenderTargetView()->SetPrivateData(WKPDID_D3DDebugObjectName,
 		debugData.size(), debugData.c_str());
 
+	debugData = "RTT GBuffer Normal";
+	mGBuffer.normal->getRenderTargetTexture()->SetPrivateData(WKPDID_D3DDebugObjectName,
+		debugData.size(), debugData.c_str());
+
 	//Diffuse
-	debugData = "GBuffer Diffuse SRV";
+	debugData = "SRV GBuffer Diffuse";
 	mGBuffer.diffuse->getShaderResourceView()->SetPrivateData(WKPDID_D3DDebugObjectName,
 		debugData.size(), debugData.c_str());
 
-	debugData = "GBuffer Diffuse RTV";
+	debugData = "RTV GBuffer Diffuse";
 	mGBuffer.diffuse->getRenderTargetView()->SetPrivateData(WKPDID_D3DDebugObjectName,
+		debugData.size(), debugData.c_str());
+
+	debugData = "RTT GBuffer Diffuse";
+	mGBuffer.diffuse->getRenderTargetTexture()->SetPrivateData(WKPDID_D3DDebugObjectName,
+		debugData.size(), debugData.c_str());
+
+	//Light
+	debugData = "SRV Light";
+	mLightRenderTarget->getShaderResourceView()->SetPrivateData(WKPDID_D3DDebugObjectName,
+		debugData.size(), debugData.c_str());
+
+	debugData = "RTV Light";
+	mLightRenderTarget->getRenderTargetView()->SetPrivateData(WKPDID_D3DDebugObjectName,
+		debugData.size(), debugData.c_str());
+
+	debugData = "RTT Light";
+	mLightRenderTarget->getRenderTargetTexture()->SetPrivateData(WKPDID_D3DDebugObjectName,
 		debugData.size(), debugData.c_str());
 #endif
 
@@ -72,6 +98,7 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 
 bsDeferredRenderer::~bsDeferredRenderer()
 {
+	delete mLightRenderTarget;
 	delete mGBuffer.diffuse;
 	delete mGBuffer.normal;
 	delete mGBuffer.position;
@@ -99,38 +126,52 @@ void bsDeferredRenderer::createShaders()
 
 void bsDeferredRenderer::renderOneFrame()
 {
-	mDx11Renderer->clearBackBuffer();
+	mRenderQueue->reset();
+
 
 	//Set and clear G buffer
 	mDx11Renderer->setRenderTargets(&mGBuffer.position, 3);
-	mDx11Renderer->clearRenderTargets(&mGBuffer.position, 3, nullptr);
 
-	//Draw the geometry into the set G buffers.
-	mRenderQueue->draw();
+	//Draw the geometry into the G buffers.
+	mRenderQueue->drawGeometry();
 
-	//Unbind render targets.
+	//Unbind G buffer render targets.
 	mDx11Renderer->setRenderTargets(nullptr, 3);
 
-	mShaderManager->setPixelShader(mMergerPixelShader);
-	mShaderManager->setVertexShader(mMergerVertexShader);
-
-	mDx11Renderer->setBackBufferAsRenderTarget();
-	
-	//Set the GBuffer as shader resources, allowing the merger shader to sample them.
-	ID3D11ShaderResourceView* shaderResourceViews[3];
+	//Set the GBuffer as shader resources, allowing them to be used as input by shaders
+	ID3D11ShaderResourceView* shaderResourceViews[4];
 	shaderResourceViews[0] = mGBuffer.position->getShaderResourceView();
 	shaderResourceViews[1] = mGBuffer.normal->getShaderResourceView();
 	shaderResourceViews[2] = mGBuffer.diffuse->getShaderResourceView();
 	mDx11Renderer->getDeviceContext()->PSSetShaderResources(0, 3, shaderResourceViews);
 
+	//Set the light render target.
+	mDx11Renderer->setRenderTargets(&mLightRenderTarget, 1);
+
+	//Draw lights
+	//mDx11Renderer->clearBackBuffer();
+	mRenderQueue->drawLights();
+
+	mDx11Renderer->setRenderTargets(nullptr, 1);
+
+	shaderResourceViews[3] = mLightRenderTarget->getShaderResourceView();
+
+	mDx11Renderer->getDeviceContext()->PSSetShaderResources(0, 4, shaderResourceViews);
+
+	//////////////////////////////////////////////////////////////////////////
+
+	mShaderManager->setPixelShader(mMergerPixelShader);
+	mShaderManager->setVertexShader(mMergerVertexShader);
+
+	mDx11Renderer->setBackBufferAsRenderTarget();
+
 	//Draw a fullscreen quad with the merger shader to produce final output.
 	mFullScreenQuad->draw(mDx11Renderer->getDeviceContext());
 
 	//Unbind shader resource views.
-	//ID3D11ShaderResourceView* dummy[3] = { nullptr, nullptr, nullptr };
 	memset(shaderResourceViews, 0, sizeof(ID3D11ShaderResourceView*)
 		* ARRAYSIZE(shaderResourceViews));
-	mDx11Renderer->getDeviceContext()->PSSetShaderResources(0, 3, shaderResourceViews);
+	mDx11Renderer->getDeviceContext()->PSSetShaderResources(0, 4, shaderResourceViews);
 
 	//Call the callbacks
 	for (unsigned int i = 0, count = mEndOfRenderCallbacks.size(); i < count; ++i)
@@ -139,4 +180,8 @@ void bsDeferredRenderer::renderOneFrame()
 	}
 
 	mDx11Renderer->present();
+
+	mDx11Renderer->clearBackBuffer();
+	mDx11Renderer->clearRenderTargets(&mGBuffer.position, 3);
+	mDx11Renderer->clearRenderTargets(&mLightRenderTarget, 1);
 }

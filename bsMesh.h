@@ -1,10 +1,11 @@
-#ifndef MESH_H
-#define MESH_H
+#ifndef BS_MESH_H
+#define BS_MESH_H
 
 #include "bsConfig.h"
 
 #include <string>
 #include <vector>
+#include <memory>
 
 #include <Windows.h>
 #include <d3d11.h>
@@ -15,6 +16,10 @@
 class bsDx11Renderer;
 
 
+/**	Class for mesh rendering.
+	Contains vertex and index buffers for a mesh, and possibly a collection of sub-meshes.
+	Use the bsMeshManager class to create meshes.
+*/
 class bsMesh : public bsRenderable
 {
 	friend class bsMeshManager;
@@ -28,17 +33,18 @@ public:
 
 	void draw(bsDx11Renderer* dx11Renderer) const;
 
-	inline std::vector<bsMesh*> getSubMeshes()
+	/**	Returns the collection of sub-meshes owned by this mesh.
+		This may contain zero elements if this mesh has no sub-meshes.
+	*/
+	inline const std::vector<bsMesh*>& getSubMeshes() const
 	{
 		return mSubMeshes;
 	}
 
-	inline RenderableIdentifier getRenderableIdentifier() const
+	inline RenderableType getRenderableType() const
 	{
 		return MESH;
 	}
-
-	bool operator<(const bsMesh& other);
 
 	bool isOkForRendering() const
 	{
@@ -46,7 +52,7 @@ public:
 	}
 
 private:
-	//Updates this mesh' AABB so that it contains all of this mesh' submeshes' AABBs.
+	//Updates this mesh' AABB so that it contains all of this mesh' sub-meshes' AABBs.
 	void updateAABB();
 
 	//Not copyable
@@ -60,12 +66,13 @@ private:
 
 	unsigned int	mID;
 #if BS_DEBUG_LEVEL > 1
-	//Contains the mesh' file name. For debugging purposes only, never rely on this
-	//variable existing.
+	/**	Contains the mesh' file name.
+		For debugging purposes only, never rely on this variable existing.
+	*/
 	std::string		mName;
 #endif
 
 	bool			mFinished;
 };
 
-#endif // MESH_H
+#endif // BS_MESH_H

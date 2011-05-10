@@ -21,10 +21,6 @@ bsMesh::bsMesh()
 
 bsMesh::~bsMesh()
 {
-	for (unsigned int i = 0; i < mSubMeshes.size(); ++i)
-	{
-		delete mSubMeshes[i];
-	}
 	if (mVertexBuffer)
 	{
 		mVertexBuffer->Release();
@@ -37,19 +33,18 @@ bsMesh::~bsMesh()
 
 void bsMesh::draw(bsDx11Renderer* dx11Renderer) const
 {
+	//If both of these are null, this is probably a mesh which only owns sub-meshes
+	//without having any defined triangles itself.
 	if (mVertexBuffer && mIndices)
 	{
-		ID3D11DeviceContext* const context = dx11Renderer->getDeviceContext();
+		ID3D11DeviceContext* context = dx11Renderer->getDeviceContext();
 
 		UINT offsets =  0;
 		UINT stride = sizeof(VertexNormalTex);
 		context->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offsets);
 		context->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
-		//context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
 		context->DrawIndexed(mIndices, 0, 0);
-		//context->DrawIndexedInstanced(mIndices, 5, 0, 0, 0);
 	}
 
 	for (unsigned int i = 0; i < mSubMeshes.size(); ++i)
@@ -70,18 +65,5 @@ void bsMesh::updateAABB()
 		{
 			mAabb.includeAabb(subMeshAabb);
 		}
-	}
-}
-
-bool bsMesh::operator<(const bsMesh& other)
-{
-	if (other.mID < mID)
-	{
-		return true;
-	}
-	//else if (other.mID > mID)
-	else
-	{
-		return false;
 	}
 }

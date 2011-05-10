@@ -206,7 +206,7 @@ bsDx11Renderer::~bsDx11Renderer()
 	bsLog::logMessage("DirectX successfully uninitialized");
 }
 
-void bsDx11Renderer::present()
+void bsDx11Renderer::present() const
 {
 	if (FAILED(mSwapChain->Present(mVsyncEnabled ? 1 : 0, 0)))
 	{
@@ -217,7 +217,7 @@ void bsDx11Renderer::present()
 }
 
 HRESULT bsDx11Renderer::compileShader(const char* fileName, const char* entryPoint,
-	const char* shaderModel, ID3DBlob** blobOut)
+	const char* shaderModel, ID3DBlob** blobOut) const
 {
 	HRESULT hResult;
 
@@ -288,14 +288,13 @@ void bsDx11Renderer::setBackBufferAsRenderTarget()
 	mDeviceContext->OMSetRenderTargets(1, &mBackBufferRenderTargetView, mDepthStencilView);
 }
 
-void bsDx11Renderer::clearRenderTargets(bsRenderTarget** renderTargets, unsigned int count,
-	float* colorRgba)
+void bsDx11Renderer::clearRenderTargets(bsRenderTarget** renderTargets, unsigned int count)
 {
-	//Set every render target to provided color, or default color if one is not provided.
+	//Clear every render target provided with pre-defined clear color.
 	for (unsigned int i = 0; i < count; ++i)
 	{
 		mDeviceContext->ClearRenderTargetView(renderTargets[i]->mRenderTargetView,
-			colorRgba ? colorRgba : mRenderTargetClearColor);
+			mRenderTargetClearColor);
 	}
 }
 
@@ -304,4 +303,10 @@ void bsDx11Renderer::clearBackBuffer()
 	mDeviceContext->ClearRenderTargetView(mBackBufferRenderTargetView, mRenderTargetClearColor);
 	//Clear depth buffer to 1.0 (max depth)
 	mDeviceContext->ClearDepthStencilView(mDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+}
+
+void bsDx11Renderer::setRenderTargetClearColor( float* colorRgba )
+{
+	memcpy(mRenderTargetClearColor, colorRgba,
+		sizeof(mRenderTargetClearColor[0]) * ARRAYSIZE(mRenderTargetClearColor));
 }

@@ -19,7 +19,7 @@ public:
 	~bsDx11Renderer();
 
 	//Presents drawn primitives, waits for v-sync if enabled.
-	void present();
+	void present() const;
 
 	inline ID3D11DeviceContext* getDeviceContext() const
 	{
@@ -32,7 +32,7 @@ public:
 	}
 
 	HRESULT compileShader(const char* fileName, const char* entryPoint,
-		const char* shaderModel, ID3DBlob** blobOut);
+		const char* shaderModel, ID3DBlob** blobOut) const;
 
 	inline void setVsyncEnabled(bool enabled)
 	{
@@ -44,6 +44,9 @@ public:
 		return mVsyncEnabled;
 	}
 
+	//This color is used to clear render targets and the back buffer.
+	void setRenderTargetClearColor(float* colorRgba);
+
 	/*	Sets an array of render targets to be used as current render targets.
 		Can be used to unbind by setting renderTargets to null and renderTargetCount to
 		the amount of render targets to unbind.
@@ -54,9 +57,8 @@ public:
 	void setBackBufferAsRenderTarget();
 
 	//Clears render targets, making it possible to draw on them again.
-	//color should be a pointer to an array of 4 floats (RGBA), or null.
-	void clearRenderTargets(bsRenderTarget** renderTargets, unsigned int count,
-		float* colorRgba);
+	//Use setRenderTargetClearColor to change the color used to clear the render targets.
+	void clearRenderTargets(bsRenderTarget** renderTargets, unsigned int count);
 
 	void clearBackBuffer();
 

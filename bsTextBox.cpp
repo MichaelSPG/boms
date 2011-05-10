@@ -21,7 +21,7 @@ bsTextBox::~bsTextBox()
 
 }
 
-void bsTextBox::addTextLine(const std::wstring& textLine)
+void bsTextBox::addTextLineWide(const std::wstring& textLine)
 {
 	mTextLines.push_back(std::pair<std::wstring, float>(textLine, 0.0f));
 	if (mTextLines.size() > mMaxLineCount)
@@ -32,7 +32,7 @@ void bsTextBox::addTextLine(const std::wstring& textLine)
 
 void bsTextBox::addTextLine(const std::string& textLine)
 {
-	addTextLine(bsStringUtils::utf8ToUtf16(textLine));
+	addTextLineWide(bsStringUtils::utf8ToUtf16(textLine));
 }
 
 void bsTextBox::updateText()

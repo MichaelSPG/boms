@@ -6,6 +6,9 @@
 #include <d3d11.h>
 
 
+/**	Defines a render target which can be used as both a render target, texture and shader
+	resource (input for shaders).
+*/
 class bsRenderTarget
 {
 	friend class bsDx11Renderer;
@@ -29,7 +32,6 @@ public:
 	{
 		return mRenderTargetTexture;
 	}
-
 
 
 private:

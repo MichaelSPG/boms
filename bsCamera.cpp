@@ -190,8 +190,6 @@ void bsCamera::updateViewProjection()
 	bsMath::XMFloat4x4Transpose(cbCamera.view);
 	bsMath::XMFloat4x4Transpose(cbCamera.projection);
 
-	cbCamera.farClip = mProjectionInfo.mFarClip;
-
 	mDeviceContext->UpdateSubresource(mViewProjectionBuffer, 0, nullptr,
 		&cbCamera, 0, 0);
 

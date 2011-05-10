@@ -21,7 +21,7 @@ class bsSceneGraph;
 class bsSceneNode
 {
 	friend class bsSceneGraph;
-	friend class Application;//TODO: remove
+	//friend class Application;//TODO: remove
 
 	bsSceneNode(const hkVector4& position, int id, bsSceneGraph* sceneGraph);
 	~bsSceneNode();

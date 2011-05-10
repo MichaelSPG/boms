@@ -8,6 +8,9 @@
 struct ID3D11PixelShader;
 
 
+/**	Contains a single pixel shader.
+	Use bsShaderManager to create shaders.
+*/
 class bsPixelShader
 {
 	friend class bsShaderManager;
@@ -24,7 +27,7 @@ public:
 		mPixelShader->Release();
 	}
 
-	inline ID3D11PixelShader* getPixelShader() const
+	inline ID3D11PixelShader* getD3dPixelShader() const
 	{
 		return mPixelShader;
 	}

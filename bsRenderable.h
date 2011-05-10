@@ -6,24 +6,30 @@
 #include <Common/Base/Types/Geometry/Aabb/hkAabb.h>
 #include <Common/Base/Types/Geometry/Aabb/hkAabbUtil.h>
 
-class bsSceneNode;
 
-
+/**	Base class for all renderable objects.
+	In order for a renderable to be rendered, it must be attached to a scene node.
+*/
 class bsRenderable
 {
 	friend class bsSceneNode;
 public:
 
-	enum RenderableIdentifier
+	//All the types of subclasses of this class can have.
+	enum RenderableType
 	{
 		MESH,
 		WIREFRAME_PRIMITIVE,
-		LINES
+		LINE,
+		LIGHT
 	};
 
 	virtual ~bsRenderable() {}
 
-	virtual inline RenderableIdentifier getRenderableIdentifier() const = 0;
+	/**	Returns the type of this renderable, making it possible to cast a pointer to this
+		base class to a pointer to a subclass safely.
+	*/
+	virtual inline RenderableType getRenderableType() const = 0;
 
 	//Whether this renderable is ready for rendering
 	virtual bool isOkForRendering() const = 0;

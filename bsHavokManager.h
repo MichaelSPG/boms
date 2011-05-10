@@ -33,6 +33,10 @@
 #include <Physics/Utilities/VisualDebugger/hkpPhysicsContext.h>
 
 
+/**	This class manages the core Havok objects, like the worlds, memory system, thread pool
+	etc.
+	Contains two hkpWorlds, one for visibility detection and one for normal physics.
+*/
 class bsHavokManager
 {
 public:
@@ -45,8 +49,11 @@ public:
 
 	void createPhysicsWorld(bool createVisualDebugger = true);
 
+
+	//Steps the Havok world for graphics with the provided time step.
 	void stepGraphicsWorld(float deltaTimeMs);
 
+	//Steps the Havok world for physics with the provided time step.
 	void stepPhysicsWorld(float deltaTimeMs);
 
 	inline hkpWorld* getGraphicsWorld() const

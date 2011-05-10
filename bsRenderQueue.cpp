@@ -10,6 +10,7 @@
 #include "bsMesh.h"
 #include "bsPrimitive.h"
 #include "bsLine3D.h"
+#include "bsLight.h"
 
 #include "bsDx11Renderer.h"
 #include "bsShaderManager.h"
@@ -50,6 +51,10 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 
 	bufferDescription.ByteWidth = sizeof(CBWireFrame);
 	hres = mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr, &mWireframeWorldBuffer);
+	assert(SUCCEEDED(hres));
+
+	bufferDescription.ByteWidth = sizeof(CBLight);
+	hres = mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr, &mLightBuffer);
 	assert(SUCCEEDED(hres));
 
 	//Shaders
@@ -95,22 +100,39 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	d.Format = DXGI_FORMAT_R32G32_FLOAT;
 	inputLayout.push_back(d);
 
-	mMeshVertexShader = mShaderManager->getVertexShader("HLSL_Basic.fx", inputLayout);
-	mMeshPixelShader = mShaderManager->getPixelShader("HLSL_Basic.fx");
+	mMeshVertexShader = mShaderManager->getVertexShader("Mesh.fx", inputLayout);
+	mMeshPixelShader = mShaderManager->getPixelShader("Mesh.fx");
+
+
+	//Light
+	inputLayout.clear();
+	d.SemanticName = "POSITION";
+	d.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	d.AlignedByteOffset = 0;
+	inputLayout.push_back(d);
+
+	mLightVertexShader = mShaderManager->getVertexShader("Light.fx", inputLayout);
+	mLightPixelShader = mShaderManager->getPixelShader("Light.fx");
 }
 
 bsRenderQueue::~bsRenderQueue()
 {
 	mWorldBuffer->Release();
 	mWireframeWorldBuffer->Release();
+	mLightBuffer->Release();
 }
 
 void bsRenderQueue::reset()
 {
 	mFrameStats.reset();
+
+	mMeshesToDraw.clear();
+	mLinesToDraw.clear();
+	mPrimitivesToDraw.clear();
+	mLightsToDraw.clear();
 }
 
-void bsRenderQueue::draw()
+void bsRenderQueue::drawGeometry()
 {
 	mFrameStats.reset();
 	bsTimer timer;
@@ -118,7 +140,12 @@ void bsRenderQueue::draw()
 
 	unbindGeometryShader();
 
-	sortSceneNodes();
+	sortRenderables();
+
+	//Render all the geometric renderable types
+	drawMeshes();
+	drawLines();
+	drawPrimitives();
 
 	end = timer.getTimeMilliSeconds() - start;
 	mFrameStats.timeTakenMs = end;
@@ -131,10 +158,7 @@ void bsRenderQueue::setWorldConstantBuffer(const XMFLOAT4X4& world)
 	context->VSSetConstantBuffers(1, 1, &mWorldBuffer);
 	context->PSSetConstantBuffers(1, 1, &mWorldBuffer);
 
-	CBWorld cbWorld;
-	cbWorld.world = world;
-
-	context->UpdateSubresource(mWorldBuffer, 0, nullptr, &cbWorld.world, 0, 0);
+	context->UpdateSubresource(mWorldBuffer, 0, nullptr, &world, 0, 0);
 }
 
 void bsRenderQueue::setWireframeConstantBuffer(const XMFLOAT4X4& world, const XMFLOAT4& color)
@@ -151,12 +175,18 @@ void bsRenderQueue::setWireframeConstantBuffer(const XMFLOAT4X4& world, const XM
 	context->UpdateSubresource(mWireframeWorldBuffer, 0, nullptr, &cbWireFrame, 0, 0);
 }
 
-void bsRenderQueue::sortSceneNodes()
+void bsRenderQueue::setLightConstantBuffer(const CBLight& cbLight)
 {
-	std::unordered_map<bsMesh*, std::vector<bsSceneNode*>>		meshPairs;
-	std::unordered_map<bsLine3D*, std::vector<bsSceneNode*>>	lines;
-	std::vector<std::pair<bsSceneNode*, bsPrimitive*>>			primitivePairs;
+	ID3D11DeviceContext* context = mDx11Renderer->getDeviceContext();
 
+	context->VSSetConstantBuffers(2, 1, &mLightBuffer);
+	context->PSSetConstantBuffers(2, 1, &mLightBuffer);
+
+	context->UpdateSubresource(mLightBuffer, 0, nullptr, &cbLight, 0, 0);
+}
+
+void bsRenderQueue::sortRenderables()
+{
 	const std::vector<bsSceneNode*>& sceneNodes = mCamera->getVisibleSceneNodes();
 
 	mFrameStats.visibleSceneNodeCount = sceneNodes.size();
@@ -166,26 +196,49 @@ void bsRenderQueue::sortSceneNodes()
 		return;
 	}
 
+	//Iterate through all the scene nodes and get the renderables, then sort them into
+	//collections depending on their renderable subclass and group up identical renderables
+	//that are owned by multiple nodes
 	for (unsigned int i = 0, count = sceneNodes.size(); i < count; ++i)
 	{
 		const auto& renderables = sceneNodes[i]->getRenderables();
 
+		//Iterate through all of this node's renderables and group them
 		for (unsigned int j = 0; j < renderables.size(); ++j)
 		{
-			bsRenderable::RenderableIdentifier identifier = renderables[j]
-				->getRenderableIdentifier();
+			const bsRenderable::RenderableType identifier = renderables[j]
+				->getRenderableType();
 
 			if (identifier == bsRenderable::MESH)
 			{
-				auto mesh = static_cast<bsMesh*>(renderables[j].get());
-				auto finder = meshPairs.find(mesh);
+				bsMesh* mesh = static_cast<bsMesh*>(renderables[j].get());
+				//See if this mesh already exists in the collection
+				auto finder = mMeshesToDraw.find(mesh);
 
-				if (finder == meshPairs.end())
+				if (finder == mMeshesToDraw.end())
 				{
 					//Not found, create it
 					std::vector<bsSceneNode*> nodes(1);
 					nodes[0] = sceneNodes[i];
-					meshPairs.insert(std::make_pair(mesh, nodes));
+					mMeshesToDraw.insert(std::make_pair(mesh, nodes));
+				}
+				else
+				{
+					//Found, add the scene node to the mesh' list of scene nodes
+					finder->second.push_back(sceneNodes[i]);
+				}
+			}
+			else if (identifier == bsRenderable::WIREFRAME_PRIMITIVE)
+			{
+				bsPrimitive* primitive = static_cast<bsPrimitive*>(renderables[j].get());
+				auto finder = mPrimitivesToDraw.find(primitive);
+
+				if (finder == mPrimitivesToDraw.end())
+				{
+					//Not found, create it
+					std::vector<bsSceneNode*> nodes(1);
+					nodes[0] = sceneNodes[i];
+					mPrimitivesToDraw.insert(std::make_pair(primitive, nodes));
 				}
 				else
 				{
@@ -193,22 +246,35 @@ void bsRenderQueue::sortSceneNodes()
 					finder->second.push_back(sceneNodes[i]);
 				}
 			}
-			else if (identifier == bsRenderable::WIREFRAME_PRIMITIVE)
-			{
-				primitivePairs.push_back(std::make_pair(sceneNodes[i],
-					static_cast<bsPrimitive*>(renderables[j].get())));
-			}
-			else if (identifier == bsRenderable::LINES)
+			else if (identifier == bsRenderable::LINE)
 			{
 				bsLine3D* line = static_cast<bsLine3D*>(renderables[j].get());
-				auto finder = lines.find(line);
+				auto finder = mLinesToDraw.find(line);
 
-				if (finder == lines.end())
+				if (finder == mLinesToDraw.end())
 				{
 					//Not found, create it
 					std::vector<bsSceneNode*> nodes(1);
 					nodes[0] = sceneNodes[i];
-					lines.insert(std::make_pair(line, nodes));
+					mLinesToDraw.insert(std::make_pair(line, nodes));
+				}
+				else
+				{
+					//Found
+					finder->second.push_back(sceneNodes[i]);
+				}
+			}
+			else if (identifier == bsRenderable::LIGHT)
+			{
+				bsLight* light = static_cast<bsLight*>(renderables[j].get());
+				auto finder = mLightsToDraw.find(light);
+
+				if (finder == mLightsToDraw.end())
+				{
+					//Not found, create it
+					std::vector<bsSceneNode*> nodes(1);
+					nodes[0] = sceneNodes[i];
+					mLightsToDraw.insert(std::make_pair(light, nodes));
 				}
 				else
 				{
@@ -218,24 +284,32 @@ void bsRenderQueue::sortSceneNodes()
 			}
 		}
 	}
+}
 
-	ID3D11DeviceContext* context = mDx11Renderer->getDeviceContext();
+void bsRenderQueue::unbindGeometryShader()
+{
+	mDx11Renderer->getDeviceContext()->GSSetShader(nullptr, nullptr, 0);
+}
 
-	//Meshes
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+void bsRenderQueue::drawMeshes()
+{
+	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(
+		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	mShaderManager->setPixelShader(mMeshPixelShader);
 	mShaderManager->setVertexShader(mMeshVertexShader);
 
-	mFrameStats.uniqueMeshesDrawn = meshPairs.size();
+	mFrameStats.uniqueMeshesDrawn = mMeshesToDraw.size();
 
-	for (auto itr = meshPairs.begin(), end = meshPairs.end(); itr != end; ++itr)
+	for (auto itr = mMeshesToDraw.begin(), end = mMeshesToDraw.end(); itr != end; ++itr)
 	{
 		bsMesh* mesh = itr->first;
 		const std::vector<bsSceneNode*>& sceneNodes = itr->second;
 
 		mFrameStats.totalMeshesDrawn += sceneNodes.size();
 
+		//For each scene node which contains this mesh, draw the mesh with different
+		//transforms.
 		for (unsigned int i = 0, count = sceneNodes.size(); i < count; ++i)
 		{
 			const hkTransform& transform = sceneNodes[i]->getDerivedTransformation();
@@ -248,16 +322,17 @@ void bsRenderQueue::sortSceneNodes()
 			mesh->draw(mDx11Renderer);
 		}
 	}
-	
+}
 
-	//Lines
-
+void bsRenderQueue::drawLines()
+{
 	mShaderManager->setPixelShader(mWireframePixelShader);
 	mShaderManager->setVertexShader(mWireframeVertexShader);
 
-	context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(
+		D3D_PRIMITIVE_TOPOLOGY_LINELIST);
 
-	for (auto itr = lines.begin(), end = lines.end(); itr != end; ++itr)
+	for (auto itr = mLinesToDraw.begin(), end = mLinesToDraw.end(); itr != end; ++itr)
 	{
 		bsLine3D* currentLine = itr->first;
 		const std::vector<bsSceneNode*>& sceneNodes = itr->second;
@@ -279,7 +354,70 @@ void bsRenderQueue::sortSceneNodes()
 	}
 }
 
-void bsRenderQueue::unbindGeometryShader()
+void bsRenderQueue::drawPrimitives()
 {
-	mDx11Renderer->getDeviceContext()->GSSetShader(nullptr, nullptr, 0);
+	//TODO: Make this actually do something
+}
+
+void bsRenderQueue::drawLights()
+{
+	mShaderManager->setPixelShader(mLightPixelShader);
+	mShaderManager->setVertexShader(mLightVertexShader);
+
+	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(
+		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	for (auto itr = mLightsToDraw.begin(), end = mLightsToDraw.end(); itr != end; ++itr)
+	{
+		bsLight* currentLight = itr->first;
+		const std::vector<bsSceneNode*>& sceneNodes = itr->second;
+
+		mFrameStats.visibleLights += sceneNodes.size();
+
+		for (unsigned int i = 0, count = sceneNodes.size(); i < count; ++i)
+		{
+			const hkTransform& transform = sceneNodes[i]->getDerivedTransformation();
+			float f4x4[16];
+			transform.get4x4ColumnMajor(f4x4);
+			XMFLOAT4X4 world(f4x4);
+			//bsMath::XMFloat4x4Transpose(world);
+			//Set scale to equal radius
+			//world._44 = 1.0f / currentLight->mRadius;
+			//world._44 = 0.3f;
+			
+			float scale = 15.0f;
+			/*
+			world._11 *= scale;
+			world._22 *= scale;
+			world._33 *= scale;
+			*/
+			XMMATRIX m = XMMatrixScaling(scale, scale, scale);
+			XMMATRIX origTranslation = XMMatrixIdentity();
+			/*
+			origTranslation._41 = world._14;
+			origTranslation._42 = world._24;
+			origTranslation._43 = world._34;
+			*/
+			
+			origTranslation._41 = world._41;
+			origTranslation._42 = world._42;
+			origTranslation._43 = world._43;
+			
+			m = XMMatrixMultiply(m, origTranslation);
+			XMStoreFloat4x4(&world, m);
+			bsMath::XMFloat4x4Transpose(world);
+
+			setWorldConstantBuffer(world);
+
+			CBLight cbLight;
+			cbLight.color = currentLight->mColor;
+			cbLight.lightType = currentLight->mLightType;
+			cbLight.intensity = currentLight->mIntensity;
+			cbLight.radius = currentLight->mRadius;
+
+			setLightConstantBuffer(cbLight);
+
+			currentLight->draw(mDx11Renderer);
+		}
+	}
 }

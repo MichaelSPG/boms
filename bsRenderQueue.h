@@ -1,10 +1,13 @@
 #ifndef BS_RENDERQUEUE_H
 #define BS_RENDERQUEUE_H
 
+#include "bsConfig.h"
+
 #include <vector>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 #include <D3DX11.h>
 #include <Windows.h>
@@ -19,10 +22,17 @@ class bsShaderManager;
 class bsVertexShader;
 class bsPixelShader;
 class bsCamera;
+class bsLine3D;
+class bsLight;
+struct CBLight;
+
 struct ID3D11DeviceContext;
 struct ID3D11Buffer;
 
-
+/**	Contains stats about a frame.
+	Data can be taken out manually, or a string can be created following a
+	predefined pattern.
+*/
 struct bsFrameStats
 {
 	bsFrameStats()
@@ -46,12 +56,13 @@ struct bsFrameStats
 		ss  << "\nVisible scene nodes: " << visibleSceneNodeCount
 			<< "\nUnique meshes drawn: " << uniqueMeshesDrawn
 			<< "\nTotal meshes drawn: " << totalMeshesDrawn
-			<< "\nTotal lines drawn: " << linesDrawn;
+			<< "\nTotal lines drawn: " << linesDrawn
+			<< "\nVisible lights: " << visibleLights;
 
 		return ss.str();
 	}
 
-	inline std::wstring getFrameStatsWideString() const
+	inline std::wstring getFrameStatsStringWide() const
 	{
 		std::wstringstream ss;
 		ss.setf(std::ios::floatfield, std::ios::fixed);
@@ -61,7 +72,8 @@ struct bsFrameStats
 		ss  << L"\nVisible scene nodes: " << visibleSceneNodeCount
 			<< L"\nUnique meshes drawn: " << uniqueMeshesDrawn
 			<< L"\nTotal meshes drawn: " << totalMeshesDrawn
-			<< L"\nTotal lines drawn: " << linesDrawn;
+			<< L"\nTotal lines drawn: " << linesDrawn
+			<< L"\nVisible lights: " << visibleLights;
 
 		return ss.str();
 	}
@@ -73,37 +85,64 @@ struct bsFrameStats
 	unsigned int	uniqueMeshesDrawn;
 	unsigned int	totalMeshesDrawn;
 	unsigned int	linesDrawn;
+	unsigned int	visibleLights;
 };
 
+
+/**	The render queue is responsible for drawing everything to the screen.
+	Organizes various groups of renderable objects to make it easy to draw individual
+	types of renderables.
+*/
 class bsRenderQueue
 {
 public:
 	bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shaderManager);
+
 	~bsRenderQueue();
 
 	//Clears all current collections of renderables.
 	void reset();
 
-	void draw();
+	//Draws the geometry
+	void drawGeometry();
 
+	void drawLights();
+
+	/**	Sets the active camera.
+		This camera is used to generate a list of scene nodes that are visible per frame,
+		i.e. ones that are inside the frustum.
+	*/
 	inline void setCamera(bsCamera* camera)
 	{
 		mCamera = camera;
 	}
 
+	/**	Gets the current frame stats.
+		If called between the start and end of all the draw functions,
+		the stats may be incomplete.
+	*/
 	inline const bsFrameStats& getFrameStats() const
 	{
 		return mFrameStats;
 	}
 
 private:
-	void sortSceneNodes();
+	/*	Gets the renderables from the scene nodes and groups them based on what kind of
+		renderable they are
+	*/
+	void sortRenderables();
+
+	//Functions to draw individual renderable types.
+	void drawMeshes();
+	void drawLines();
+	void drawPrimitives();
 
 	void setWorldConstantBuffer(const XMFLOAT4X4& world);
 
 	void setWireframeConstantBuffer(const XMFLOAT4X4& world, const XMFLOAT4& color);
 
-	//Unbinds only.
+	void setLightConstantBuffer(const CBLight& cbLight);
+
 	void unbindGeometryShader();
 
 	bsCamera*		mCamera;
@@ -112,6 +151,7 @@ private:
 	bsShaderManager*	mShaderManager;
 	ID3D11Buffer*		mWorldBuffer;
 	ID3D11Buffer*		mWireframeWorldBuffer;
+	ID3D11Buffer*		mLightBuffer;
 
 	std::shared_ptr<bsPixelShader>	mWireframePixelShader;
 	std::shared_ptr<bsVertexShader>	mWireframeVertexShader;
@@ -119,7 +159,15 @@ private:
 	std::shared_ptr<bsPixelShader>	mMeshPixelShader;
 	std::shared_ptr<bsVertexShader>	mMeshVertexShader;
 
+	std::shared_ptr<bsPixelShader>	mLightPixelShader;
+	std::shared_ptr<bsVertexShader>	mLightVertexShader;
+
 	bsFrameStats		mFrameStats;
+
+	std::unordered_map<bsMesh*, std::vector<bsSceneNode*>>		mMeshesToDraw;
+	std::unordered_map<bsLine3D*, std::vector<bsSceneNode*>>	mLinesToDraw;
+	std::unordered_map<bsPrimitive*, std::vector<bsSceneNode*>>	mPrimitivesToDraw;
+	std::unordered_map<bsLight*, std::vector<bsSceneNode*>>		mLightsToDraw;
 };
 
 #endif // BS_RENDERQUEUE_H

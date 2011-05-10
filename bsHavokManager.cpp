@@ -23,9 +23,9 @@ static void HK_CALL errorReport(const char* message, void* userArgGivenToInit)
 	//Havok likes to end its messages with \n, so we remove that here before sending it
 	//to the log.
 	std::string correctedMessage("Havok: ");
-	correctedMessage += message;
+	correctedMessage.append(message);
 
-	while (correctedMessage[correctedMessage.size() - 1] == '\n')
+	while (correctedMessage.back() == '\n')
 	{
 		correctedMessage.pop_back();
 	}

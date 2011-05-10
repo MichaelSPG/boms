@@ -40,8 +40,8 @@ bsPrimitive::~bsPrimitive()
 	}
 }
 
-void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer, bsShaderManager* shaderManager,
-	const hkAabb& aabb, bool nodeAabb /*= true*/)
+void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer,
+	bsShaderManager* shaderManager, const hkAabb& aabb)
 {
 	assert(dx11Renderer);
 	assert(shaderManager);
@@ -56,85 +56,52 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer, bsShaderManager*
 	d.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	d.InstanceDataStepRate = 0;
 	inputLayout.push_back(d);
-	/*
-	d.SemanticName = "COLOR";
-	d.AlignedByteOffset = 12;
-	inputLayout.push_back(d);
-	*/
+	
 	mVertexShader = shaderManager->getVertexShader("Wireframe.fx", inputLayout);
 	mPixelShader  = shaderManager->getPixelShader("Wireframe.fx");
 
 
 	D3D11_BUFFER_DESC bufferDescription;
 	ZeroMemory(&bufferDescription, sizeof(bufferDescription));
-
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
 	bufferDescription.ByteWidth = sizeof(CBWireFrame);
 	bufferDescription.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	bufferDescription.CPUAccessFlags = 0;
-	bufferDescription.MiscFlags = 0;
 
 	HRESULT hres = dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr,
 		&mBuffer);
 	assert(SUCCEEDED(hres));
 
-#ifdef _DEBUG
-	const char bufferName[] = "PrimitiveConstantBuffer";
-	mBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof(bufferName) - 1, bufferName);
-#endif // _DEBUG
+#if BS_DEBUG_LEVEL > 0
+	std::string bufferName("CB Primitive");
+	mBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, bufferName.length(),
+		bufferName.c_str());
+#endif // BS_DEBUG_LEVEL > 0
 
 	
 	hkVector4 halfExtents;
 	aabb.getHalfExtents(halfExtents);
-	hkQuadReal maxQuad(aabb.m_max.getQuad());
-	hkQuadReal minQuad(aabb.m_min.getQuad());
+	const hkVector4& maxHalfExtents = aabb.m_max;
+	const hkVector4& minHalfExtents = aabb.m_min;
 	
-	std::vector<XMFLOAT3> vertices;
-	if (nodeAabb)
-	{
-		//Vertex buffer
-		XMFLOAT3 verticesAabb[] =
-		{
-			XMFLOAT3(-halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)),//Upper left, front
-			XMFLOAT3( halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)),//Upper right, front
-			XMFLOAT3( halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)),//Lower right, front
-			XMFLOAT3(-halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), -halfExtents.getSimdAt(2)),//Lower left, front
+	std::vector<XMFLOAT3> vertices(8);
+	vertices.push_back(XMFLOAT3(minHalfExtents.getSimdAt(0), maxHalfExtents.getSimdAt(1),
+		minHalfExtents.getSimdAt(2)));//Upper left, front
+	vertices.push_back(XMFLOAT3(maxHalfExtents.getSimdAt(0), maxHalfExtents.getSimdAt(1),
+		minHalfExtents.getSimdAt(2)));//Upper right, front
+	vertices.push_back(XMFLOAT3(maxHalfExtents.getSimdAt(0), minHalfExtents.getSimdAt(1),
+		minHalfExtents.getSimdAt(2)));//Lower right, front
+	vertices.push_back(XMFLOAT3(minHalfExtents.getSimdAt(0), minHalfExtents.getSimdAt(1),
+		minHalfExtents.getSimdAt(2)));//Lower left, front
 
-			XMFLOAT3(-halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)),//Upper left, back
-			XMFLOAT3( halfExtents.getSimdAt(0),  halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)),//Upper right, back
-			XMFLOAT3( halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)),//Lower right, back
-			XMFLOAT3(-halfExtents.getSimdAt(0), -halfExtents.getSimdAt(1), halfExtents.getSimdAt(2)),//Lower left, back
-		};
+	vertices.push_back(XMFLOAT3(minHalfExtents.getSimdAt(0), maxHalfExtents.getSimdAt(1),
+		maxHalfExtents.getSimdAt(2)));//Upper left, back
+	vertices.push_back(XMFLOAT3(maxHalfExtents.getSimdAt(0), maxHalfExtents.getSimdAt(1),
+		maxHalfExtents.getSimdAt(2)));//Upper right, back
+	vertices.push_back(XMFLOAT3(maxHalfExtents.getSimdAt(0), minHalfExtents.getSimdAt(1),
+		maxHalfExtents.getSimdAt(2)));//Lower right, back
+	vertices.push_back(XMFLOAT3(minHalfExtents.getSimdAt(0), minHalfExtents.getSimdAt(1),
+		maxHalfExtents.getSimdAt(2)));//Lower left, back
 
-		for (unsigned int i = 0; i < ARRAYSIZE(verticesAabb); ++i)
-		{
-			vertices.push_back(verticesAabb[i]);
-		}
-	}
-	else
-	{
-		//Vertex buffer
-		XMFLOAT3 verticesNotAabb[] =
-		{
-			XMFLOAT3(minQuad.x, maxQuad.y, minQuad.z),//Upper left, front
-			XMFLOAT3(maxQuad.x, maxQuad.y, minQuad.z),//Upper right, front
-			XMFLOAT3(maxQuad.x, minQuad.y, minQuad.z),//Lower right, front
-			XMFLOAT3(minQuad.x, minQuad.y, minQuad.z),//Lower left, front
-
-			XMFLOAT3(minQuad.x, maxQuad.y, maxQuad.z),//Upper left, back
-			XMFLOAT3(maxQuad.x, maxQuad.y, maxQuad.z),//Upper right, back
-			XMFLOAT3(maxQuad.x, minQuad.y, maxQuad.z),//Lower right, back
-			XMFLOAT3(minQuad.x, minQuad.y, maxQuad.z),//Lower left, back
-		};
-
-		for (unsigned int i = 0; i < ARRAYSIZE(verticesNotAabb); ++i)
-		{
-			vertices.push_back(verticesNotAabb[i]);
-		}
-	}
-
-	
-	
 	
 	//Vertex buffer
 	bufferDescription.ByteWidth = sizeof(XMFLOAT3) * vertices.size();
@@ -152,21 +119,15 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer, bsShaderManager*
 		assert(!"bsPrimitive failed to create vertex buffer");
 	}
 
-#ifdef _DEBUG
-	const char vertexBufferName[] = "PrimitiveVertexBuffer";
-	mVertexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof(vertexBufferName) - 1,
-		vertexBufferName);
-#endif // _DEBUG
+#if BS_DEBUG_LEVEL > 0
+	std::string vertexBufferName("VB Primitive");
+	mVertexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, vertexBufferName.length(),
+		vertexBufferName.c_str());
+#endif // BS_DEBUG_LEVEL > 0
 
-	/*
-	unsigned int stride = sizeof(Vertex);
-	unsigned int offset = 0;
-	dx11Renderer->getDeviceContext()->IASetVertexBuffers(1, 1, &mVertexBuffer, &stride,
-		&offset);
-	*/
 
 	///Index buffer
-	WORD indices[] =
+	unsigned short indices[] =
 	{
 		0, 1,
 		1, 2,
@@ -183,7 +144,7 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer, bsShaderManager*
 	};
 	
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
-	bufferDescription.ByteWidth = sizeof(WORD) * ARRAYSIZE(indices);
+	bufferDescription.ByteWidth = sizeof(unsigned short) * ARRAYSIZE(indices);
 	bufferDescription.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	bufferDescription.CPUAccessFlags = 0;
 
@@ -193,11 +154,11 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer, bsShaderManager*
 		&mIndexBuffer);
 	assert(SUCCEEDED(hres));
 
-#ifdef _DEBUG
-	const char indexBufferName[] = "PrimitiveIndexBuffer";
-	mIndexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, sizeof(indexBufferName) - 1,
-		indexBufferName);
-#endif // _DEBUG
+#if BS_DEBUG_LEVEL > 0
+	std::string indexBufferName("PrimitiveIndexBuffer");
+	mIndexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, indexBufferName.length(),
+		indexBufferName.c_str());
+#endif // BS_DEBUG_LEVEL > 0
 
 	mFinished = true;
 }
@@ -209,7 +170,6 @@ void bsPrimitive::draw(bsDx11Renderer* dx11Renderer)
 
 	ID3D11DeviceContext* const context = dx11Renderer->getDeviceContext();
 
-
 	UINT offsets =  0;
 	UINT stride = sizeof(XMFLOAT3);
 	context->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offsets);
@@ -217,12 +177,14 @@ void bsPrimitive::draw(bsDx11Renderer* dx11Renderer)
 
 	context->IASetInputLayout(mVertexShader->getInputLayout());
 
+	//TODO: Remove the shaders from this class.
+	/*
 	context->VSSetShader(mVertexShader->getVertexShader(), nullptr, 0);
 	context->PSSetShader(mPixelShader->getPixelShader(), nullptr, 0);
 
 	context->VSSetConstantBuffers(1, 1, &mBuffer);
 	context->PSSetConstantBuffers(1, 1, &mBuffer);
-
+	*/
 
 	context->DrawIndexed(24, 0, 0);
 }

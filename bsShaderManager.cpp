@@ -22,13 +22,13 @@ bsShaderManager::~bsShaderManager()
 }
 
 std::shared_ptr<bsVertexShader> bsShaderManager::getVertexShader(const std::string& fileName,
-	const std::vector<D3D11_INPUT_ELEMENT_DESC>& inputDesc)
+	const std::vector<D3D11_INPUT_ELEMENT_DESC>& inputDesc) const
 {
 	assert(fileName.length());
 	assert(inputDesc.size() && "Zero length input description");
 
 	//get the path for the file
-	std::string filePath = mResourceManager->getFileSystem()->getPath(fileName);
+	std::string filePath = mResourceManager->getFileSystem()->getPathFromFilename(fileName);
 	if (!filePath.length())
 	{
 		//Log error message if mesh doesn't exist.
@@ -52,15 +52,16 @@ std::shared_ptr<bsVertexShader> bsShaderManager::getVertexShader(const std::stri
 	}
 
 	//Not found, create and return the shader
-	return createVertexShader(filePath, inputDesc);
+	//createVertexShader is not const, so must cast const away
+	return const_cast<bsShaderManager*>(this)->createVertexShader(filePath, inputDesc);
 }
 
-std::shared_ptr<bsPixelShader> bsShaderManager::getPixelShader(const std::string& fileName)
+std::shared_ptr<bsPixelShader> bsShaderManager::getPixelShader(const std::string& fileName) const
 {
 	assert(fileName.length());
 
 	//Get the path for the file
-	std::string filePath = mResourceManager->getFileSystem()->getPath(fileName);
+	std::string filePath = mResourceManager->getFileSystem()->getPathFromFilename(fileName);
 	if (!filePath.length())
 	{
 		//Log error message if mesh doesn't exist.
@@ -84,7 +85,7 @@ std::shared_ptr<bsPixelShader> bsShaderManager::getPixelShader(const std::string
 	}
 
 	//Not found, create and return the shader
-	return createPixelShader(filePath);
+	return const_cast<bsShaderManager*>(this)->createPixelShader(filePath);
 }
 
 std::shared_ptr<bsVertexShader> bsShaderManager::createVertexShader(const std::string& fileName,
@@ -238,8 +239,8 @@ void bsShaderManager::setVertexShader(const std::shared_ptr<bsVertexShader>& ver
 
 	ID3D11DeviceContext* context = mDx11Renderer->getDeviceContext();
 
-	context->IASetInputLayout(vertexShader->getInputLayout());
-	context->VSSetShader(vertexShader->getVertexShader(), nullptr, 0);
+	context->IASetInputLayout(vertexShader->mInputLayout);
+	context->VSSetShader(vertexShader->mVertexShader, nullptr, 0);
 }
 
 void bsShaderManager::setPixelShader(const std::shared_ptr<bsPixelShader>& pixelShader)
@@ -248,5 +249,5 @@ void bsShaderManager::setPixelShader(const std::shared_ptr<bsPixelShader>& pixel
 
 	ID3D11DeviceContext* context = mDx11Renderer->getDeviceContext();
 
-	context->PSSetShader(pixelShader->getPixelShader(), nullptr, 0);
+	context->PSSetShader(pixelShader->mPixelShader, nullptr, 0);
 }

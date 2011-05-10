@@ -29,9 +29,6 @@ void bsFileSystem::buildFileSystem()
 	{
 		if (boost::filesystem::is_regular_file(itr->path()))
 		{
-			//std::string fileName = itr->filename();
-			//std::string pathName = itr->path().string();
-			itr->path().filename().c_str();
 			std::string fileName = itr->path().filename().string();
 			std::string pathName = itr->path().relative_path().string();
 
@@ -39,6 +36,7 @@ void bsFileSystem::buildFileSystem()
 			auto findResult = mFilePaths.find(fileName);
 			if (findResult == mFilePaths.end())
 			{
+				//Add the file and path to the map.
 				mFilePaths[fileName] = pathName;
 #if BS_DEBUG_LEVEL > 1
 				std::string message("Adding file '");
@@ -63,16 +61,18 @@ void bsFileSystem::buildFileSystem()
 	}
 }
 
-std::string bsFileSystem::getPath(const std::string& fileName) const
+std::string bsFileSystem::getPathFromFilename(const std::string& fileName) const
 {
 	auto findResult = mFilePaths.find(fileName);
 
 	if (findResult == mFilePaths.end())
 	{
+		//Not found
 		return std::string("");
 	}
 	else
 	{
-		return mFilePaths.find(fileName)->second;
+		//Found
+		return findResult->second;
 	}
 }

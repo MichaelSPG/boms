@@ -6,18 +6,10 @@
 #include <windows.h>
 
 #include "bsDx11Renderer.h"
-#include "bsSceneGraph.h"
-#include "bsResourceManager.h"
 
 
 class bsLog;
-class bsCamera;
-class bsWindow;
 class bsCore;
-class bsRenderTarget;
-class bsFullScreenQuad;
-class bsPixelShader;
-class bsVertexShader;
 class bsDeferredRenderer;
 
 
@@ -51,18 +43,9 @@ private:
 	OIS::Keyboard		*mKeyboard;
 	OIS::Mouse			*mMouse;
 
-	bool w, a, s, d, space, c, shift, moveDuck, resetDuck, rightMouseDown, leftMouseDown,
-		mQuit, pause;
+	bool w, a, s, d, space, c, shift, rightMouseDown, leftMouseDown, mQuit, pause;
 
 	bsCore*		mCore;
-
-	std::vector<bsRenderTarget*>	mRenderTargets;
-
-	bsFullScreenQuad*	mFullScreenQuad;
-
-	std::shared_ptr<bsVertexShader> mFullscreenVS;
-	std::shared_ptr<bsPixelShader> mFullscreenPS;
-
 
 	bsDeferredRenderer*	mDeferredRenderer;
 };

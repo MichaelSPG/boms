@@ -20,6 +20,12 @@
 #include "bsVertexTypes.h"
 
 
+/**	Structure containing a serialized mesh' vertices and indices,
+	as well as min and max extents used for AABB creation.
+	
+	The structure uses boost's serialization functionality to quickly load and save the
+	contents to and from files.
+*/
 struct bsSerializedMesh
 {
 	friend class boost::serialization::access;
@@ -35,11 +41,13 @@ struct bsSerializedMesh
 	//Vertex and index buffers for each mesh.
 	std::vector<std::vector<VertexNormalTex>>	vertices;
 	std::vector<std::vector<unsigned int>>		indices;
+
 	//For AABB.
 	std::vector<XMFLOAT3>	minExtents;
 	std::vector<XMFLOAT3>	maxExtents;
 };
 
+//Functions for serialization of structures used by the serialized mesh structure.
 namespace boost
 {
 namespace serialization
@@ -67,15 +75,21 @@ void serialize(Archive& ar, XMFLOAT2& xmf2, const unsigned int)
 	ar & xmf2.y;
 }
 
-}//serialization
-}//boost
+}// namespace serialization
+}// namespace boost
 
-//Load only version
+/**	This mesh serializer uses boost's serialization functionality,
+	specifically the binary archive for better load times.
+	
+	This version supports loading only.
+*/
 class bsMeshSerializer
 {
 	friend class bsMeshManager;
 
-	//True on success
+	/**	Loads a file and puts its contents in the mesh parameter.
+		Returns true on succes.
+	*/
 	bool load(const std::string& meshName, bsSerializedMesh& mesh);
 };
 

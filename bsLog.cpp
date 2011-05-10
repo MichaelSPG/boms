@@ -9,6 +9,8 @@ PANTHEIOS_CALL(void) pantheios_be_file_getAppInit(int /* backEndId */, pan_be_fi
 	init->flags |= PANTHEIOS_BE_INIT_F_HIDE_DATE;
 	init->flags |= PANTHEIOS_BE_INIT_F_HIGH_RESOLUTION;
 	/*
+	//All possible flags are listed here
+
 	PANTHEIOS_BE_INIT_F_NO_PROCESS_ID
 	PANTHEIOS_BE_INIT_F_NO_THREAD_ID
 	PANTHEIOS_BE_INIT_F_NO_DATETIME
@@ -27,7 +29,7 @@ PANTHEIOS_CALL(void) pantheios_be_file_getAppInit(int /* backEndId */, pan_be_fi
 std::vector<std::function<void(const char*)>> bsLog::mCallbacks
 	= std::vector<std::function<void(const char*)>>();
 
-bool bsLog::init(pantheios::pan_severity_t severity /*= pantheios::SEV_DEBUG*/)
+bool bsLog::init(pantheios::pan_severity_t severityCeiling /*= pantheios::SEV_DEBUG*/)
 {
 	if (pantheios::init())
 	{
@@ -37,7 +39,7 @@ bool bsLog::init(pantheios::pan_severity_t severity /*= pantheios::SEV_DEBUG*/)
 	pantheios_be_file_setFilePath(PANTHEIOS_LITERAL_STRING("log.bsl"),
 		PANTHEIOS_BE_FILE_F_TRUNCATE, PANTHEIOS_BE_FILE_F_TRUNCATE, PANTHEIOS_BEID_ALL);
 
-	pantheios_fe_simple_setSeverityCeiling(severity);
+	pantheios_fe_simple_setSeverityCeiling(severityCeiling);
 
 	return true;
 }
@@ -53,6 +55,7 @@ void bsLog::logMessage(const char *message,
 	pantheios::log(severity, message);
 
 #ifndef BS_DISABLE_LOG_CALLBACKS
+	//Execute all the callbacks with the message
 	for (unsigned int i = 0, count = mCallbacks.size(); i < count; ++i)
 	{
 		mCallbacks[i](message);

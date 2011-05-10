@@ -9,6 +9,9 @@ struct ID3D11VertexShader;
 struct ID3D11InputLayout;
 
 
+/**	Contains a single vertex shader and its input layout.
+	Use bsShaderManager to create shaders.
+*/
 class bsVertexShader
 {
 	friend class bsShaderManager;
@@ -28,7 +31,7 @@ public:
 		mInputLayout->Release();
 	}
 
-	inline ID3D11VertexShader* getVertexShader() const
+	inline ID3D11VertexShader* getD3dVertexShader() const
 	{
 		return mVertexShader;
 	}
