@@ -7,7 +7,6 @@
 bsLight::bsLight(LightType lightType, bsMeshManager* meshManager,
 	const bsPointLightCInfo& cInfo)
 	: mMesh(meshManager->getMesh("sphere_1m_d.bsm"))
-	, mAabb(mMesh->getAabb())
 	, mColor(cInfo.color)
 	, mRadius(cInfo.radius)
 	, mIntensity(cInfo.intensity)
@@ -17,7 +16,9 @@ bsLight::bsLight(LightType lightType, bsMeshManager* meshManager,
 	//TODO: Set this to equal parameter
 	mLightType = LT_POINT;
 
-	mAabb.expandBy(mRadius);
+	const float halfRadius = mRadius * 0.5f;
+	mAabb.m_min.setAll3(-halfRadius);
+	mAabb.m_max.setAll3(halfRadius);
 }
 
 bsLight::~bsLight()

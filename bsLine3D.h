@@ -37,16 +37,16 @@ public:
 	}
 
 
-	/**	Add a single point to the collection.
+	/*	Add a single point to the collection.
 		Use the addPoints function when adding many points at once for greater efficiency.
 	*/
 	void addPoint(const XMFLOAT3& position);
 
-	/**	Adds a vector of points to the collection.
+	/*	Adds a vector of points to the collection.
 	*/
 	void addPoints(const std::vector<XMFLOAT3>& points);
 
-	/**	Creates the buffers used for drawing. Call this before trying to render this object.
+	/*	Creates the buffers used for drawing. Call this before trying to render this object.
 		Returns true on success.
 		There must be at least 2 points, and an even number of points.
 	*/

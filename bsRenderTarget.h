@@ -6,7 +6,7 @@
 #include <d3d11.h>
 
 
-/**	Defines a render target which can be used as both a render target, texture and shader
+/*	Defines a render target which can be used as both a render target, texture and shader
 	resource (input for shaders).
 */
 class bsRenderTarget

@@ -18,18 +18,17 @@ bsSceneGraph::bsSceneGraph(bsDx11Renderer* renderer, bsResourceManager* resource
 	, mDx11Renderer(renderer)
 	, mResourceManager(resourceManager)
 	, mMaxTreeDepth(4)
-	, mHavokManager(havokManager)
 	, mGraphicsWorld(nullptr)
 {
 	assert(renderer);
 	assert(resourceManager);
 	assert(havokManager);
 
-	mHavokManager->createGraphicsWorld(true);
-	mGraphicsWorld = mHavokManager->getGraphicsWorld();
+	havokManager->createGraphicsWorld(true);
+	mGraphicsWorld = havokManager->getGraphicsWorld();
 
 	mCamera = new bsCamera(bsProjectionInfo(45.0f, 1000.0f, 0.1f,
-		(float)cInfo.windowWidth / (float)cInfo.windowHeight), this, mHavokManager);
+		(float)cInfo.windowWidth / (float)cInfo.windowHeight), this, havokManager);
 
 	bsLog::logMessage("Scene graph initialized successfully");
 }
@@ -46,7 +45,8 @@ bsSceneGraph::~bsSceneGraph()
 	}
 }
 
-bsSceneNode* bsSceneGraph::createSceneNode(const hkVector4& position /*= hkVector4(0.0f, 0.0f, 0.0f, 0.0f)*/)
+bsSceneNode* bsSceneGraph::createSceneNode(const hkVector4& position
+	/*= hkVector4(0.0f, 0.0f, 0.0f, 0.0f)*/)
 {
 	bsSceneNode* node = new bsSceneNode(position, getNewId(), this);
 
@@ -57,7 +57,5 @@ bsSceneNode* bsSceneGraph::createSceneNode(const hkVector4& position /*= hkVecto
 
 void bsSceneGraph::update(float deltaTime)
 {
-	//mHavokManager->stepGraphicsWorld(deltaTime);
-	//hkpWorld* world = mHavokManager->getGraphicsWorld();
-	
+	assert(!"bsSceneGraph::update is unused");
 }

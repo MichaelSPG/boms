@@ -15,26 +15,26 @@ PANTHEIOS_CALL(void) pantheios_be_file_getAppInit(int /* backEndId */, pan_be_fi
 
 #ifndef BS_DISABLE_LOGGING
 
-/**	Class for logging messages with severity levels to a file.
+/*	Class for logging messages with severity levels to a file.
 */
 class bsLog
 {
 public:
-	/**	Initializes pantheios. Returns true on success.
+	/*	Initializes pantheios. Returns true on success.
 		severityCeiling equals the lowest message severity which should be logged.
 	*/
 	static bool init(pantheios::pan_severity_t severityCeiling = pantheios::SEV_DEBUG);
 
 	static void deinit();
 
-	/**	Logs a message to the log file.
+	/*	Logs a message to the log file.
 		Also sends the message to all callback functions registered with the addCallback
 		function.
 	*/
 	static void logMessage(const char* message,
 		pantheios::pan_severity_t severity = pantheios::SEV_INFORMATIONAL);
 
-	/**	Sets the lowest level of severity to log.
+	/*	Sets the lowest level of severity to log.
 		Messages with lower severity than the lowest severity will be thrown away.
 	*/
 	inline static void setLogLevel(pantheios::pan_severity_t severity)
@@ -48,7 +48,7 @@ public:
 	}
 
 #ifndef BS_DISABLE_LOG_CALLBACKS
-	/**	Adds a callback function which will receive every message logged.
+	/*	Adds a callback function which will receive every message logged.
 	*/
 	inline static void addCallback(const std::function<void(const char*)>& func)
 	{

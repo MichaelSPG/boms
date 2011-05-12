@@ -16,7 +16,7 @@
 class bsDx11Renderer;
 
 
-/**	Class for mesh rendering.
+/*	Class for mesh rendering.
 	Contains vertex and index buffers for a mesh, and possibly a collection of sub-meshes.
 	Use the bsMeshManager class to create meshes.
 */
@@ -33,7 +33,7 @@ public:
 
 	void draw(bsDx11Renderer* dx11Renderer) const;
 
-	/**	Returns the collection of sub-meshes owned by this mesh.
+	/*	Returns the collection of sub-meshes owned by this mesh.
 		This may contain zero elements if this mesh has no sub-meshes.
 	*/
 	inline const std::vector<bsMesh*>& getSubMeshes() const
@@ -66,7 +66,7 @@ private:
 
 	unsigned int	mID;
 #if BS_DEBUG_LEVEL > 1
-	/**	Contains the mesh' file name.
+	/*	Contains the mesh' file name.
 		For debugging purposes only, never rely on this variable existing.
 	*/
 	std::string		mName;

@@ -5,7 +5,7 @@
 #include "bsDx11Renderer.h"
 #include "bsLog.h"
 #include "bsTemplates.h"
-#include "bsTextBox.h"
+#include "bsScrollingText2D.h"
 
 
 bsTextManager::bsTextManager(bsDx11Renderer* dx11Renderer)
@@ -29,7 +29,7 @@ bsTextManager::~bsTextManager()
 	}
 }
 
-std::shared_ptr<bsText2D> bsTextManager::createText(const std::wstring& text,
+std::shared_ptr<bsText2D> bsTextManager::createText2D(const std::wstring& text,
 	const std::wstring& font /*= L"Consolas"*/)
 {
 	IFW1FontWrapper* fontWrapper;
@@ -42,40 +42,40 @@ std::shared_ptr<bsText2D> bsTextManager::createText(const std::wstring& text,
 		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
 	}
 
-	assert(SUCCEEDED(hres) && "bsTextManager::createText failed");
+	assert(SUCCEEDED(hres) && "bsTextManager::createText2D failed");
 	
 	std::shared_ptr<bsText2D> textObject(new bsText2D(mDx11Renderer, text));
-	//bsText2D* textObject = new bsText2D(mDx11Renderer, text);
 	textObject->mFontWrapper = fontWrapper;
 
 	mTexts.push_back(textObject);
 	return textObject;
 }
 
-std::shared_ptr<bsTextBox> bsTextManager::createTextBox(const float fadeDelay,
-	const unsigned int maxLineCount, const std::wstring& font /*= L"Consolas"*/)
+std::shared_ptr<bsScrollingText2D> bsTextManager::createScrollingText2D(float fadeDelay,
+	unsigned int maxLineCount, const std::wstring& font /*= L"Consolas"*/)
 {
-	std::shared_ptr<bsTextBox> textBox(new bsTextBox(fadeDelay, maxLineCount));
-	textBox->mText = createText(L"", font);
+	std::shared_ptr<bsScrollingText2D> textBox(new bsScrollingText2D(fadeDelay, maxLineCount));
+	textBox->mText = createText2D(L"", font);
 
 	mTextBoxes.push_back(textBox);
 
 	return textBox;
 }
 
-void bsTextManager::destroyUnused()
+void bsTextManager::destroyUnusedTexts()
 {
-	for (unsigned int i = 0; i < mTexts.size(); ++i)
-	{
-		//Use count will be 1 if referenced only by this class
-		if (mTexts[i].use_count() == 1)
+	mTexts.erase(std::remove_if(mTexts.begin(), mTexts.end(),
+		[](const std::shared_ptr<bsText2D>& text)
 		{
-			bsT::unordered_erase(mTexts, mTexts[i]);
+			//If only used by this class, it can be removed
+			return text.use_count() == 1;
+		}), mTexts.end());
 
-			//Item at end is now i'th element, decrement i to make sure it is also evaluated
-			--i;
-		}
-	}
+	mTextBoxes.erase(std::remove_if(mTextBoxes.begin(), mTextBoxes.end(),
+		[](const std::shared_ptr<bsScrollingText2D>& text)
+	{
+		return text.use_count() == 1;
+	}), mTextBoxes.end());
 }
 
 void bsTextManager::drawAllTexts()
@@ -91,6 +91,5 @@ void bsTextManager::updateTexts(float deltaTime)
 	for (unsigned int i = 0, count = mTextBoxes.size(); i < count; ++i)
 	{
 		mTextBoxes[i]->update(deltaTime);
-		mTextBoxes[i]->updateText();
 	}
 }

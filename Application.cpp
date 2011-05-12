@@ -14,7 +14,7 @@
 #include "bsCamera.h"
 #include "bsRenderStats.h"
 #include "bsRenderQueue.h"
-#include "bsTextBox.h"
+#include "bsScrollingText2D.h"
 #include "bsTextManager.h"
 #include "bsStringUtils.h"
 #include "bsWindow.h"
@@ -84,7 +84,7 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 
 	//Register the text manager with the rendering system so that it'll draw texts
 	mDeferredRenderer->registerEndOfRenderCallback(boost::bind(&bsTextManager::drawAllTexts, textManager));
-
+	
 	//////////////////////////////////////////////////////////////////////////
 	
 
@@ -107,56 +107,36 @@ void Application::update(float deltaTime)
 	
 	bsCamera* camera = mCore->getSceneGraph()->getCamera();
 
+	//Movement + speedup if shift is pressed
 	if (w)
 	{
-		camera->translate(0.0f, 0.0f, shift ? 6.0f : 1.2f);
+		camera->translate(hkVector4(0.0f, 0.0f, shift ? 6.0f : 1.2f));
 	}
 	if (s)
 	{
-		camera->translate(0.0f, 0.0f, shift ? -6.0f : -1.2f);
+		camera->translate(hkVector4(0.0f, 0.0f, shift ? -6.0f : -1.2f));
 	}
 	if (a)
 	{
-		camera->translate(shift ? -6.0f : -1.2f, 0.0f, 0.0f);
+		camera->translate(hkVector4(shift ? -6.0f : -1.2f, 0.0f, 0.0f));
 	}
 	if (d)
 	{
-		camera->translate(shift ? 6.0f : 1.2f, 0.0f, 0.0f);
+		camera->translate(hkVector4(shift ? 6.0f : 1.2f, 0.0f, 0.0f));
 	}
 	if (space)
 	{
-		camera->translate(0.0f, shift ? 6.0f : 1.2f, 0.0f);
+		camera->translate(hkVector4(0.0f, shift ? 6.0f : 1.2f, 0.0f));
 	}
 	if (c)
 	{
-		camera->translate(0.0f, shift ? -6.0f : -1.2f, 0.0f);
+		camera->translate(hkVector4(0.0f, shift ? -6.0f : -1.2f, 0.0f));
 	}
+	
 	camera->update();
 	
 
-	static std::vector<D3D11_INPUT_ELEMENT_DESC> inputLayout;
-	D3D11_INPUT_ELEMENT_DESC d;
-	d.SemanticName = "POSITION";
-	d.SemanticIndex = 0;
-	d.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	d.InputSlot = 0;
-	d.AlignedByteOffset = 0;
-	d.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-	d.InstanceDataStepRate = 0;
-	inputLayout.push_back(d);
-
-	d.SemanticName = "NORMAL";
-	d.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	d.AlignedByteOffset = 12;
-	inputLayout.push_back(d);
-
-	d.SemanticName = "TEXCOORD";
-	d.AlignedByteOffset = 24;
-	d.Format = DXGI_FORMAT_R32G32_FLOAT;
-	inputLayout.push_back(d);
-
-	bsResourceManager* resourceManager = mCore->getResourceManager();
-
+	static bsResourceManager* resourceManager = mCore->getResourceManager();
 
 	static auto context = mCore->getDx11Renderer()->getDeviceContext();
 	static bsMeshManager* meshManager = resourceManager->getMeshManager();
@@ -170,7 +150,7 @@ void Application::update(float deltaTime)
 
 	static auto cubeWithOffset = meshManager->getMesh("cubeWithOffset.bsm");
 
-	bsSceneGraph* sceneGraph = mCore->getSceneGraph();
+	static bsSceneGraph* sceneGraph = mCore->getSceneGraph();
 	static bsSceneNode* identityNode = sceneGraph->createSceneNode();
 
 	static bsSceneNode* testNode1 = sceneGraph->createSceneNode(hkVector4(-70.0f, 0.0f, 0.0f));
@@ -181,7 +161,8 @@ void Application::update(float deltaTime)
 	
 
 	static std::vector<bsSceneNode*> derivedNodes;
-	bsSceneNode*& previousNode = derivedNode1;
+	static std::vector<bsSceneNode*> moreDerivedNodes;
+	static bsSceneNode*& previousNode = derivedNode1;
 
 	static bool derNodesOnce = false;
 	if (!derNodesOnce)
@@ -191,6 +172,8 @@ void Application::update(float deltaTime)
 		for (unsigned int i = 0; i < 10; ++i)
 		{
 			derivedNodes.push_back(previousNode->createChildSceneNode(hkVector4(50.0f, 0.0f, 0.0f)));
+			moreDerivedNodes.push_back(derivedNodes[i]->createChildSceneNode(hkVector4(0.0f, 50.0f, 0.0f)));
+
 			previousNode = derivedNodes.back();
 		}
 
@@ -214,7 +197,7 @@ void Application::update(float deltaTime)
 			for (unsigned int i = 0; i < derivedNodes.size(); ++i)
 			{
 				derivedNodes[i]->attachRenderable((i & 1) == 0 ? duck : greeble);
-				derivedNodes[i]->attachRenderable(light);
+				moreDerivedNodes[i]->attachRenderable(light);
 			}
 
 			identityNode->attachRenderable(light);
@@ -224,9 +207,19 @@ void Application::update(float deltaTime)
 		once = true;
 	}
 
-	static hkVector4 unit(0.0f, 1.0f, 0.0f);
+	const static hkVector4 unit(0.0f, 1.0f, 0.0f);
 	static float increaseForever = 0.0f;
 	increaseForever += pause ? 0.0f : 0.01f;
+	static int increaseForeverInt = 0;
+	++increaseForeverInt;
+
+	if (increaseForeverInt % 100 == 0)
+	{
+		std::stringstream ss;
+		ss << "Frame " << increaseForeverInt;
+		bsLog::logMessage(ss.str().c_str());
+		//bsLog::logMessage("spam");
+	}
 
 	
 	for (unsigned int i = 0; i < derivedNodes.size(); ++i)
@@ -248,19 +241,19 @@ void Application::update(float deltaTime)
 	stats.setFps(1.0f / deltaTime * 1000.0f);
 	stats.setFrameTime(deltaTime);
 
-	static auto statsText = textManager->createText(L"");
+	static auto statsText = textManager->createText2D(L"");
 	statsText->setPosition(2.5f, 2.5f);
 	statsText->setColor(0xff0000ff);
 	statsText->setFontSize(16.0f);
 	statsText->addFlags(FW1_RESTORESTATE);
 	statsText->setText(stats.getStatsString());
 
-	static std::shared_ptr<bsTextBox> textBox = textManager->createTextBox(4500.0f, 10);
+	static std::shared_ptr<bsScrollingText2D> textBox = textManager->createScrollingText2D(4500.0f, 10);
 	textBox->getText()->setPosition(10.0f, 350.0f);
 	textBox->getText()->addFlags(FW1_BOTTOM | FW1_RESTORESTATE);
 	textBox->getText()->setFontSize(14.0f);
 
-	static auto frameStats = textManager->createText(L"");
+	static auto frameStats = textManager->createText2D(L"");
 	frameStats->setPosition(2.5f, 450.0f);
 	frameStats->addFlags(FW1_RESTORESTATE);
 	frameStats->setColor(0xff00ff00);
@@ -272,8 +265,8 @@ void Application::update(float deltaTime)
 	static bool logCallBackOnce = false;
 	if (!logCallBackOnce)
 	{
-		bsTextBox* tb = textBox.get();
-		bsLog::addCallback(boost::bind(&bsTextBox::addTextLine, tb, _1));
+		bsScrollingText2D* tb = textBox.get();
+		bsLog::addCallback(boost::bind(&bsScrollingText2D::addTextLine, tb, _1));
 		logCallBackOnce = true;
 	}
 

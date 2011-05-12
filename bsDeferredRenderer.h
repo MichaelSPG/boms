@@ -20,7 +20,7 @@ class bsVertexShader;
 class bsPixelShader;
 
 
-/**	Class for deferred shading.
+/*	Class for deferred shading.
 	Renders the geometry of a scene into a G buffers which is then used by other shaders
 	to construct the final image.
 */
@@ -40,7 +40,7 @@ public:
 
 	virtual ~bsDeferredRenderer();
 
-	/**	Renders a single frame, and executes all registered end-of-render callback
+	/*	Renders a single frame, and executes all registered end-of-render callback
 		functions just before the frame is presented.
 	*/
 	virtual void renderOneFrame();

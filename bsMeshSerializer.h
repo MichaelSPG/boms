@@ -20,7 +20,7 @@
 #include "bsVertexTypes.h"
 
 
-/**	Structure containing a serialized mesh' vertices and indices,
+/*	Structure containing a serialized mesh' vertices and indices,
 	as well as min and max extents used for AABB creation.
 	
 	The structure uses boost's serialization functionality to quickly load and save the
@@ -78,7 +78,7 @@ void serialize(Archive& ar, XMFLOAT2& xmf2, const unsigned int)
 }// namespace serialization
 }// namespace boost
 
-/**	This mesh serializer uses boost's serialization functionality,
+/*	This mesh serializer uses boost's serialization functionality,
 	specifically the binary archive for better load times.
 	
 	This version supports loading only.
@@ -87,7 +87,7 @@ class bsMeshSerializer
 {
 	friend class bsMeshManager;
 
-	/**	Loads a file and puts its contents in the mesh parameter.
+	/*	Loads a file and puts its contents in the mesh parameter.
 		Returns true on succes.
 	*/
 	bool load(const std::string& meshName, bsSerializedMesh& mesh);

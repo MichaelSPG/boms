@@ -11,19 +11,21 @@
 class bsLine3D;
 
 
-class bsGeometryUtils
+/*	Geometric utilities used to create geometry Havok objects.
+	Not yet functional.
+*/
+namespace bsGeometryUtils
 {
-public:
-	static void createLinesFromShape(const hkpShape* const shape, bsLine3D* line3D);
+void createLinesFromShape(const hkpShape* const shape, bsLine3D* line3D);
 
-	static void createLinesFromAabb(const hkAabb& aabb, bsLine3D* line3D)
-	{
-		hkVector4 halfExtents;
-		aabb.getHalfExtents(halfExtents);
-		hkpBoxShape* shape = new hkpBoxShape(halfExtents);
-		createLinesFromShape(shape, line3D);
-		delete shape;
-	}
+void createLinesFromAabb(const hkAabb& aabb, bsLine3D* line3D)
+{
+	hkVector4 halfExtents;
+	aabb.getHalfExtents(halfExtents);
+	hkpBoxShape* shape = new hkpBoxShape(halfExtents);
+	createLinesFromShape(shape, line3D);
+	delete shape;
+}
 
 };
 

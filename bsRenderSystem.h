@@ -4,7 +4,7 @@
 #include "bsConfig.h"
 
 
-/**	Base class for all render systems.
+/*	Base class for all render systems.
 	
 */
 class bsRenderSystem

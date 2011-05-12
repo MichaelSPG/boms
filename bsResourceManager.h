@@ -11,7 +11,7 @@
 class bsDx11Renderer;
 
 
-/**	Contains all the resource managers used by the engine.
+/*	Contains all the resource managers used by the engine.
 	You don't need to initiate every resource manager, just the ones you are going to use.
 */
 

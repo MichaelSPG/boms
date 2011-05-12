@@ -19,7 +19,7 @@ class bsVertexShader;
 class bsDx11Renderer;
 
 
-/**	Class for wireframe drawing of primitive objects.
+/*	Class for wireframe drawing of primitive objects.
 	Currently only supports creation from AABBs.
 */
 class bsPrimitive : public bsRenderable

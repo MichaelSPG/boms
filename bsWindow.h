@@ -7,9 +7,13 @@
 #include <string>
 
 
+/*	Wrapper class for Windows windows.
+*/
 class bsWindow
 {
 public:
+	/*	Creates a HWND with specified width, height and name from the provided HINSTANCE.
+	*/
 	bsWindow(int windowWidth, int windowHeight, const std::string& name,
 		HINSTANCE hInstance, int showCmd);
 

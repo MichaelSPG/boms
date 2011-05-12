@@ -187,7 +187,14 @@ void bsRenderQueue::setLightConstantBuffer(const CBLight& cbLight)
 
 void bsRenderQueue::sortRenderables()
 {
-	const std::vector<bsSceneNode*>& sceneNodes = mCamera->getVisibleSceneNodes();
+	std::vector<bsSceneNode*> sceneNodes = mCamera->getVisibleSceneNodes();
+
+	//Remove nodes that are marked as not visible.
+	sceneNodes.erase(std::remove_if(sceneNodes.begin(), sceneNodes.end(),
+		[](const bsSceneNode* sceneNode)
+		{
+			return !sceneNode->isVisible();
+		}), sceneNodes.end());
 
 	mFrameStats.visibleSceneNodeCount = sceneNodes.size();
 	if (sceneNodes.empty())

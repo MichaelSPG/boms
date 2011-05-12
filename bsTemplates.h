@@ -4,6 +4,9 @@
 #include <vector>
 #include <map>
 
+
+/*	Contains some template functions to perform operations on certain STL containers.	
+*/
 namespace bsT
 {
 

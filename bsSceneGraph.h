@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 
-#include "bsMath.h"
+#include <Common/Base/hkBase.h>
 
 class bsResourceManager;
 class bsSceneNode;
@@ -15,30 +15,26 @@ class bsHavokManager;
 class hkpWorld;
 struct bsCoreCInfo;
 
+
+/*	The scene graph is responsibe for creation of scene nodes.
+	It also creates the Havok world used for visibility detection of nodes.
+*/
 class bsSceneGraph
 {
 	friend class bsSceneNode;
 
 public:
-	/*	Tree depth is the maximum node depth to be created. Total number of oct nodes may
-		be as high as 8^n + 8^(n-1) + ... 8^1 + 8^0.
-	*/
 	bsSceneGraph(bsDx11Renderer* renderer, bsResourceManager* resourceManager,
 		bsHavokManager* havokManager, const bsCoreCInfo& cInfo);
 
 	~bsSceneGraph();
 
+	/*	Creates a new scene node with the given translation.
+		This new node will not be the child of any other nodes.
+	*/
 	bsSceneNode* createSceneNode(const hkVector4& position = hkVector4(0.0f, 0.0f, 0.0f, 0.0f));
 
-	/**	Increments the amount of created objects and returns it.
-		Used to assign unique IDs to objects.
-	*/
-	inline int getNewId()
-	{
-		return ++mNumCreatedNodes;
-	}
-
-	/**	Returns the amount of created objects without incrementing the value.
+	/*	Returns the amount of created nodes.
 	*/
 	inline int getNumCreatedNodes() const
 	{
@@ -60,6 +56,15 @@ public:
 	
 
 private:
+	/*	Increments the amount of created nodes and returns it.
+		Used to assign unique IDs to nodes.
+	*/
+	inline int getNewId()
+	{
+		return ++mNumCreatedNodes;
+	}
+
+
 	bsCamera*	mCamera;
 
 	std::vector<bsSceneNode*>	mSceneNodes;
@@ -69,7 +74,6 @@ private:
 	bsResourceManager*	mResourceManager;
 	unsigned short		mMaxTreeDepth;
 
-	bsHavokManager*		mHavokManager;
 	hkpWorld*			mGraphicsWorld;
 };
 

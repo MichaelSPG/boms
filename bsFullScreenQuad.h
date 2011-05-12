@@ -6,7 +6,7 @@
 #include <d3d11.h>
 
 
-/**	Used for drawing full screen quads (two triangles with coordinates between
+/*	Used for drawing full screen quads (two triangles with coordinates between
 	-1,-1-1 and	1,1,1).
 	
 */
@@ -18,7 +18,7 @@ public:
 
 	~bsFullScreenQuad();
 
-	/**	Draws the full screen quad.
+	/*	Draws the full screen quad.
 		Remember to set an appropriate shader before calling this.
 	*/
 	void draw(ID3D11DeviceContext* const deviceContext) const;

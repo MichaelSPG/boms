@@ -7,7 +7,7 @@
 #include <Common/Base/Types/Geometry/Aabb/hkAabbUtil.h>
 
 
-/**	Base class for all renderable objects.
+/*	Base class for all renderable objects.
 	In order for a renderable to be rendered, it must be attached to a scene node.
 */
 class bsRenderable
@@ -24,9 +24,14 @@ public:
 		LIGHT
 	};
 
+	bsRenderable()
+	{
+		mAabb.setEmpty();
+	}
+
 	virtual ~bsRenderable() {}
 
-	/**	Returns the type of this renderable, making it possible to cast a pointer to this
+	/*	Returns the type of this renderable, making it possible to cast a pointer to this
 		base class to a pointer to a subclass safely.
 	*/
 	virtual inline RenderableType getRenderableType() const = 0;

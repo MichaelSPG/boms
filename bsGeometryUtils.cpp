@@ -16,8 +16,9 @@
 #include "bsLine3D.h"
 #include "bsConvert.h"
 
-
-void bsGeometryUtils::createLinesFromShape(const hkpShape* const shape, bsLine3D* line3D)
+namespace bsGeometryUtils
+{
+void createLinesFromShape(const hkpShape* const shape, bsLine3D* line3D)
 {
 	//assert(shape->getType() == HK_SHAPE_BOX);
 
@@ -86,3 +87,5 @@ void bsGeometryUtils::createLinesFromShape(const hkpShape* const shape, bsLine3D
 	line3D->addPoints(sphereLinesXM);
 	*/
 }
+
+} // namespace bsGeometryUtils

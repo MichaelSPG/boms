@@ -8,7 +8,7 @@
 struct ID3D11PixelShader;
 
 
-/**	Contains a single pixel shader.
+/*	Contains a single pixel shader.
 	Use bsShaderManager to create shaders.
 */
 class bsPixelShader

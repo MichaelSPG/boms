@@ -14,6 +14,7 @@
 
 bsCore::bsCore(const bsCoreCInfo& cInfo)
 	: mCInfo(cInfo)
+	, mRenderSystem(nullptr)
 {
 	bsLog::init(pantheios::SEV_DEBUG);
 	if (!mCInfo.isOk())
@@ -64,6 +65,8 @@ bsCore::~bsCore()
 
 bool bsCore::update(float deltaTimeMs)
 {
+	assert(mRenderSystem && "A render system must be set before calling bsCore::update");
+
 	if (!mWindow->checkForMessages())
 	{
 		return false;
@@ -73,16 +76,6 @@ bool bsCore::update(float deltaTimeMs)
 	//mHavokManager->stepPhysicsWorld(deltaTimeMs);
 
 	mRenderSystem->renderOneFrame();
-
-	//mDx11Renderer->clearBackBuffer();
-	//mDx11Renderer->clearRenderTargets()
-
-	//mRenderQueue->reset();
-	//mRenderQueue->draw();
-
-	//mResourceManager->getTextManager()->drawAllTexts(deltaTimeMs);
-
-	//mDx11Renderer->present();
 
 	return true;
 }

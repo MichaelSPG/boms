@@ -33,7 +33,7 @@
 #include <Physics/Utilities/VisualDebugger/hkpPhysicsContext.h>
 
 
-/**	This class manages the core Havok objects, like the worlds, memory system, thread pool
+/*	This class manages the core Havok objects, like the worlds, memory system, thread pool
 	etc.
 	Contains two hkpWorlds, one for visibility detection and one for normal physics.
 */

@@ -3,6 +3,7 @@
 #include <cassert>
 #include <memory>
 
+#include "bsMath.h"
 #include "bsSceneGraph.h"
 #include "bsLog.h"
 #include "bsHavokManager.h"
@@ -13,7 +14,7 @@
 
 bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGraph,
 	bsHavokManager* havokManager)
-	: mProjectionNeedsUpdate(true)
+	: mProjectionNeedsUpdate(false)
 	, mViewNeedsUpdate(true)
 	, mViewProjectionNeedsUpdate(true)
 	
@@ -53,8 +54,7 @@ bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGr
 	bsMath::XMFloat4x4PerspectiveFovLH(mProjectionInfo.mFieldOfView,
 		mProjectionInfo.mAspectRatio, mProjectionInfo.mNearClip, mProjectionInfo.mFarClip,
 		mProjection);
-	
-	
+
 
 	hkVector4 vertices[8];
 	for (unsigned int i = 0; i < 8; ++i)
@@ -96,10 +96,10 @@ bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGr
 	cInfo.m_enableDeactivation = false;
 	cInfo.m_motionType = hkpMotion::MOTION_KEYFRAMED;
 	mRigidBody = new hkpRigidBody(cInfo);
-	//havokManager->getGraphicsWorld()->addEntity(mRigidBody);
+	havokManager->getGraphicsWorld()->addEntity(mRigidBody);
 
 
-	translate(0.0f, 0.0f, -125.0f);
+	setPosition(hkVector4(0.0f, 0.0f, -125.0f));
 }
 
 bsCamera::~bsCamera()
@@ -107,20 +107,6 @@ bsCamera::~bsCamera()
 	mViewProjectionBuffer->Release();
 	mPhantom->removeReference();
 	mRigidBody->removeReference();
-}
-
-inline void bsCamera::lookAt(const XMFLOAT3& position)
-{
-	assert(!"bsCamera::lookAt not implemented");
-
-	mViewNeedsUpdate = true;
-}
-
-inline void bsCamera::setPosition(float x, float y, float z)
-{
-	assert(!"bsCamera::setPosition not implemented");
-
-	mViewNeedsUpdate = true;
 }
 
 void bsCamera::update()
@@ -153,13 +139,7 @@ void bsCamera::updateView()
 	rotationX.mul(rotationY);
 	mTransform.setRotation(rotationX);
 
-
-	hkTransform rotatedTransform(mTransform);
-	rotatedTransform.getRotation().invert(0.00001f);
-	rotatedTransform.getTranslation().mul4(-1.0f);
-
-	mPhantom->setTransform(rotatedTransform);
-	mRigidBody->setTransform(rotatedTransform);
+	updatePhantomTransform();
 
 	mViewProjectionNeedsUpdate = true;
 }
@@ -190,8 +170,7 @@ void bsCamera::updateViewProjection()
 	bsMath::XMFloat4x4Transpose(cbCamera.view);
 	bsMath::XMFloat4x4Transpose(cbCamera.projection);
 
-	mDeviceContext->UpdateSubresource(mViewProjectionBuffer, 0, nullptr,
-		&cbCamera, 0, 0);
+	mDeviceContext->UpdateSubresource(mViewProjectionBuffer, 0, nullptr, &cbCamera, 0, 0);
 
 	mViewProjectionNeedsUpdate = false;
 }
@@ -204,97 +183,37 @@ void bsCamera::rotateAboutAxis(const hkVector4& axis, float degrees)
 	rot.setAxisAngle(axis, radians);
 	mTransform.getRotation().mul(rot);
 
-	hkTransform rotatedTransform(mTransform);
-	rotatedTransform.getRotation().invert(0.00001f);
-	rotatedTransform.getTranslation().mul4(-1.0f);
-	
-	mPhantom->setTransform(rotatedTransform);
-	mRigidBody->setTransform(rotatedTransform);
+	updatePhantomTransform();
 
 	mViewNeedsUpdate = true;
 }
 
-void bsCamera::translate(float x, float y, float z)
+void bsCamera::lookAt(const hkVector4& targetPosition)
 {
-	mTransform.getTranslation().add3clobberW(hkVector4(-x, -y, -z));
+	assert(!"bsCamera::lookAt not implemented");
 
-	hkTransform rotatedTransform(mTransform);
-	rotatedTransform.getRotation().invert(0.00001f);
-	rotatedTransform.getTranslation().mul4(-1.0f);
-
-	mPhantom->setTransform(rotatedTransform);
-	mRigidBody->setTransform(rotatedTransform);
-	
 	mViewNeedsUpdate = true;
 }
 
-void bsCamera::translateRelative(float x, float y, float z)
+void bsCamera::setPosition(const hkVector4& position)
 {
-	//TODO: Fix or remove this function
-	assert(false);
+	//Get the translation based on current position and new position
+	hkVector4 translation(position);
+	translation.sub3clobberW(mTransform.getTranslation());
 
-	hkVector4 translation(x, y, z);
-	//mTransform.getRotation().multiplyVector(translation, translation);
+	translate(translation);
+}
+void bsCamera::translate(const hkVector4& translation)
+{
+	//Generate the new position
+	hkVector4 position(mTransform.getTranslation());
+	position.sub3clobberW(translation);
+
+	mTransform.setTranslation(position);
+
+	updatePhantomTransform();
 	
-	translation.setMul3(mTransform.getRotation(), translation);
-	mTransform.getTranslation().add3clobberW(translation);
-
-
-	/*
-	hkVector4 newPosition(x, y, -z);
-	hkTransform trns = mPhantom->getTransform();
-	trns.getTranslation().setTransformedPos(trns, newPosition);
-	
-	mPhantom->setTransform(trns);
-	mRigidBody->setTransform(trns);
-	*/
-	/*
-	hkVector4 newTranslation(0.0f, 0.0f, 0.0f);// = transform.getTranslation();
-	//newTranslation.setTransformedPos(transform, hkVector4(x, y, z));
-	newTranslation.setMul3(mTransform.getRotation(), hkVector4(-x, -y, -z));
-
-	
-	mTransform.getTranslation().add3clobberW(newTranslation);
-	*/
-	//transform.setTranslation(newTranslation);
-
-
-	/*
-	//current.add3clobberW(hkVector4(x, y, z));
-	hkVector4 newTrans(x, y, z);
-	newTrans.add3clobberW(current);
-	//newTrans.setMul3(transform.getRotation(), current);
-	newTrans.setTransformedPos(transform, current);
-
-	transform.setTranslation(newTrans);
-	*/
-
-	hkTransform rotatedTransform(mTransform);
-	rotatedTransform.getRotation().invert(0.00001f);
-	rotatedTransform.getTranslation().mul4(-1.0f);
-
-	mPhantom->setTransform(rotatedTransform);
-	mRigidBody->setTransform(rotatedTransform);
-	
-
 	mViewNeedsUpdate = true;
-
-	return;
-
-
-	/*
-	hkTransform transform = mPhantom->getTransform();
-	//transform.getTranslation().sub3clobberW(hkVector4(x, y, z));
-
-	const hkVector4& oldTranslation = transform.getTranslation();
-	hkVector4 newTranslation(x, y, z);
-	newTranslation.setRotatedDir(transform.getRotation(), newTranslation);
-	transform.getTranslation().add3clobberW(newTranslation);
-
-	mPhantom->setTransform(transform);
-	mRigidBody->setTransform(transform);
-
-	mViewNeedsUpdate = true;*/
 }
 
 void bsCamera::rotateX(float angleRadians)
@@ -309,4 +228,14 @@ void bsCamera::rotateY(float angleRadians)
 	mRotationY += angleRadians;
 
 	mViewNeedsUpdate = true;
+}
+
+void bsCamera::updatePhantomTransform()
+{
+	hkTransform rotatedTransform(mTransform);
+	rotatedTransform.getRotation().invert(0.00001f);
+	rotatedTransform.getTranslation().mul4(-1.0f);
+
+	mPhantom->setTransform(rotatedTransform);
+	mRigidBody->setTransform(rotatedTransform);
 }

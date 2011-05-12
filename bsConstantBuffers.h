@@ -7,7 +7,7 @@
 #include <xnamath.h>
 
 
-/**	Defines all the constant buffers used to represent transforms and other properties
+/*	Defines all the constant buffers used to represent transforms and other properties
 	on the GPU.
 */
 

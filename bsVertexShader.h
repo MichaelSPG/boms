@@ -9,7 +9,7 @@ struct ID3D11VertexShader;
 struct ID3D11InputLayout;
 
 
-/**	Contains a single vertex shader and its input layout.
+/*	Contains a single vertex shader and its input layout.
 	Use bsShaderManager to create shaders.
 */
 class bsVertexShader

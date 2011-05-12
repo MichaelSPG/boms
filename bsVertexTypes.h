@@ -5,7 +5,7 @@
 #include <Windows.h>
 #include <xnamath.h>
 
-/**	Defines all the various vertex types.
+/*	Defines all the various vertex types.
 	A textured mesh requires different properties than a wireframe primitive,
 	so one vertex type does not work for everything.
 */

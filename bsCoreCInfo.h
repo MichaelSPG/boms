@@ -1,9 +1,10 @@
 #ifndef BS_CORECINFO_H
 #define BS_CORECINFO_H
 
-#include <Windows.h>//For HINSTANCE
-#include <string>
+#include "bsConfig.h"
 
+#include <Windows.h>
+#include <string>
 
 
 /*	Structure which holds all necessary information for starting the engine.
@@ -16,35 +17,40 @@ struct bsCoreCInfo
 		, worldSize(1000.0f)
 		, windowWidth(1280)
 		, windowHeight(720)
-		//, hWnd(nullptr)
 		, hInstance(nullptr)
 		, showCmd(-1)
 		, windowName("Direct3D 11")
 	{}
 
 
-	//This directory will be scanned by the file system, making it easy to load files it.
-	//Default: "..\assets\"
+	/*	This directory will be scanned by the file system, making it easy to load files it.
+		Default: "..\assets\"
+	*/
 	std::string	assetDirectory;
 
-	//The world size is a cube with sides equal to this many meters.
-	//Default: 1000.0f
+	/*	The world size is a cube with sides equal to this many meters.
+		Default: 1000.0f
+	*/
 	float	worldSize;
 	
-	//The dimensions of the window.
-	//Default: 1280x720
+	/*	The dimensions of the window.
+		Default: 1280x720
+	*/
 	int		windowWidth, windowHeight;
 
-	//Parameters from WinMain()
+	/*	Parameters from WinMain()
+	*/
 	HINSTANCE	hInstance;
 	int			showCmd;
 
-	//Name of the window
-	//Default: "Direct3D 11"
+	/*	Name of the window
+		Default: "Direct3D 11"
+	*/
 	std::string	windowName;
 
 
-	//Returns true if the structure is set up properly.
+	/*	Returns true if the structure is set up properly.
+	*/
 	bool isOk() const
 	{
 		return assetDirectory.length() && (worldSize > 0.0f) && (windowWidth > 0)

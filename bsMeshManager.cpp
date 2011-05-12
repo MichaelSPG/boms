@@ -33,7 +33,7 @@ bsMeshManager::~bsMeshManager()
 	}
 }
 
-std::shared_ptr<bsMesh> bsMeshManager::getMesh(const std::string& meshName)
+std::shared_ptr<bsMesh> bsMeshManager::getMesh(const std::string& meshName) const
 {
 	assert(meshName.length());
 
@@ -59,7 +59,8 @@ std::shared_ptr<bsMesh> bsMeshManager::getMesh(const std::string& meshName)
 	}
 
 	//Not found, create and return the shader.
-	std::shared_ptr<bsMesh> mesh = loadMesh(meshPath);
+	//Cast const away since the load function is not const
+	std::shared_ptr<bsMesh> mesh = const_cast<bsMeshManager*>(this)->loadMesh(meshPath);
 	if (!mesh)
 	{
 		std::stringstream message;

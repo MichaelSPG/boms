@@ -1,10 +1,17 @@
 #ifndef BS_CONVERT_H
 #define BS_CONVERT_H
 
+#include "bsConfig.h"
+
 #include <Common/Base/hkBase.h>
 
-#include "bsMath.h"
+#include <Windows.h>
+#include <xnamath.h>
 
+
+/*	Functions to convert between XNA math and Havok math classes.
+	
+*/
 namespace bsMath
 {
 

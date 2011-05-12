@@ -17,7 +17,7 @@ class bsResourceManager;
 class bsDx11Renderer;
 
 
-/**	Contains shaders used by the application, mapped with file path as key to allow for
+/*	Contains shaders used by the application, mapped with file path as key to allow for
 	fast fetching of already loaded shaders.
 */
 class bsShaderManager

@@ -6,7 +6,6 @@
 #include "bsResourceManager.h"
 #include "bsHavokManager.h"
 #include "bsMesh.h"
-#include "bsGeometryUtils.h"
 #include "bsLine3D.h"
 #include <Physics/Collide/Shape/Convex/Box/hkpBoxShape.h>
 
@@ -15,20 +14,21 @@ bsSceneNode::bsSceneNode(const hkVector4& localTranslation, int id, bsSceneGraph
 	: mSceneGraph(sceneGraph)
 	, mParentSceneNode(nullptr)
 	, mID(id)
+	, mVisible(true)
 	, mPhantom(nullptr)
 {
-	mTransform.getTranslation().setXYZ(localTranslation);
-	mTransform.getRotation().setIdentity();
+	mLocalTransform.getTranslation().setXYZ(localTranslation);
+	mLocalTransform.getRotation().setIdentity();
 
 	mAabb.setEmpty();
 
 	hkpBoxShape* shape = new hkpBoxShape(hkVector4(0.1f, 0.1f, 0.1f));
-	mPhantom = new hkpCachingShapePhantom(shape, mTransform);
+	mPhantom = new hkpCachingShapePhantom(shape, mLocalTransform);
 	
 	//Set user data to point to this scene node, making it possible to get this scene node
 	//from other phantoms' lists of overlapping phantoms.
 	mPhantom->setUserData(reinterpret_cast<hkUlong>(this));
-	mSceneGraph->mHavokManager->getGraphicsWorld()->addPhantom(mPhantom);
+	mSceneGraph->mGraphicsWorld->addPhantom(mPhantom);
 }
 
 bsSceneNode::~bsSceneNode()
@@ -46,6 +46,9 @@ bsSceneNode* bsSceneNode::createChildSceneNode(const hkVector4& position /*= hkV
 		mSceneGraph);
 	node->mParentSceneNode = this;
 
+	//Update it once to make sure it's synced properly with this node.
+	node->updateDerivedTransform();
+
 	mChildren.push_back(node);
 
 	mSceneGraph->mSceneNodes.push_back(node);
@@ -53,7 +56,7 @@ bsSceneNode* bsSceneNode::createChildSceneNode(const hkVector4& position /*= hkV
 	return node;
 }
 
-const hkVector4& bsSceneNode::getDerivedTranslation() const
+const hkVector4& bsSceneNode::getDerivedPosition() const
 {
 	return mPhantom->getTransform().getTranslation();
 }
@@ -65,21 +68,12 @@ const hkTransform& bsSceneNode::getDerivedTransformation() const
 
 void bsSceneNode::updateDerivedTransform() const
 {
-	//Get derivedTransform transform from parent
+	//Get derived transform from parent
 	if (mParentSceneNode)
 	{
-		//Get transform from parent, add own transform.
-		//TODO: Make this not result in rediculously high translations
-		//const hkTransform& localTransform = mPhantom->getTransform();//gjør om denne til mTransform?
-		// = mParentSceneNode->getDerivedTransformation();
-
-		//derivedTransform.getRotation().mul(localTransform.getRotation());
-		//derivedTransform.getTranslation().add3clobberW(localTransform.getTranslation());
-		//derivedTransform.getTranslation().setMul3(derivedTransform.getRotation(), derivedTransform.getTranslation());
-			
 		//Multiply own transform with derived.
 		hkTransform derivedTransform;
-		derivedTransform.setMul(mParentSceneNode->getDerivedTransformation(), mTransform);
+		derivedTransform.setMul(mParentSceneNode->getDerivedTransformation(), mLocalTransform);
 
 		mPhantom->setTransform(derivedTransform);
 	}
@@ -87,34 +81,33 @@ void bsSceneNode::updateDerivedTransform() const
 	{
 		//No parents to derive transform from, meaning own (local) transform is
 		//already in world space.
-		mPhantom->setTransform(mTransform);
+		mPhantom->setTransform(mLocalTransform);
 	}
-	/*
-	//Add own (local) transform
-	hkTransform oldTransform = mPhantom->getTransform();
-	oldTransform.getTranslation().add3clobberW(mTransform.getTranslation());
-	oldTransform.getRotation().mul(mTransform.getRotation());
-	mPhantom->setTransform(oldTransform);
-	*/
+
+	//All children of this node need to have their positions updates too
+	for (unsigned int i = 0, count = mChildren.size(); i < count; ++i)
+	{
+		mChildren[i]->updateDerivedTransform();
+	}
 }
 
 void bsSceneNode::setPosition(const hkVector4& newPosition)
 {
-	hkVector4 translation(mTransform.getTranslation());
+	hkVector4 translation(mLocalTransform.getTranslation());
 	translation.sub3clobberW(newPosition);
 
-	mTransform.setTranslation(newPosition);
-	//mTransform.getTranslation().set(x, y, z, 0.0f);
+	mLocalTransform.setTranslation(newPosition);
+	//mLocalTransform.getTranslation().set(x, y, z, 0.0f);
 
 	//Get translation
-	translation.sub3clobberW(mTransform.getTranslation());
+	translation.sub3clobberW(mLocalTransform.getTranslation());
 	
 	updateDerivedTransform();
 }
 
 void bsSceneNode::translate(const hkVector4& translation)
 {
-	mTransform.getTranslation().add3clobberW(translation);
+	mLocalTransform.getTranslation().add3clobberW(translation);
 	
 	updateDerivedTransform();
 }

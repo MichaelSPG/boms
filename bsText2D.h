@@ -1,5 +1,5 @@
-#ifndef BS_TEXT_H
-#define BS_TEXT_H
+#ifndef BS_TEXT2D_H
+#define BS_TEXT2D_H
 
 #include <string>
 
@@ -9,7 +9,12 @@
 
 class bsDx11Renderer;
 
-//Use bsTextManager to create bsText2D objects.
+
+/*	A 2D text objects which can be used to show text on the screen.
+	The text contained by this object can be changed at any time during runtime.
+	
+	Use bsTextManager to create bsText2D objects.
+*/
 class bsText2D
 {
 	friend class bsTextManager;
@@ -19,18 +24,7 @@ class bsText2D
 public:
 	~bsText2D();
 
-	inline IFW1FontWrapper* getFontWrapper() const
-	{
-		return mFontWrapper;
-	}
-
 	inline const std::wstring& getText() const
-	{
-		return mText;
-	}
-
-	//Read/write access
-	inline std::wstring& getText()
 	{
 		return mText;
 	}
@@ -45,20 +39,16 @@ public:
 		return mEnabled;
 	}
 
-	//Default: true
+	/*	If a text is not enabled, if will not be drawn.
+		Default: true
+	*/
 	inline void setEnabled(bool enabled)
 	{
 		mEnabled = enabled;
 	}
 
-	//Read only
-	inline const XMFLOAT2& getPosition() const
-	{
-		return mPosition;
-	}
 
-	//Read/write access
-	inline XMFLOAT2& getPosition()
+	inline const XMFLOAT2& getPosition() const
 	{
 		return mPosition;
 	}
@@ -104,23 +94,28 @@ public:
 		return mFlags;
 	}
 
-	//See FW1_TEXT_FLAG enum
-	//Default: 0
+	/*	See FW1_TEXT_FLAG enum
+		Default: 0 (left aligned)
+	*/
 	inline void setFlags(unsigned int flags)
 	{
 		mFlags = flags;
 	}
 
-	//See FW1_TEXT_FLAG enum
-	//Default: 0
+	/*	See FW1_TEXT_FLAG enum
+		Default: 0 (left aligned)
+		Bitwise ORs one or multiple flags, i.e. current |= flags
+	*/
 	inline void addFlags(unsigned int flags)
 	{
 		mFlags |= flags;
 	}
 
-	void draw();
 	
 private:
+	//Renders the text to active render target
+	void draw();
+
 	bool					mEnabled;
 	std::wstring			mText;
 	IFW1FontWrapper*		mFontWrapper;
@@ -132,4 +127,4 @@ private:
 	unsigned int	mFlags;
 };
 
-#endif // BS_TEXT_H
+#endif // BS_TEXT2D_H

@@ -1,9 +1,12 @@
 #ifndef BS_CONFIG_H
 #define BS_CONFIG_H
 
-#include <exception>
 
-/*	2 for maximum debug level, 0 for minimum.
+/*	Configuration used to change functionality of certain objects, or error checking.
+*/
+
+
+/*	2 for maximum debug level, 0 for off.
 */
 #ifndef BS_DEBUG_LEVEL
 #ifdef _DEBUG

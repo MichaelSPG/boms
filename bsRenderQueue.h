@@ -29,7 +29,7 @@ struct CBLight;
 struct ID3D11DeviceContext;
 struct ID3D11Buffer;
 
-/**	Contains stats about a frame.
+/*	Contains stats about a frame.
 	Data can be taken out manually, or a string can be created following a
 	predefined pattern.
 */
@@ -51,7 +51,7 @@ struct bsFrameStats
 		std::stringstream ss;
 		ss.setf(std::ios::floatfield, std::ios::fixed);
 		ss.precision(3);
-		ss << "Time taken: " << timeTakenMs << " ms";
+		ss << "Rendering time taken: " << timeTakenMs << " ms";
 		ss.precision(0);
 		ss  << "\nVisible scene nodes: " << visibleSceneNodeCount
 			<< "\nUnique meshes drawn: " << uniqueMeshesDrawn
@@ -67,7 +67,7 @@ struct bsFrameStats
 		std::wstringstream ss;
 		ss.setf(std::ios::floatfield, std::ios::fixed);
 		ss.precision(3);
-		ss << L"Time taken: " << timeTakenMs << L" ms";
+		ss << L"Rendering time taken: " << timeTakenMs << L" ms";
 		ss.precision(0);
 		ss  << L"\nVisible scene nodes: " << visibleSceneNodeCount
 			<< L"\nUnique meshes drawn: " << uniqueMeshesDrawn
@@ -89,7 +89,7 @@ struct bsFrameStats
 };
 
 
-/**	The render queue is responsible for drawing everything to the screen.
+/*	The render queue is responsible for drawing everything to the screen.
 	Organizes various groups of renderable objects to make it easy to draw individual
 	types of renderables.
 */
@@ -108,7 +108,7 @@ public:
 
 	void drawLights();
 
-	/**	Sets the active camera.
+	/*	Sets the active camera.
 		This camera is used to generate a list of scene nodes that are visible per frame,
 		i.e. ones that are inside the frustum.
 	*/
@@ -117,7 +117,7 @@ public:
 		mCamera = camera;
 	}
 
-	/**	Gets the current frame stats.
+	/*	Gets the current frame stats.
 		If called between the start and end of all the draw functions,
 		the stats may be incomplete.
 	*/

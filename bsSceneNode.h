@@ -15,15 +15,23 @@
 #include "bsRenderable.h"
 #include "bsTemplates.h"
 
-
 class bsSceneGraph;
 
+
+/*	Scene nodes are used to represent a node in 3D space which can have multiple objects
+	attached to it.
+	For example, a node can be used to represent a car by attaching the car mesh,
+	an exhaust particle effect and an engine sound to it.
+
+	Use bsSceneGraph to create scene nodes, or an already created scene node if you want
+	to create a hierarchy of nodes.
+*/
 class bsSceneNode
 {
 	friend class bsSceneGraph;
-	//friend class Application;//TODO: remove
 
 	bsSceneNode(const hkVector4& position, int id, bsSceneGraph* sceneGraph);
+
 	~bsSceneNode();
 
 public:
@@ -31,84 +39,118 @@ public:
 		The new scene node will inherit this scene node's transform, meaning that moving
 		or rotating this node will also move or rotate the child node.
 	*/
-	bsSceneNode* createChildSceneNode(const hkVector4& localTranslation = hkVector4(0.0f, 0.0f, 0.0f, 0.0f));
-
+	bsSceneNode* createChildSceneNode(const hkVector4& localTranslation =
+		hkVector4(0.0f, 0.0f, 0.0f, 0.0f));
+	
+	/*	Attaches a renderable object to this scene node.
+		This allows the object to be rendered with this node's transformations.
+	*/
 	void attachRenderable(const std::shared_ptr<bsRenderable>& renderable);
 
+	/*	Detaches a renderable, meaning it will no longer be drawn with this node's
+		transformation.
+	*/
 	void detachRenderable(const std::shared_ptr<bsRenderable>& renderable);
 
+	/*	Returns all renderables attached to this node.
+	*/
 	inline const std::vector<std::shared_ptr<bsRenderable>>& getRenderables() const
 	{
 		return mRenderables;
 	}
 
-	//World space
-	//Gets translation derived from all parents, including local.
-	const hkVector4& getDerivedTranslation() const;
+	/*	Returns this node's derived translation (this node's world space).
+		The translation is derived from node's above this node in the hierarchy.
+		If this node is not a child of a different scene node, this translation is the
+		same as local translation.
+	*/
+	const hkVector4& getDerivedPosition() const;
 
-	//Local space
-	//Gets local transformation.
+	/*	Returns this node's local transformation.
+	*/
 	inline const hkTransform& getTransformation() const
 	{
-		return mTransform;
+		return mLocalTransform;
 	}
 
-	//World space
-	//Gets transformation derived from all parents, including local.
+	/*	Returns this node's derived transformation (this node's world space).
+		The transformation is derived from node's above this node in the hierarchy.
+		If this node is not a child of a different scene node, this transformation is the
+		same as local translation.
+	*/
 	const hkTransform& getDerivedTransformation() const;
 
-	//Local space
-	//Gets local translation.
+	/*	Returns this node's local translation (local space).
+	*/
 	inline const hkVector4& getPosition() const
 	{
-		return mTransform.getTranslation();
+		return mLocalTransform.getTranslation();
 	}
 
-	//Calls setPosition with translation's x, y and z elements.
+	/*	Sets this node's local translation.
+	*/
 	void setPosition(const hkVector4& newPosition);
-	/*{
-		setPosition(translation.getSimdAt(0), translation.getSimdAt(1),
-			translation.getSimdAt(2));
-	}*/
 
-	//void setPosition(float x, float y, float z);
-
+	/*	Translates this node's local translation.
+	*/
 	void translate(const hkVector4& translation);
 
-	//Sets local rotation.
+	/*	Sets this node's local rotation.
+	*/
 	inline void setRotation(const hkRotation& rotation)
 	{
-		mTransform.setRotation(rotation);
+		mLocalTransform.setRotation(rotation);
 
 		updateDerivedTransform();
 	}
 
-	//Sets local rotation.
+	/*	Sets this node's local rotation.
+	*/
 	inline void setRotation(const hkQuaternion& rotation)
 	{
-		mTransform.setRotation(rotation);
+		mLocalTransform.setRotation(rotation);
 
 		updateDerivedTransform();
+	}
+
+	/*	Sets whether this node should be visible or not.
+		If it is not visible, any renderable objects it contain will not be rendered.
+		Default to true.
+	*/
+	inline void setVisible(bool visible)
+	{
+		mVisible = visible;
+	}
+
+	inline bool isVisible() const
+	{
+		return mVisible;
 	}
 
 private:
-	//Updates the phantom's shape so that it is identical to the node's AABB.
+	/*	Updates the phantom's shape so that it is identical to the node's AABB.
+		Called after a renderable has been detached or attached to keep visibility
+		detection correct.
+	*/
 	void updatePhantomShape();
 
-	//Updates the derived transform so that it includes the most recent version of
-	//local transform.
+	/*	Updates the derived transform so that it includes the most recent version of
+		local transform.
+		Called by all functions which modify local transform.
+	*/
 	void updateDerivedTransform() const;
 
 	std::vector<bsSceneNode*> mChildren;
 	bsSceneNode*	mParentSceneNode;
 	int				mID;
+	bool			mVisible;
 
 	bsSceneGraph*	mSceneGraph;
 
 	//Every renderable object attached to this scene node.
 	std::vector<std::shared_ptr<bsRenderable>>	mRenderables;
 
-	hkTransform				mTransform;
+	hkTransform				mLocalTransform;
 	hkAabb					mAabb;
 	hkpCachingShapePhantom*	mPhantom;
 };

@@ -20,6 +20,8 @@ class bsSceneGraph;
 class bsHavokManager;
 
 
+/*	Projection information used to construct the camera.
+*/
 struct bsProjectionInfo
 {
 	bsProjectionInfo(float fieldOfViewDegrees, float farClip, float nearClip,
@@ -30,12 +32,20 @@ struct bsProjectionInfo
 		, mAspectRatio(aspectRatio)
 	{}
 
+	//Field of view in degrees
 	float	mFieldOfView;
+	//Distance to the far clip plane
 	float	mFarClip;
+	//Distance to the near clip plane
 	float	mNearClip;
-	float	mAspectRatio;	//Aspect ratio of view space x:y
+	//Aspect ratio of view space x:y
+	float	mAspectRatio;
 };
 
+/*	A camera describing a position in 3D space from which a scene will be rendered.
+	
+	The camera will automatically upload its transformation to the GPU when it changes.
+*/
 class bsCamera
 {
 public:
@@ -44,36 +54,41 @@ public:
 
 	~bsCamera();
 
-	inline void lookAt(const XMFLOAT3& position);
+	/*	Rotates the camera so that it looks at the target position.
+	*/
+	void lookAt(const hkVector4& targetPosition);
 
+	/*	Rotates the camera around a specified axis.
+	*/
 	void rotateAboutAxis(const hkVector4& axis, float degrees);
 
-	inline void translate(const XMFLOAT3& translation)
+	/*	Translates the camera.
+	*/
+	void translate(const hkVector4& translation);
+
+	/*	Sets the camera's position in world space.
+	*/
+	void setPosition(const hkVector4& position);
+
+	/*	Returns the camera's position in world space.
+	*/
+	inline hkVector4 getPosition() const
 	{
-		translate(translation.x, translation.y, translation.z);
+		return mTransform.getTranslation();
 	}
 
-	void translate(float x, float y, float z);
-
-	inline void translateRelative(const XMFLOAT3& translation)
-	{
-		translateRelative(translation.x, translation.y, translation.z);
-	}
-
-	void translateRelative(float x, float y, float z);
-
-	inline void setPosition(const XMFLOAT3& translation)
-	{
-		setPosition(translation.x, translation.y, translation.z);
-	}
-
-	inline void setPosition(float x, float y, float z);
-
+	/*	Returns a reference to the currently active projection info.
+		This may not be identical to the projection info the camera was created with.
+	*/
 	inline const bsProjectionInfo& getProjectionInfo() const
 	{
 		return mProjectionInfo;
 	}
 
+	/*	Sets a new projection info.
+		The camera's projection matrix will be recreated and uploaded to the GPU
+		after this has been called.
+	*/
 	inline void setProjectionInfo(const bsProjectionInfo& projectionInfo)
 	{
 		mProjectionInfo = projectionInfo;
@@ -81,27 +96,28 @@ public:
 		mProjectionNeedsUpdate = true;
 	}
 
+	/*	Returns a vector of all scene nodes that overlap with the frustum.
+	*/
 	inline std::vector<bsSceneNode*> getVisibleSceneNodes() const
 	{
 		return mPhantom->getOverlappingSceneNodes();
 	}
 
-	//Updates and uploads transformation matrix to the GPU if it has changed.
+	/*	Updates and uploads transformation matrix to the GPU if it has changed.
+	*/
 	void update();
 
-	inline const XMFLOAT4X4& getViewProjectionMatrix()
-	{
-		update();
-
-		return mViewProjection;
-	}
-
+	/*	Rotates the camera around the X axis.
+	*/
 	void rotateX(float angleRadians);
 
+	/*	Rotates the camera around the Y axis.
+	*/
 	void rotateY(float angleRadians);
 
 private:
-	//Updates the view matrix and then updates the view projection matrix.
+	/*	Updates the view matrix and then updates the view projection matrix.
+	*/
 	void updateView();
 
 	/*	Updates projection matrix with current projection info, and then updates
@@ -113,6 +129,11 @@ private:
 		and uploads it to the GPU
 	*/
 	void updateViewProjection();
+
+	/*	Syncronizes the phantom used for visibility detection's transform with the camera
+		so that visibility detection will be as accurate as possible.
+	*/
+	void updatePhantomTransform();
 
 
 
