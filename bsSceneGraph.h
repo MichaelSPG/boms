@@ -50,9 +50,6 @@ public:
 	{
 		return mCamera;
 	}
-
-	void update(float deltaTime);
-
 	
 
 private:

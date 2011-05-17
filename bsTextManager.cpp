@@ -1,9 +1,8 @@
 #include "bsTextManager.h"
 
-#include <cassert>
-
 #include "bsDx11Renderer.h"
 #include "bsLog.h"
+#include "bsAssert.h"
 #include "bsTemplates.h"
 #include "bsScrollingText2D.h"
 
@@ -13,12 +12,8 @@ bsTextManager::bsTextManager(bsDx11Renderer* dx11Renderer)
 	, mDx11Renderer(dx11Renderer)
 {
 	HRESULT hres = FW1CreateFactory(FW1_VERSION, &mFw1Factory);
-	if (FAILED(hres))
-	{
-		bsLog::logMessage("Failed to create font factory", pantheios::SEV_CRITICAL);
-	}
 	
-	assert(SUCCEEDED(hres) && "bsTextManager::bsTextManager font factory creation");
+	BS_ASSERT2(SUCCEEDED(hres), "FW1 font factory creation failed");
 }
 
 bsTextManager::~bsTextManager()
@@ -36,13 +31,8 @@ std::shared_ptr<bsText2D> bsTextManager::createText2D(const std::wstring& text,
 	
 	HRESULT hres = mFw1Factory->CreateFontWrapper(mDx11Renderer->getDevice(), font.c_str(),
 		&fontWrapper);
-	if (FAILED(hres))
-	{
-		std::string errorMessage("Failed to create font wrapper");
-		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
-	}
 
-	assert(SUCCEEDED(hres) && "bsTextManager::createText2D failed");
+	BS_ASSERT2(SUCCEEDED(hres), "Failed to create a font wrapper object");
 	
 	std::shared_ptr<bsText2D> textObject(new bsText2D(mDx11Renderer, text));
 	textObject->mFontWrapper = fontWrapper;

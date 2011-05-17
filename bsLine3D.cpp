@@ -1,11 +1,11 @@
 #include "bsLine3D.h"
 
-#include <cassert>
 #include <string>
 
 #include "bsDx11Renderer.h"
 #include "bsVertexTypes.h"
 #include "bsLog.h"
+#include "bsAssert.h"
 
 
 bsLine3D::bsLine3D(const XMFLOAT4& colorRgba)
@@ -44,42 +44,28 @@ void bsLine3D::addPoints(const std::vector<XMFLOAT3>& points)
 
 bool bsLine3D::create(bsDx11Renderer* dx11Renderer)
 {
-	assert(isOkForRendering());
+	BS_ASSERT2(isOkForRendering(), "Tried to create line while the data was in a non-good state");
 
 	const unsigned int pointCount = mPoints.size();
 
-	if (!pointCount)
-	{
-		bsLog::logMessage("bsLine3D::create called with no points defined",
-			pantheios::SEV_ERROR);
-		assert(!"bsLine3D::create called with no points defined");
-		return false;
-	}
-	else if (pointCount & 1)//if odd
-	{
-		bsLog::logMessage("Attempted to create bsLine3D with an odd amount of points",
-			pantheios::SEV_ERROR);
-		assert(!"Attempted to create bsLine3D with an odd amount of points");
-		return false;
-	}
+	BS_ASSERT2(pointCount, "No points defined");
+	BS_ASSERT2(pointCount & 1, "Attempted to create bsLine3D with an odd amount of points");
 
 	//Vertex buffer
 	D3D11_BUFFER_DESC bufferDescription;
-	ZeroMemory(&bufferDescription, sizeof(bufferDescription));
+	memset(&bufferDescription, 0, sizeof(bufferDescription));
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
 	bufferDescription.ByteWidth = sizeof(XMFLOAT3) * pointCount;
 	bufferDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
 	D3D11_SUBRESOURCE_DATA initData;
-	ZeroMemory(&initData, sizeof(initData));
+	memset(&initData, 0, sizeof(initData));
 	initData.pSysMem = &mPoints[0];
 
 	if (FAILED(dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
 		&mVertexBuffer)))
 	{
-		bsLog::logMessage("bsLine3D failed to create vertex buffer", pantheios::SEV_ERROR);
-
-		assert(!"bsLine3D failed to create vertex buffer");
+		BS_ASSERT(!"Failed to create vertex buffer");
 
 		return false;
 	}
@@ -107,8 +93,7 @@ bool bsLine3D::create(bsDx11Renderer* dx11Renderer)
 	if (FAILED(dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
 		&mIndexBuffer)))
 	{
-		bsLog::logMessage("bsLine3D failed to create index buffer", pantheios::SEV_ERROR);
-		assert(!"bsLine3D failed to create index buffer");
+		BS_ASSERT(!"Failed to create index buffer");
 
 		return false;
 	}
@@ -127,8 +112,8 @@ bool bsLine3D::create(bsDx11Renderer* dx11Renderer)
 
 void bsLine3D::draw(bsDx11Renderer* dx11Renderer)
 {
-	assert(dx11Renderer);
-	assert(mFinished && "Trying to draw a bsLine3D which has not had its buffers created");
+	BS_ASSERT(dx11Renderer);
+	BS_ASSERT2(mFinished, "Trying to draw a bsLine3D which has not had its buffers created");
 
 	ID3D11DeviceContext* context = dx11Renderer->getDeviceContext();
 

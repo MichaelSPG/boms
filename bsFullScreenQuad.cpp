@@ -1,17 +1,17 @@
 #include "bsFullScreenQuad.h"
 
 #include <vector>
-#include <cassert>
 
 #include "bsLog.h"
 #include "bsVertexTypes.h"
+#include "bsAssert.h"
 
 
 bsFullScreenQuad::bsFullScreenQuad(ID3D11Device* const device)
 	: mVertexBuffer(nullptr)
 	, mIndexBuffer(nullptr)
 {
-	assert(device);
+	BS_ASSERT(device);
 
 	VertexTex vertices[] = 
 	{

@@ -1,10 +1,10 @@
 #include "bsDx11Renderer.h"
 
-#include <cassert>
 #include <string>
 
 #include "bsLog.h"
 #include "bsRenderTarget.h"
+#include "bsAssert.h"
 
 
 bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindowHeight)
@@ -58,8 +58,7 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 		featureLevels, ARRAYSIZE(featureLevels), D3D11_SDK_VERSION, &swapChainDesc, &mSwapChain,
 		&mDevice, &fl, &mDeviceContext)))
 	{
-		bsLog::logMessage("Failed to create D3D11 device", pantheios::SEV_CRITICAL);
-		assert(!"Failed to create D3D11 device");
+		BS_ASSERT(!"Failed to create D3D11 device");
 	}
 
 	//Back buffer
@@ -67,8 +66,7 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 	bsLog::logMessage("Creating back buffer");
 	if (FAILED(mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer)))
 	{
-		bsLog::logMessage("Failed to create back buffer", pantheios::SEV_CRITICAL);
-		assert(!"Failed to create back buffer");
+		BS_ASSERT(!"Failed to create back buffer");
 	}
 
 	
@@ -76,9 +74,7 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 	bsLog::logMessage("Creating back buffer render target view");
 	if (FAILED(mDevice->CreateRenderTargetView(backBuffer, nullptr, &mBackBufferRenderTargetView)))
 	{
-		bsLog::logMessage("Failed to create back buffer render target view",
-			pantheios::SEV_CRITICAL);
-		assert(!"Failed to create back buffer render target view");
+		BS_ASSERT(!"Failed to create back buffer render target view");
 	}
 	
 	backBuffer->Release();
@@ -101,8 +97,7 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 	bsLog::logMessage("Creating depth stencil texture");
 	if (FAILED(mDevice->CreateTexture2D(&depthDesc, nullptr, &mDepthStencil)))
 	{
-		bsLog::logMessage("Failed to create depth stencil texture", pantheios::SEV_CRITICAL);
-		assert(!"Failed to create depth stencil texture");
+		BS_ASSERT(!"Failed to create depth stencil texture");
 	}
 
 	//Depth stencil view
@@ -120,8 +115,7 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 	if (FAILED(mDevice->CreateDepthStencilView(mDepthStencil, &depthViewDesc,
 		&mDepthStencilView)))
 	{
-		bsLog::logMessage("Failed to create depth stencil view", pantheios::SEV_CRITICAL);
-		assert(!"Failed to create depth stencil view");
+		BS_ASSERT(!"Failed to create depth stencil view");
 	}
 
 	//Viewport
@@ -210,9 +204,7 @@ void bsDx11Renderer::present() const
 {
 	if (FAILED(mSwapChain->Present(mVsyncEnabled ? 1 : 0, 0)))
 	{
-		bsLog::logMessage("IDXGISwapChain::Present failed", pantheios::SEV_ERROR);
-
-		assert(!"IDXGISwapChain::Present failed");
+		BS_ASSERT(!"IDXGISwapChain::Present failed");
 	}
 }
 
@@ -243,7 +235,7 @@ HRESULT bsDx11Renderer::compileShader(const char* fileName, const char* entryPoi
 
 			OutputDebugStringA((char*)errorBlob->GetBufferPointer());
 
-			assert(!"Failed to compile shader");
+			BS_ASSERT(!"Failed to compile shader");
 		}
 		else
 		{
@@ -266,7 +258,8 @@ HRESULT bsDx11Renderer::compileShader(const char* fileName, const char* entryPoi
 void bsDx11Renderer::setRenderTargets(bsRenderTarget** renderTargets,
 	unsigned int renderTargetCount)
 {
-	assert(renderTargetCount > 0 && renderTargetCount <= D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT);
+	BS_ASSERT2(renderTargetCount > 0 && renderTargetCount <= D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT,
+		"Render target count out of valid range (0-8)");
 
 	//Array of render targets to be set.
 	ID3D11RenderTargetView* renderTargetViews[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT] = { nullptr };

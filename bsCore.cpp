@@ -1,13 +1,12 @@
 #include "bsCore.h"
 
-#include <cassert>
-
 #include "bsWindow.h"
 #include "bsSceneGraph.h"
 #include "bsDx11Renderer.h"
 #include "bsResourceManager.h"
 #include "bsHavokManager.h"
 #include "bsLog.h"
+#include "bsAssert.h"
 #include "bsRenderQueue.h"
 #include "bsRenderSystem.h"
 
@@ -17,14 +16,8 @@ bsCore::bsCore(const bsCoreCInfo& cInfo)
 	, mRenderSystem(nullptr)
 {
 	bsLog::init(pantheios::SEV_DEBUG);
-	if (!mCInfo.isOk())
-	{
-		bsLog::logMessage("Invalid construction info was sent to bsCore",
-			pantheios::SEV_EMERGENCY);
-		
-		assert(mCInfo.isOk());
-		return;
-	}
+
+	BS_ASSERT2(mCInfo.isOk(), "Invalid construction info was sent to bsCore");
 
 	bsLog::logMessage("Initializing core", pantheios::SEV_NOTICE);
 
@@ -53,19 +46,22 @@ bsCore::~bsCore()
 	delete mSceneGraph;
 
 	delete mHavokManager;
-	hkMemoryInitUtil::quit();
 	hkBaseSystem::quit();
+	hkMemoryInitUtil::quit();
 
 	delete mResourceManager;
 
 	delete mDx11Renderer;
 
 	delete mWindow;
+
+	bsLog::logMessage("Core shut down successfully", pantheios::SEV_NOTICE);
+	bsLog::deinit();
 }
 
 bool bsCore::update(float deltaTimeMs)
 {
-	assert(mRenderSystem && "A render system must be set before calling bsCore::update");
+	BS_ASSERT2(mRenderSystem, "A render system must be set before calling bsCore::update");
 
 	if (!mWindow->checkForMessages())
 	{

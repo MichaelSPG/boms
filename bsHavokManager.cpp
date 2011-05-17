@@ -13,9 +13,9 @@
 
 #include <Common/Base/Config/hkProductFeatures.cxx>
 #include <string>
-#include <cassert>
 
 #include "bsLog.h"
+#include "bsAssert.h"
 
 
 static void HK_CALL errorReport(const char* message, void* userArgGivenToInit)
@@ -80,7 +80,7 @@ void bsHavokManager::createGraphicsWorld(bool createVisualDebugger /*= false*/)
 		bsLog::logMessage("Graphics world already exists", pantheios::SEV_CRITICAL);
 		return;
 	}
-	assert(!mGraphicsWorld && "Graphics world already exists");
+	BS_ASSERT2(!mGraphicsWorld, "Graphics world already exists");
 
 	if (!mNonWorldObjectsCreated)
 	{
@@ -113,7 +113,7 @@ void bsHavokManager::createPhysicsWorld(bool createVisualDebugger /*= true*/)
 		createNonWorldObjects();
 	}
 
-	assert(!"Not implemented");
+	BS_ASSERT(!"Not implemented");
 
 
 	if (createVisualDebugger)
@@ -160,14 +160,7 @@ void bsHavokManager::createNonWorldObjects()
 
 void bsHavokManager::createVDB(hkpWorld* world)
 {
-	if (mVisualDebugger)
-	{
-		bsLog::logMessage("Visual debugger has already been created",
-			pantheios::SEV_ERROR);
-
-		return;
-	}
-	assert(!mVisualDebugger && "Visual debugger has already been created");
+	BS_ASSERT2(!mVisualDebugger, "Visual debugger has already been created");
 
 	//Create visual debugger and start listening for connections.
 	mContext = new hkpPhysicsContext();
@@ -181,7 +174,7 @@ void bsHavokManager::createVDB(hkpWorld* world)
 
 void bsHavokManager::stepGraphicsWorld(float deltaTimeMs)
 {
-	assert(mGraphicsWorld);
+	BS_ASSERT2(mGraphicsWorld, "Graphics world is being stepped before it has been created");
 
 	//Convert to seconds since Havok uses seconds.
 	mGraphicsWorld->stepDeltaTime(deltaTimeMs * 0.001f);
@@ -195,8 +188,9 @@ void bsHavokManager::stepGraphicsWorld(float deltaTimeMs)
 
 void bsHavokManager::stepPhysicsWorld(float deltaTimeMs)
 {
-	assert(mPhysicsWorld);
-	assert(!"stepPhysicsWorld not implemented");
+	BS_ASSERT2(mPhysicsWorld, "Physics world is being stepped before it has been created");
+
+	BS_ASSERT(!"stepPhysicsWorld not implemented");
 
 	//step world
 

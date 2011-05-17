@@ -9,6 +9,7 @@
 #include "bsLog.h"
 #include "bsDx11Renderer.h"
 #include "bsMeshSerializer.h"
+#include "bsAssert.h"
 
 
 
@@ -17,8 +18,8 @@ bsMeshManager::bsMeshManager(bsDx11Renderer* dx11Renderer, bsResourceManager* re
 	, mDx11Renderer(dx11Renderer)
 	, mResourceManager(resourceManager)
 {
-	assert(dx11Renderer);
-	assert(resourceManager);
+	BS_ASSERT(dx11Renderer);
+	BS_ASSERT(resourceManager);
 }
 
 bsMeshManager::~bsMeshManager()
@@ -28,25 +29,28 @@ bsMeshManager::~bsMeshManager()
 	//shut down.
 	for (auto itr = mMeshes.begin(), end = mMeshes.end(); itr != end; ++itr)
 	{
-		assert((itr->second.use_count() == 1) && "There are external references to meshes"
-			"when the mesh manager is shutting down");
+		if (!(itr->second.use_count() == 1))
+		{
+			bsLog::logMessage("There are external references to meshes when the mesh"
+				"manager is shutting down", pantheios::SEV_WARNING);
+		}
 	}
 }
 
 std::shared_ptr<bsMesh> bsMeshManager::getMesh(const std::string& meshName) const
 {
-	assert(meshName.length());
+	BS_ASSERT2(meshName.length(), "Zero length file names are not OK");
 
 	//Get the path for the file
 	std::string meshPath = mResourceManager->getFileSystem()->getPathFromFilename(meshName);
 	if (!meshPath.length())
 	{
 		//Log error message if mesh doesn't exist.
-		std::string message("bsMeshManager: '");
-		message += meshName + "' does not exist in any known resource paths,"
+		std::string message(meshName);
+		message += "' does not exist in any known resource paths,"
 			" it will not be created";
 
-		bsLog::logMessage(message.c_str(), pantheios::SEV_ERROR);
+		BS_ASSERT2(!"Failed to load mesh", message.c_str());
 
 		return nullptr;
 	}
@@ -61,14 +65,7 @@ std::shared_ptr<bsMesh> bsMeshManager::getMesh(const std::string& meshName) cons
 	//Not found, create and return the shader.
 	//Cast const away since the load function is not const
 	std::shared_ptr<bsMesh> mesh = const_cast<bsMeshManager*>(this)->loadMesh(meshPath);
-	if (!mesh)
-	{
-		std::stringstream message;
-		message << "Something went wrong while creating '" << meshName << '\'';
-		bsLog::logMessage(message.str().c_str(), pantheios::SEV_ERROR);
-
-		return nullptr;
-	}
+	BS_ASSERT2(mesh, std::string("Something went wrong while creating '") + meshName + '\'');
 
 #if BS_DEBUG_LEVEL > 1
 	//Add name for debugging
@@ -84,7 +81,7 @@ std::shared_ptr<bsMesh> bsMeshManager::loadMesh(const std::string& meshName)
 	bsMeshSerializer meshSerializer;
 	bsSerializedMesh serializedMesh;
 	bool success = meshSerializer.load(meshName, serializedMesh);
-	assert(success && "bsMeshManager::loadMesh failed");
+	BS_ASSERT2(success, "Failed to load serialized mesh");
 
 	if (!success)
 	{
@@ -92,7 +89,8 @@ std::shared_ptr<bsMesh> bsMeshManager::loadMesh(const std::string& meshName)
 		return nullptr;
 	}
 
-	assert(serializedMesh.indices.size() == serializedMesh.vertices.size());
+	BS_ASSERT2(serializedMesh.indices.size() == serializedMesh.vertices.size(),
+		"Vertex/index buffer mismatch");
 
 	const unsigned int meshCount = serializedMesh.indices.size();
 	std::vector<ID3D11Buffer*> vertexBuffers(meshCount);
@@ -161,8 +159,7 @@ bool bsMeshManager::createBuffers(const std::vector<VertexNormalTex>& vertices,
 	if (FAILED(mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
 		&vertexBuffer)))
 	{
-		bsLog::logMessage("Failed to create vertex buffer, aborting mesh creation",
-			pantheios::SEV_ERROR);
+		BS_ASSERT(!"Failed to create vertex buffer, aborting mesh creation");
 		
 		return false;
 	}
@@ -178,8 +175,7 @@ bool bsMeshManager::createBuffers(const std::vector<VertexNormalTex>& vertices,
 	if (FAILED(mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
 		&indexBuffer)))
 	{
-		bsLog::logMessage("Failed to create index buffer, aborting mesh creation",
-			pantheios::SEV_ERROR);
+		BS_ASSERT(!"Failed to create index buffer, aborting mesh creation");
 		
 		return false;
 	}

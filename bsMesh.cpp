@@ -1,5 +1,7 @@
 #include "bsMesh.h"
 
+#include <algorithm>
+
 #include <Windows.h>
 #include <xnamath.h>
 
@@ -29,6 +31,11 @@ bsMesh::~bsMesh()
 	{
 		mIndexBuffer->Release();
 	}
+	std::for_each(mSubMeshes.begin(), mSubMeshes.end(),
+		[](bsMesh* mesh)
+	{
+		delete mesh;	
+	});
 }
 
 void bsMesh::draw(bsDx11Renderer* dx11Renderer) const

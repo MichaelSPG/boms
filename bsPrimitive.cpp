@@ -1,6 +1,5 @@
 #include "bsPrimitive.h"
 
-#include <cassert>
 #include <vector>
 
 #include <Common/Base/Types/Geometry/Aabb/hkAabb.h>
@@ -12,6 +11,7 @@
 #include "bsVertexTypes.h"
 #include "bsConstantBuffers.h"
 #include "bsDx11Renderer.h"
+#include "bsAssert.h"
 
 
 bsPrimitive::bsPrimitive()
@@ -43,8 +43,8 @@ bsPrimitive::~bsPrimitive()
 void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer,
 	bsShaderManager* shaderManager, const hkAabb& aabb)
 {
-	assert(dx11Renderer);
-	assert(shaderManager);
+	BS_ASSERT(dx11Renderer);
+	BS_ASSERT(shaderManager);
 
 	std::vector<D3D11_INPUT_ELEMENT_DESC> inputLayout;
 	D3D11_INPUT_ELEMENT_DESC d;
@@ -69,7 +69,7 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer,
 
 	HRESULT hres = dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr,
 		&mBuffer);
-	assert(SUCCEEDED(hres));
+	BS_ASSERT2(SUCCEEDED(hres), "Failed to create a buffer");
 
 #if BS_DEBUG_LEVEL > 0
 	std::string bufferName("CB Primitive");
@@ -114,9 +114,7 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer,
 	if (FAILED(dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
 		&mVertexBuffer)))
 	{
-		bsLog::logMessage("bsPrimitive failed to create vertex buffer");
-
-		assert(!"bsPrimitive failed to create vertex buffer");
+		BS_ASSERT(!"Failed to create vertex buffer");
 	}
 
 #if BS_DEBUG_LEVEL > 0
@@ -152,7 +150,7 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer,
 
 	hres = dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
 		&mIndexBuffer);
-	assert(SUCCEEDED(hres));
+	BS_ASSERT2(SUCCEEDED(hres), "Failed to create index buffer");
 
 #if BS_DEBUG_LEVEL > 0
 	std::string indexBufferName("PrimitiveIndexBuffer");
@@ -165,8 +163,8 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer,
 
 void bsPrimitive::draw(bsDx11Renderer* dx11Renderer)
 {
-	assert(dx11Renderer);
-	assert(mFinished);
+	BS_ASSERT(dx11Renderer);
+	BS_ASSERT(mFinished);
 
 	ID3D11DeviceContext* const context = dx11Renderer->getDeviceContext();
 

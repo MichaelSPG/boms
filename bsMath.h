@@ -23,16 +23,17 @@ namespace bsMath
 //Uses C rand(). Remember to call srand().
 inline float randomRange(float min, float max)
 {
-	float r = (float)rand() * 3.0518509475997192297128208258309e-5f;// 1 / MAX_RAND
+	//r in range [0, 1]
+	float r = (float)rand() / RAND_MAX;
 	return min + r * (max - min);
 }
 
 //Uses C rand(). Remember to call srand().
 inline int randomRange(int min, int max)
 {
-	float r = (float)rand() * 3.0518509475997192297128208258309e-5f;// 1 / MAX_RAND
+	float r = (float)rand() / RAND_MAX;
 	r = min + r * (max - min);
-	//Add this so that the value will be correct after float to int conversion.
+	//Add positive or negative 0.5 depending on r's sign to round properly
 	return (int)(r + (r < 0.0f ? -0.5f : 0.5f));
 }
 

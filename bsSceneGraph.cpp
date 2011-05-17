@@ -1,6 +1,5 @@
 #include "bsSceneGraph.h"
 
-#include <cassert>
 #include <vector>
 
 #include "bsSceneNode.h"
@@ -8,6 +7,7 @@
 #include "bsResourceManager.h"
 #include "bsCamera.h"
 #include "bsLog.h"
+#include "bsAssert.h"
 #include "bsHavokManager.h"
 #include "bsCoreCInfo.h"
 
@@ -20,9 +20,9 @@ bsSceneGraph::bsSceneGraph(bsDx11Renderer* renderer, bsResourceManager* resource
 	, mMaxTreeDepth(4)
 	, mGraphicsWorld(nullptr)
 {
-	assert(renderer);
-	assert(resourceManager);
-	assert(havokManager);
+	BS_ASSERT(renderer);
+	BS_ASSERT(resourceManager);
+	BS_ASSERT(havokManager);
 
 	havokManager->createGraphicsWorld(true);
 	mGraphicsWorld = havokManager->getGraphicsWorld();
@@ -53,9 +53,4 @@ bsSceneNode* bsSceneGraph::createSceneNode(const hkVector4& position
 	mSceneNodes.push_back(node);
 
 	return node;
-}
-
-void bsSceneGraph::update(float deltaTime)
-{
-	assert(!"bsSceneGraph::update is unused");
 }

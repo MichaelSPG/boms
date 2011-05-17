@@ -1,7 +1,5 @@
 #include "bsGeometryUtils.h"
 
-#include <cassert>
-
 #include <Physics/Collide/Shape/Convex/hkpConvexShape.h>
 #include <Physics/Collide/Shape/Convex/Sphere/hkpSphereShape.h>
 #include <Physics/Utilities/VisualDebugger/Viewer/hkpShapeDisplayBuilder.h>
@@ -15,12 +13,13 @@
 
 #include "bsLine3D.h"
 #include "bsConvert.h"
+#include "bsAssert.h"
 
 namespace bsGeometryUtils
 {
 void createLinesFromShape(const hkpShape* const shape, bsLine3D* line3D)
 {
-	//assert(shape->getType() == HK_SHAPE_BOX);
+	//BS_ASSERT(shape->getType() == HK_SHAPE_BOX);
 
 	//Create the geometry
 	hkArray<hkDisplayGeometry*> geometry;
@@ -28,13 +27,13 @@ void createLinesFromShape(const hkpShape* const shape, bsLine3D* line3D)
 	hkpShapeDisplayBuilder builder(environment);
 	builder.buildShapeDisplay(shape, hkTransform::getIdentity(), geometry);
 
-	assert(geometry.getSize() == 1);
+	BS_ASSERT(geometry.getSize() == 1);
 
 	hkArray<hkVector4> lines;
 	geometry[0]->getWireframeGeometry(lines);
 
 	const int count = lines.getSize();
-	//assert(count);
+	//BS_ASSERT(count);
 
 	//Copy the points
 	std::vector<XMFLOAT3> points(count);

@@ -1,6 +1,5 @@
 #include "bsRenderQueue.h"
 
-#include <cassert>
 #include <map>
 #include <unordered_map>
 
@@ -18,6 +17,7 @@
 #include "bsPixelShader.h"
 #include "bsLog.h"
 #include "bsTimer.h"
+#include "bsAssert.h"
 
 #include "bsMath.h"
 #include "bsConstantBuffers.h"
@@ -27,12 +27,12 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	: mDx11Renderer(dx11Renderer)
 	, mShaderManager(shaderManager)
 {
-	assert(dx11Renderer);
-	assert(shaderManager);
+	BS_ASSERT(dx11Renderer);
+	BS_ASSERT(shaderManager);
 
 
 	D3D11_BUFFER_DESC bufferDescription;
-	ZeroMemory(&bufferDescription, sizeof(bufferDescription));
+	memset(&bufferDescription, 0, sizeof(bufferDescription));
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
 	bufferDescription.ByteWidth = sizeof(CBWorld);
 	bufferDescription.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
@@ -42,20 +42,15 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	HRESULT hres = mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr,
 		&mWorldBuffer);
 
-	assert(SUCCEEDED(hres) && "bsRenderQueue::bsRenderQueue failed to create world buffer");
-	if (FAILED(hres))
-	{
-		bsLog::logMessage("bsRenderQueue::bsRenderQueue failed to create world buffer",
-			pantheios::SEV_CRITICAL);
-	}
+	BS_ASSERT2(SUCCEEDED(hres), "bsRenderQueue::bsRenderQueue failed to create world buffer");
 
 	bufferDescription.ByteWidth = sizeof(CBWireFrame);
 	hres = mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr, &mWireframeWorldBuffer);
-	assert(SUCCEEDED(hres));
+	BS_ASSERT(SUCCEEDED(hres));
 
 	bufferDescription.ByteWidth = sizeof(CBLight);
 	hres = mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr, &mLightBuffer);
-	assert(SUCCEEDED(hres));
+	BS_ASSERT(SUCCEEDED(hres));
 
 	//Shaders
 	//Wireframe

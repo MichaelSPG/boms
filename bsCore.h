@@ -2,9 +2,7 @@
 #define BS_CORE_H
 
 #include "bsConfig.h"
-
-#include <cassert>
-
+#include "bsAssert.h"
 #include "bsCoreCInfo.h"
 
 class bsSceneGraph;
@@ -77,7 +75,7 @@ public:
 	*/
 	inline void setRenderSystem(bsRenderSystem* renderSystem)
 	{
-		assert(renderSystem);
+		BS_ASSERT(renderSystem);
 
 		mRenderSystem = renderSystem;
 	}

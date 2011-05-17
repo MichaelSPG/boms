@@ -1,12 +1,12 @@
 #include "bsNodeCollectorPhantom.h"
 
 #include <algorithm>
-#include <cassert>
 
-#include "bsTemplates.h"
-//#include "bsSceneNode.h"
 #include <Physics\Collide\Query\Collector\BodyPairCollector\hkpAllCdBodyPairCollector.h>
 #include <Physics/Collide/Shape/Convex/ConvexVertices/hkpConvexVerticesShape.h>
+
+#include "bsTemplates.h"
+#include "bsAssert.h"
 
 
 void bsNodeCollectorPhantom::addOverlappingCollidable(hkpCollidable* collidable)
@@ -78,13 +78,15 @@ std::vector<bsSceneNode*> bsNodeCollectorPhantom::getOverlappingSceneNodes()
 
 		//This will only ever happen if addOverlappingCollidable accepts a non-phantom,
 		//so hopefully never.
-		assert(curentHit->getType() == hkpWorldObject::BROAD_PHASE_PHANTOM);
+		BS_ASSERT2(curentHit->getType() == hkpWorldObject::BROAD_PHASE_PHANTOM,
+			"Non-phantom object in graphics world");
 
 		const hkpPhantom* phantom = static_cast<const hkpPhantom*>(curentHit->getOwner());
 		
 		//Only phantoms with user data (reinterpret_cast'd 'this' by owning scene node)
 		//should pass through addOverlappingCollidable.
-		assert(phantom->getUserData());
+		BS_ASSERT2(phantom->getUserData(), "Phantom with user no pointer to scene node"
+			"collected");
 
 		currentOverlappingNodes[i] = reinterpret_cast<bsSceneNode*>(phantom->getUserData());
 	}

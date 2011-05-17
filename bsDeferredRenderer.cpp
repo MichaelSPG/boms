@@ -1,6 +1,5 @@
 #include "bsDeferredRenderer.h"
 
-#include <cassert>
 #include <vector>
 #include <string>
 
@@ -13,6 +12,7 @@
 #include "bsWindow.h"
 #include "bsFullScreenQuad.h"
 #include "bsShaderManager.h"
+#include "bsAssert.h"
 
 
 bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* camera,
@@ -21,9 +21,9 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 	, mCamera(camera)
 	, mShaderManager(shaderManager)
 {
-	assert(dx11Renderer);
-	assert(camera);
-	assert(shaderManager);
+	BS_ASSERT(dx11Renderer);
+	BS_ASSERT(camera);
+	BS_ASSERT(shaderManager);
 
 	mRenderQueue = new bsRenderQueue(mDx11Renderer, mShaderManager);
 	mRenderQueue->setCamera(mCamera);
@@ -98,10 +98,14 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 
 bsDeferredRenderer::~bsDeferredRenderer()
 {
+	delete mFullScreenQuad;
+
 	delete mLightRenderTarget;
 	delete mGBuffer.diffuse;
 	delete mGBuffer.normal;
 	delete mGBuffer.position;
+
+	delete mRenderQueue;
 }
 
 void bsDeferredRenderer::createShaders()

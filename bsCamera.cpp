@@ -1,11 +1,11 @@
 #include "bsCamera.h"
 
-#include <cassert>
 #include <memory>
 
 #include "bsMath.h"
 #include "bsSceneGraph.h"
 #include "bsLog.h"
+#include "bsAssert.h"
 #include "bsHavokManager.h"
 #include "bsNodeCollectorPhantom.h"
 #include "bsDx11Renderer.h"
@@ -26,9 +26,9 @@ bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGr
 	, mRotationX(0.0f)
 	, mRotationY(0.0f)
 {
-	assert(sceneGraph);
-	assert(havokManager);
-	assert(havokManager->getGraphicsWorld() != nullptr);
+	BS_ASSERT(sceneGraph);
+	BS_ASSERT(havokManager);
+	BS_ASSERT(havokManager->getGraphicsWorld() != nullptr);
 
 	XMStoreFloat4x4(&mProjection, XMMatrixIdentity());
 	XMStoreFloat4x4(&mViewProjection, XMMatrixIdentity());
@@ -43,11 +43,10 @@ bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGr
 	bufferDescription.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bufferDescription.CPUAccessFlags = 0;
 
+
 	if (FAILED(device->CreateBuffer(&bufferDescription, nullptr, &mViewProjectionBuffer)))
 	{
-		bsLog::logMessage("bsCamera::bsCamera: failed to create view projection buffer",
-			pantheios::SEV_CRITICAL);
-		assert(!"bsCamera::bsCamera: failed to create view projection buffer");
+		BS_ASSERT(!"Failed to create view projection buffer");
 	}
 	mDeviceContext->VSSetConstantBuffers(0, 1, &mViewProjectionBuffer);
 
@@ -190,7 +189,7 @@ void bsCamera::rotateAboutAxis(const hkVector4& axis, float degrees)
 
 void bsCamera::lookAt(const hkVector4& targetPosition)
 {
-	assert(!"bsCamera::lookAt not implemented");
+	BS_ASSERT(!"bsCamera::lookAt not implemented");
 
 	mViewNeedsUpdate = true;
 }

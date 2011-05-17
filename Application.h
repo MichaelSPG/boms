@@ -5,9 +5,6 @@
 #include <string>
 #include <windows.h>
 
-#include "bsDx11Renderer.h"
-
-
 class bsLog;
 class bsCore;
 class bsDeferredRenderer;

@@ -1,12 +1,12 @@
 #include "bsShaderManager.h"
 
-#include <cassert>
 #include <string>
 
 #include <D3Dcompiler.h>
 
 #include "bsResourceManager.h"
 #include "bsLog.h"
+#include "bsAssert.h"
 #include "bsDx11Renderer.h"
 
 
@@ -24,22 +24,23 @@ bsShaderManager::~bsShaderManager()
 std::shared_ptr<bsVertexShader> bsShaderManager::getVertexShader(const std::string& fileName,
 	const std::vector<D3D11_INPUT_ELEMENT_DESC>& inputDesc) const
 {
-	assert(fileName.length());
-	assert(inputDesc.size() && "Zero length input description");
+	BS_ASSERT(fileName.length());
+	BS_ASSERT2(inputDesc.size(), "Zero length input description");
 
-	//get the path for the file
+	//Get the path for the file
 	std::string filePath = mResourceManager->getFileSystem()->getPathFromFilename(fileName);
 	if (!filePath.length())
 	{
-		//Log error message if mesh doesn't exist.
+		//The path for the given mesh name was not found
 
 		std::string message("bsShaderManager: '");
 		message += fileName + "' does not exist in any known resource paths,"
 			" it will not be created";
 
-		bsLog::logMessage(message.c_str(), pantheios::SEV_ERROR);
+		BS_ASSERT2(false, message.c_str());
 
-		assert(!"Shader does not exist");
+		//This is useful info even if asserts are disabled, so log it again just in case
+		bsLog::logMessage(message.c_str(), pantheios::SEV_ERROR);
 
 		return nullptr;
 	}
@@ -58,21 +59,21 @@ std::shared_ptr<bsVertexShader> bsShaderManager::getVertexShader(const std::stri
 
 std::shared_ptr<bsPixelShader> bsShaderManager::getPixelShader(const std::string& fileName) const
 {
-	assert(fileName.length());
+	BS_ASSERT2(fileName.length(), "Zero length file name. Use \".\" for current path");
 
 	//Get the path for the file
 	std::string filePath = mResourceManager->getFileSystem()->getPathFromFilename(fileName);
+
 	if (!filePath.length())
 	{
-		//Log error message if mesh doesn't exist.
-
-		std::string message("bsShaderManager: '");
+		std::string message("'");
 		message += fileName + "' does not exist in any known resource paths,"
 			" it will not be created";
 
-		bsLog::logMessage(message.c_str(), pantheios::SEV_ERROR);
+		BS_ASSERT2(false, message.c_str());
 
-		//need assert
+		//This is useful info even if asserts are disabled, so log it again just in case
+		bsLog::logMessage(message.c_str(), pantheios::SEV_ERROR);
 
 		return nullptr;
 	}
@@ -104,9 +105,8 @@ std::shared_ptr<bsVertexShader> bsShaderManager::createVertexShader(const std::s
 
 		std::string errorMessage("Failed to compile vertex shader '");
 		errorMessage += fileName + '\'';
-		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
 
-		assert(!"Failed to compile vertex shader");
+		BS_ASSERT2(false, errorMessage.c_str());
 
 		return nullptr;
 	}
@@ -125,7 +125,7 @@ std::shared_ptr<bsVertexShader> bsShaderManager::createVertexShader(const std::s
 		errorMessage + fileName + '\'';
 		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
 
-		assert(!"Failed to create vertex shader");
+		BS_ASSERT2(false, errorMessage.c_str());
 
 		return nullptr;
 	}
@@ -142,9 +142,8 @@ std::shared_ptr<bsVertexShader> bsShaderManager::createVertexShader(const std::s
 
 		std::string errorMessage("Failed to create input layout for '");
 		errorMessage += fileName + '\'';
-		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
 
-		assert(!"Failed to create input layout");
+		BS_ASSERT2(false, errorMessage.c_str());
 
 		return nullptr;
 	}
@@ -164,7 +163,7 @@ std::shared_ptr<bsVertexShader> bsShaderManager::createVertexShader(const std::s
 	bufferName.append(fileName);
 	vs.second->mInputLayout->SetPrivateData(WKPDID_D3DDebugObjectName,
 		bufferName.size(), bufferName.c_str());
-#endif // _DEBUG
+#endif // BS_DEBUG_LEVEL > 0
 
 	mVertexShaders.insert(vs);
 
@@ -189,7 +188,8 @@ std::shared_ptr<bsPixelShader> bsShaderManager::createPixelShader(const std::str
 
 		std::string message("Failed to compile pixel shader '");
 		message += fileName + '\'';
-		bsLog::logMessage(message.c_str());
+
+		BS_ASSERT2(false, message.c_str());
 
 		return nullptr;
 	}
@@ -206,7 +206,8 @@ std::shared_ptr<bsPixelShader> bsShaderManager::createPixelShader(const std::str
 
 		std::string message("Failed to create pixel shader '");
 		message += fileName + '\'';
-		bsLog::logMessage(message.c_str(), pantheios::SEV_ERROR);
+
+		BS_ASSERT2(false, message.c_str());
 
 		return nullptr;
 	}
@@ -235,7 +236,7 @@ std::shared_ptr<bsPixelShader> bsShaderManager::createPixelShader(const std::str
 
 void bsShaderManager::setVertexShader(const std::shared_ptr<bsVertexShader>& vertexShader)
 {
-	assert(vertexShader);
+	BS_ASSERT(vertexShader);
 
 	ID3D11DeviceContext* context = mDx11Renderer->getDeviceContext();
 
@@ -245,7 +246,7 @@ void bsShaderManager::setVertexShader(const std::shared_ptr<bsVertexShader>& ver
 
 void bsShaderManager::setPixelShader(const std::shared_ptr<bsPixelShader>& pixelShader)
 {
-	assert(pixelShader);
+	BS_ASSERT(pixelShader);
 
 	ID3D11DeviceContext* context = mDx11Renderer->getDeviceContext();
 

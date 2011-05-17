@@ -1,16 +1,16 @@
 #include "bsFileSystem.h"
 
-#include <cassert>
-
 #include <boost/filesystem.hpp>
 
 #include "bsLog.h"
+#include "bsAssert.h"
 
 
 bsFileSystem::bsFileSystem(const std::string& basePath)
 	: mBasePath(basePath)
 {
-	assert(basePath.length());
+	BS_ASSERT2(basePath.length(), "Zero length base path is not ok. Use \".\" (without"
+		"quotes for current path");
 
 	buildFileSystem();
 }

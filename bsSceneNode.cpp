@@ -1,13 +1,13 @@
 #include "bsSceneNode.h"
 
-#include <cassert>
+#include <Physics/Collide/Shape/Convex/Box/hkpBoxShape.h>
 
 #include "bsSceneGraph.h"
 #include "bsResourceManager.h"
 #include "bsHavokManager.h"
 #include "bsMesh.h"
 #include "bsLine3D.h"
-#include <Physics/Collide/Shape/Convex/Box/hkpBoxShape.h>
+#include "bsAssert.h"
 
 
 bsSceneNode::bsSceneNode(const hkVector4& localTranslation, int id, bsSceneGraph* sceneGraph)
@@ -35,9 +35,8 @@ bsSceneNode::~bsSceneNode()
 {
 	mPhantom->removeReference();
 
-	assert(!mChildren.size());
-	assert(!mRenderables.size());
-	assert(!mParentSceneNode);
+	BS_ASSERT2(!mRenderables.size(), "Destroying a scene node which still has renderables attached");
+	BS_ASSERT2(!mChildren.size(), "Destroying a scene node which still has children");
 }
 
 bsSceneNode* bsSceneNode::createChildSceneNode(const hkVector4& position /*= hkVector4(0.0f, 0.0f, 0.0f, 0.0f)*/)
@@ -114,7 +113,9 @@ void bsSceneNode::translate(const hkVector4& translation)
 
 void bsSceneNode::attachRenderable(const std::shared_ptr<bsRenderable>& renderable)
 {
-	assert(renderable->isOkForRendering());
+	//TODO: Consider removing this if implementing async file loading
+	BS_ASSERT2(renderable->isOkForRendering(), "Trying to attach a renderable to a scene"
+		" node which is not ready to be rendered");
 
 	//Extend this node's AABB to include that of the new renderable.
 	mAabb.includeAabb(renderable->getAabb());

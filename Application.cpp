@@ -3,11 +3,10 @@
 #include "bsConfig.h"
 
 #include <algorithm>
-#include <cassert>
 
 #include <boost/bind.hpp>
 
-#include <Common/Base/Algorithm/PseudoRandom/hkPseudoRandomGenerator.h>
+#include <vld.h>
 
 #include "bsLog.h"
 #include "bsSceneGraph.h"
@@ -24,8 +23,11 @@
 #include "bsLine3D.h"
 #include "bsResourceManager.h"
 #include "bsLight.h"
+#include "bsDx11Renderer.h"
 
 #include "bsDeferredRenderer.h"
+
+#include "bsAssert.h"
 
 
 Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth,
@@ -86,7 +88,6 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 	mDeferredRenderer->registerEndOfRenderCallback(boost::bind(&bsTextManager::drawAllTexts, textManager));
 	
 	//////////////////////////////////////////////////////////////////////////
-	
 
 	bsLog::logMessage("Initialization completed successfully", pantheios::SEV_NOTICE);
 }
@@ -98,6 +99,9 @@ Application::~Application()
 	mInputManager->destroyInputObject(mKeyboard);
 	mInputManager->destroyInputObject(mMouse);
 	mInputManager->destroyInputSystem(mInputManager);
+
+	delete mCore;
+	delete mDeferredRenderer;
 }
 
 void Application::update(float deltaTime)

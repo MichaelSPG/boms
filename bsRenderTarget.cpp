@@ -1,9 +1,9 @@
 #include "bsRenderTarget.h"
 
-#include <cassert>
 #include <string>
 
 #include "bsDx11Renderer.h"
+#include "bsAssert.h"
 
 
 
@@ -28,7 +28,7 @@ bsRenderTarget::bsRenderTarget(unsigned int width, unsigned int height,
 
 	HRESULT hr = d3d11Device->CreateTexture2D(&textureDesc, nullptr,
 		&mRenderTargetTexture);
-	assert(SUCCEEDED(hr));
+	BS_ASSERT2(SUCCEEDED(hr), "Failed to create texture");
 
 	//Create the render target view
 	D3D11_RENDER_TARGET_VIEW_DESC renderTargetDesc;
@@ -40,7 +40,7 @@ bsRenderTarget::bsRenderTarget(unsigned int width, unsigned int height,
 
 	hr = d3d11Device->CreateRenderTargetView(mRenderTargetTexture, &renderTargetDesc,
 		&mRenderTargetView);
-	assert(SUCCEEDED(hr));
+	BS_ASSERT2(SUCCEEDED(hr), "Failed to create render target view");
 
 	//Create shader resource
 	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceDesc;
@@ -53,7 +53,7 @@ bsRenderTarget::bsRenderTarget(unsigned int width, unsigned int height,
 
 	hr = d3d11Device->CreateShaderResourceView(mRenderTargetTexture, &shaderResourceDesc,
 		&mShaderResourceView);
-	assert(SUCCEEDED(hr));
+	BS_ASSERT2(SUCCEEDED(hr), "Failed to create shader resource view");
 
 #if BS_DEBUG_LEVEL > 0
 	std::string debugString("ID3D11Texture2D render target");
