@@ -27,15 +27,14 @@ struct CBCamera
 	XMFLOAT4X4	view;
 	XMFLOAT4X4	projection;
 	XMFLOAT4X4	viewProjection;
+	XMFLOAT4X4	inverseViewProjection;
+	XMFLOAT4	cameraPosition;
 };
 
 struct CBLight
 {
-	XMFLOAT3	color;
-	float		radius;
-	float		intensity;
-	int			lightType;//bsLight::LightType
-	int			padding[2];
+	XMFLOAT4	lightPosition;
+	XMFLOAT4	lightColor;
 };
 
 #endif // BS_CONSTANTBUFFERS_H

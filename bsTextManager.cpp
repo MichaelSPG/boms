@@ -56,10 +56,10 @@ void bsTextManager::destroyUnusedTexts()
 {
 	mTexts.erase(std::remove_if(mTexts.begin(), mTexts.end(),
 		[](const std::shared_ptr<bsText2D>& text)
-		{
-			//If only used by this class, it can be removed
-			return text.use_count() == 1;
-		}), mTexts.end());
+	{
+		//If only used by this class, it can be removed
+		return text.use_count() == 1;
+	}), mTexts.end());
 
 	mTextBoxes.erase(std::remove_if(mTextBoxes.begin(), mTextBoxes.end(),
 		[](const std::shared_ptr<bsScrollingText2D>& text)
@@ -70,16 +70,27 @@ void bsTextManager::destroyUnusedTexts()
 
 void bsTextManager::drawAllTexts()
 {
-	for (unsigned int i = 0, count = mTexts.size(); i < count; ++i)
+	std::for_each(mTexts.begin(), mTexts.end(),
+		[](const std::shared_ptr<bsText2D>& textObject)
 	{
-		mTexts[i]->draw();
-	}
+		textObject->draw();
+	});
 }
 
 void bsTextManager::updateTexts(float deltaTime)
 {
-	for (unsigned int i = 0, count = mTextBoxes.size(); i < count; ++i)
+	std::for_each(mTextBoxes.begin(), mTextBoxes.end(),
+		[deltaTime](const std::shared_ptr<bsScrollingText2D>& textObject)
 	{
-		mTextBoxes[i]->update(deltaTime);
-	}
+		textObject->update(deltaTime);
+	});
+}
+
+void bsTextManager::toggleVisibility()
+{
+	std::for_each(mTexts.begin(), mTexts.end(),
+		[](const std::shared_ptr<bsText2D>& textObject)
+	{
+			textObject->setEnabled(!textObject->getEnabled());
+	});
 }

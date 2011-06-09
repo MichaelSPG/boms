@@ -1,4 +1,4 @@
-#include "Application.h"
+﻿#include "Application.h"
 
 #include "bsConfig.h"
 
@@ -35,6 +35,7 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 	: mInputManager(nullptr)
 	, mKeyboard(nullptr)
 	, mMouse(nullptr)
+	, mCameraSpeed(1.0f)
 {
 	w = a = s = d = space = c = shift = false;
 	rightMouseDown = leftMouseDown = mQuit = pause = false;
@@ -71,6 +72,7 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 	int x = rect.right - rect.left;
 	int y = rect.bottom - rect.top;
 	*/
+
 	bsWindow* window = mCore->getWindow();
 	
 	mDeferredRenderer = new bsDeferredRenderer(mCore->getDx11Renderer(),
@@ -79,7 +81,7 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 
 	mCore->setRenderSystem(mDeferredRenderer);
 
-	float clearColor[4] = {0.0f, 0.0f, 0.15f, 0.0f};
+	float clearColor[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 	mCore->getDx11Renderer()->setRenderTargetClearColor(clearColor);
 
 	bsTextManager* textManager = mCore->getResourceManager()->getTextManager();
@@ -90,6 +92,8 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 	//////////////////////////////////////////////////////////////////////////
 
 	bsLog::logMessage("Initialization completed successfully", pantheios::SEV_NOTICE);
+
+	createSomeLights();
 }
 
 Application::~Application()
@@ -114,27 +118,51 @@ void Application::update(float deltaTime)
 	//Movement + speedup if shift is pressed
 	if (w)
 	{
-		camera->translate(hkVector4(0.0f, 0.0f, shift ? 6.0f : 1.2f));
+		//camera->translate(hkVector4(0.0f, 0.0f, shift ? mCameraSpeed * 2.5f : mCameraSpeed));
+		const hkTransform& transform = camera->getTransform2();
+		hkVector4 translation(0.0f, 0.0f, shift ? mCameraSpeed * 2.5f : mCameraSpeed);
+		translation.setMul3(transform.getRotation(), translation);
+		camera->translate(translation);
 	}
 	if (s)
 	{
-		camera->translate(hkVector4(0.0f, 0.0f, shift ? -6.0f : -1.2f));
+		//camera->translate(hkVector4(0.0f, 0.0f, shift ? -mCameraSpeed * 2.5f : -mCameraSpeed));
+		const hkTransform& transform = camera->getTransform2();
+		hkVector4 translation(0.0f, 0.0f, shift ? -mCameraSpeed * 2.5f : -mCameraSpeed);
+		translation.setMul3(transform.getRotation(), translation);
+		camera->translate(translation);
 	}
 	if (a)
 	{
-		camera->translate(hkVector4(shift ? -6.0f : -1.2f, 0.0f, 0.0f));
+		//camera->translate(hkVector4(shift ? -mCameraSpeed * 2.5f : -mCameraSpeed, 0.0f, 0.0f));
+		const hkTransform& transform = camera->getTransform2();
+		hkVector4 translation(shift ? -mCameraSpeed * 2.5f : -mCameraSpeed, 0.0f, 0.0f);
+		translation.setMul3(transform.getRotation(), translation);
+		camera->translate(translation);
 	}
 	if (d)
 	{
-		camera->translate(hkVector4(shift ? 6.0f : 1.2f, 0.0f, 0.0f));
+		//camera->translate(hkVector4(shift ? mCameraSpeed * 2.5f : mCameraSpeed, 0.0f, 0.0f));
+		const hkTransform& transform = camera->getTransform2();
+		hkVector4 translation(shift ? mCameraSpeed * 2.5f : mCameraSpeed, 0.0f, 0.0f);
+		translation.setMul3(transform.getRotation(), translation);
+		camera->translate(translation);
 	}
 	if (space)
 	{
-		camera->translate(hkVector4(0.0f, shift ? 6.0f : 1.2f, 0.0f));
+		//camera->translate(hkVector4(0.0f, shift ? mCameraSpeed * 2.5f : mCameraSpeed, 0.0f));
+		const hkTransform& transform = camera->getTransform2();
+		hkVector4 translation(0.0f, shift ? mCameraSpeed * 2.5f : mCameraSpeed, 0.0f);
+		translation.setMul3(transform.getRotation(), translation);
+		camera->translate(translation);
 	}
 	if (c)
 	{
-		camera->translate(hkVector4(0.0f, shift ? -6.0f : -1.2f, 0.0f));
+		//camera->translate(hkVector4(0.0f, shift ? -mCameraSpeed * 2.5f : -mCameraSpeed, 0.0f));
+		const hkTransform& transform = camera->getTransform2();
+		hkVector4 translation(0.0f, shift ? -mCameraSpeed * 2.5f : -mCameraSpeed, 0.0f);
+		translation.setMul3(transform.getRotation(), translation);
+		camera->translate(translation);
 	}
 	
 	camera->update();
@@ -162,21 +190,31 @@ void Application::update(float deltaTime)
 	static bsSceneNode* derivedNode1 = testNode1->createChildSceneNode(hkVector4(50.0f, 0.0f, 0.0f));
 	static bsSceneNode* derivedNode2 = derivedNode1->createChildSceneNode(hkVector4(50.0f, 0.0f, 0.0f));
 	static bsSceneNode* derivedNode3 = derivedNode2->createChildSceneNode(hkVector4(50.0f, 0.0f, 0.0f));
+
+	static bsSceneNode* greebleTownNode = sceneGraph->createSceneNode();
+	static auto greebleTown = meshManager->getMesh("greeble_town_small.bsm");
+	static bool greebleOnce = false;
+	if (!greebleOnce)
+	{
+		greebleTownNode->attachRenderable(greebleTown);
+		greebleOnce = true;
+	}
 	
 
 	static std::vector<bsSceneNode*> derivedNodes;
 	static std::vector<bsSceneNode*> moreDerivedNodes;
 	static bsSceneNode*& previousNode = derivedNode1;
 
-	static bool derNodesOnce = false;
+	static bool derNodesOnce = true;
 	if (!derNodesOnce)
 	{
-		identityNode->attachRenderable(sphere);
+		//Create node hierarchy
+		//identityNode->attachRenderable(sphere);
 
 		for (unsigned int i = 0; i < 10; ++i)
 		{
-			derivedNodes.push_back(previousNode->createChildSceneNode(hkVector4(50.0f, 0.0f, 0.0f)));
-			moreDerivedNodes.push_back(derivedNodes[i]->createChildSceneNode(hkVector4(0.0f, 50.0f, 0.0f)));
+			derivedNodes.push_back(previousNode->createChildSceneNode(hkVector4(25.0f, 0.0f, 0.0f)));
+			moreDerivedNodes.push_back(derivedNodes[i]->createChildSceneNode(hkVector4(0.0f, 15.0f, 0.0f)));
 
 			previousNode = derivedNodes.back();
 		}
@@ -184,8 +222,9 @@ void Application::update(float deltaTime)
 		derNodesOnce = true;
 	}
 
-	static std::shared_ptr<bsLine3D> line3d = std::make_shared<bsLine3D>(XMFLOAT4(1.0f, 0.0f, 1.0f, 0.0f));
+	static std::shared_ptr<bsLine3D> line3d(std::make_shared<bsLine3D>(XMFLOAT4(1.0f, 0.0f, 1.0f, 0.0f)));
 
+#if 0
 	static bool once = false;
 	if (!once)
 	{
@@ -195,40 +234,31 @@ void Application::update(float deltaTime)
 			bsPointLightCInfo ci;
 			ci.color = XMFLOAT3(1.0f, 1.0f, 0.0f);
 			ci.intensity = 1.0f;
-			ci.radius = 25.0f;
-			std::shared_ptr<bsLight> light = std::make_shared<bsLight>(bsLight::LT_POINT, meshManager, ci);
+			ci.radius = 10.0f;
+			std::shared_ptr<bsLight> light(std::make_shared<bsLight>(bsLight::LT_POINT, meshManager, ci));
 
 			for (unsigned int i = 0; i < derivedNodes.size(); ++i)
 			{
-				derivedNodes[i]->attachRenderable((i & 1) == 0 ? duck : greeble);
-				moreDerivedNodes[i]->attachRenderable(light);
+				//derivedNodes[i]->attachRenderable((i & 1) == 0 ? duck : greeble);
+				//moreDerivedNodes[i]->attachRenderable(light);
 			}
 
-			identityNode->attachRenderable(light);
-			identityNode->translate(hkVector4(10.0f, -5.0f, 0.0f));
+			//identityNode->attachRenderable(light);
+			//identityNode->translate(hkVector4(10.0f, -5.0f, 0.0f));
 		}
 		
 		once = true;
 	}
+#endif
 
 	const static hkVector4 unit(0.0f, 1.0f, 0.0f);
 	static float increaseForever = 0.0f;
-	increaseForever += pause ? 0.0f : 0.01f;
-	static int increaseForeverInt = 0;
-	++increaseForeverInt;
-
-	if (increaseForeverInt % 100 == 0)
-	{
-		std::stringstream ss;
-		ss << "Frame " << increaseForeverInt;
-		bsLog::logMessage(ss.str().c_str());
-		//bsLog::logMessage("spam");
-	}
+	increaseForever += (pause ? 0.0f : 0.01f);
 
 	
 	for (unsigned int i = 0; i < derivedNodes.size(); ++i)
 	{
-		derivedNodes[i]->setPosition(hkVector4(sinf(increaseForever) * 100.0f, 0.0f, 0.0f));
+		derivedNodes[i]->setPosition(hkVector4(sinf(increaseForever) * 5.0f, 0.0f, 0.0f));
 		if ((i & 3) == 0)
 		{
 			continue;
@@ -252,7 +282,7 @@ void Application::update(float deltaTime)
 	statsText->addFlags(FW1_RESTORESTATE);
 	statsText->setText(stats.getStatsString());
 
-	static std::shared_ptr<bsScrollingText2D> textBox = textManager->createScrollingText2D(4500.0f, 10);
+	static std::shared_ptr<bsScrollingText2D> textBox(textManager->createScrollingText2D(4500.0f, 10));
 	textBox->getText()->setPosition(10.0f, 350.0f);
 	textBox->getText()->addFlags(FW1_BOTTOM | FW1_RESTORESTATE);
 	textBox->getText()->setFontSize(14.0f);
@@ -341,6 +371,31 @@ bool Application::keyPressed(const OIS::KeyEvent& arg)
 	case OIS::KC_P:
 		pause = !pause;
 		break;
+
+	case OIS::KC_1:
+		mCameraSpeed = 0.25f;
+		break;
+
+	case OIS::KC_2:
+		mCameraSpeed = 0.5f;
+		break;
+
+	case OIS::KC_3:
+		mCameraSpeed = 1.0f;
+		break;
+
+	case OIS::KC_4:
+		mCameraSpeed = 2.0f;
+		break;
+
+	case OIS::KC_5:
+		mCameraSpeed = 4.0f;
+		break;
+
+	case OIS::KC_T:
+		mCore->getResourceManager()->getTextManager()->toggleVisibility();
+		break;
+
 	}
 
 
@@ -424,4 +479,40 @@ bool Application::mouseReleased(const OIS::MouseEvent &arg, OIS::MouseButtonID i
 	}
 
 	return true;
+}
+
+void Application::createSomeLights()
+{
+	std::vector<bsSceneNode*> nodes(5);
+	XMFLOAT3 lights[5] = 
+	{
+		XMFLOAT3(1.0f, 0.0f, 0.0f),
+		XMFLOAT3(0.0f, 1.0f, 0.0f),
+		XMFLOAT3(0.0f, 0.0f, 1.0f),
+		XMFLOAT3(1.0f, 1.0f, 0.0f),
+		XMFLOAT3(0.0f, 1.0f, 1.0f)
+	};
+
+	for (unsigned int i = 0; i < nodes.size(); ++i)
+	{
+		bsPointLightCInfo ci;
+		ci.color = lights[i];
+		ci.intensity = 1.0f;
+		ci.radius = 10.0f;
+		//ci.radius = 25.0f;
+		std::shared_ptr<bsLight> light(std::make_shared<bsLight>(bsLight::LT_POINT,
+			mCore->getResourceManager()->getMeshManager(), ci));
+
+		nodes[i] = mCore->getSceneGraph()->createSceneNode();
+		nodes[i]->attachRenderable(light);
+	}
+	auto torus = mCore->getResourceManager()->getMeshManager()->getMesh("torus_knot.bsm");
+	//nodes[0]->attachRenderable(torus);
+
+
+	nodes[0]->setPosition(hkVector4(0.0f, 2.5f, 0.0f));
+	nodes[1]->setPosition(hkVector4(0.0f, 2.5f, 25.0f));
+	nodes[2]->setPosition(hkVector4(0.0f, 2.5f, -25.0f));
+	nodes[3]->setPosition(hkVector4(25.0f, 2.5f, 0.0f));
+	nodes[4]->setPosition(hkVector4(-25.0f, 2.5f, 0.0f));
 }

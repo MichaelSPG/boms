@@ -62,15 +62,11 @@ std::shared_ptr<bsMesh> bsMeshManager::getMesh(const std::string& meshName) cons
 		return val->second;
 	}
 
-	//Not found, create and return the shader.
+	//Not found, need to create it now.
 	//Cast const away since the load function is not const
-	std::shared_ptr<bsMesh> mesh = const_cast<bsMeshManager*>(this)->loadMesh(meshPath);
+	std::shared_ptr<bsMesh> mesh(const_cast<bsMeshManager*>(this)->loadMesh(meshPath));
 	BS_ASSERT2(mesh, std::string("Something went wrong while creating '") + meshName + '\'');
 
-#if BS_DEBUG_LEVEL > 1
-	//Add name for debugging
-	mesh->mName = meshName;
-#endif
 	mesh->mFinished = true;
 
 	return mesh;
@@ -114,7 +110,7 @@ std::shared_ptr<bsMesh> bsMeshManager::loadMesh(const std::string& meshName)
 	message << "Loaded mesh '" << meshName << "'";
 	bsLog::logMessage(message.str().c_str(), pantheios::SEV_NOTICE);
 
-	std::shared_ptr<bsMesh> mesh(new bsMesh());
+	std::shared_ptr<bsMesh> mesh(std::make_shared<bsMesh>());
 	mesh->mID = getNewMeshId();
 	mesh->mSubMeshes.resize(meshCount);
 

@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include <Physics/Internal/BroadPhase/HybridBroadphase/hkpHybridBroadphase.h>
+
 #include "bsMath.h"
 #include "bsSceneGraph.h"
 #include "bsLog.h"
@@ -10,6 +12,24 @@
 #include "bsNodeCollectorPhantom.h"
 #include "bsDx11Renderer.h"
 #include "bsConstantBuffers.h"
+
+
+// Compute a plane equation from triangle vertices, store offset to the origin in W.
+hkVector4 computePlaneFromTriangle(const hkVector4& vertex1, const hkVector4& vertex2,
+	const hkVector4& vertex3)
+{
+	hkVector4 v12;
+	v12.setSub4(vertex2, vertex1);
+	hkVector4 v13;
+	v13.setSub4(vertex3, vertex1);
+
+	hkVector4 plane;
+	plane.setCross(v12, v13);
+	plane.normalize3();
+	plane(3) = -plane.dot3(vertex1);
+
+	return plane;
+}
 
 
 bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGraph,
@@ -21,7 +41,9 @@ bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGr
 	, mProjectionInfo(projectionInfo)
 
 	, mSceneGraph(sceneGraph)
+	, mHybridBroadphase(static_cast<const hkpHybridBroadPhase*>(havokManager->getGraphicsWorld()->getBroadPhase()))
 	, mDeviceContext(mSceneGraph->getRenderer()->getDeviceContext())
+
 	, mTransform(hkTransform::getIdentity())
 	, mRotationX(0.0f)
 	, mRotationY(0.0f)
@@ -55,6 +77,8 @@ bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGr
 		mProjection);
 
 
+	constructFrustum();
+
 	hkVector4 vertices[8];
 	for (unsigned int i = 0; i < 8; ++i)
 	{
@@ -79,6 +103,7 @@ bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGr
 		}
 	}
 
+
 	hkTransform transform;
 	transform.setIdentity();
 
@@ -96,9 +121,6 @@ bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGr
 	cInfo.m_motionType = hkpMotion::MOTION_KEYFRAMED;
 	mRigidBody = new hkpRigidBody(cInfo);
 	havokManager->getGraphicsWorld()->addEntity(mRigidBody);
-
-
-	setPosition(hkVector4(0.0f, 0.0f, -125.0f));
 }
 
 bsCamera::~bsCamera()
@@ -168,9 +190,13 @@ void bsCamera::updateViewProjection()
 	cbCamera.viewProjection = mViewProjection;
 	bsMath::XMFloat4x4Transpose(cbCamera.view);
 	bsMath::XMFloat4x4Transpose(cbCamera.projection);
+	cbCamera.cameraPosition = bsMath::toXM4(mTransform.getTranslation());
+
+	XMVECTOR determinant;
+	XMStoreFloat4x4(&cbCamera.inverseViewProjection, XMMatrixInverse(&determinant, XMLoadFloat4x4(&mViewProjection)));
 
 	mDeviceContext->UpdateSubresource(mViewProjectionBuffer, 0, nullptr, &cbCamera, 0, 0);
-
+	
 	mViewProjectionNeedsUpdate = false;
 }
 
@@ -237,4 +263,87 @@ void bsCamera::updatePhantomTransform()
 
 	mPhantom->setTransform(rotatedTransform);
 	mRigidBody->setTransform(rotatedTransform);
+}
+
+std::vector<bsSceneNode*> bsCamera::getVisibleSceneNodes() const
+{
+	const_cast<bsCamera*>(this)->constructFrustum();
+
+
+
+
+
+	return mPhantom->getOverlappingSceneNodes();
+}
+#include "bsBroadphaseHandle.h"
+void bsCamera::constructFrustum()
+{
+	//Construct the corners of the near clip plane
+	hkVector4 nearPlane[4];
+	nearPlane[0].set( 2.0f,  2.0f, mProjectionInfo.mNearClip);
+	nearPlane[1].set( 2.0f, -2.0f, mProjectionInfo.mNearClip);
+	nearPlane[2].set(-2.0f,  2.0f, mProjectionInfo.mNearClip);
+	nearPlane[3].set(-2.0f, -2.0f, mProjectionInfo.mNearClip);
+
+	//View distance
+	const float viewLength = mProjectionInfo.mFarClip - mProjectionInfo.mNearClip;
+	//Height of the far clip plane
+	const float farHeight = 2 * tanf(XMConvertToRadians(mProjectionInfo.mFieldOfView) * 0.5f) * viewLength;
+	//Width of the far clip plane
+	const float farWidth = farHeight * mProjectionInfo.mAspectRatio;
+
+	//Corners of far clip plane
+	hkVector4 farPlane[4];
+	farPlane[0].set( farWidth, -farHeight, mProjectionInfo.mFarClip);
+	farPlane[1].set(-farWidth, -farHeight, mProjectionInfo.mFarClip);
+	farPlane[2].set( farWidth,  farHeight, mProjectionInfo.mFarClip);
+	farPlane[3].set(-farWidth,  farHeight, mProjectionInfo.mFarClip);
+
+
+	//Transform the vertices
+	const hkRotation& currentRotation(mTransform.getRotation());
+	hkVector4 direction(0.0f, 0.0f, 1.0f, 0.0f);
+	direction.setRotatedDir(currentRotation, direction);
+
+	for (unsigned int i = 0; i < 4; ++i)
+	{
+		nearPlane[i].setRotatedDir(currentRotation, nearPlane[i]);
+		farPlane[i].setRotatedDir(currentRotation, farPlane[i]);
+	}
+
+
+	hkVector4 planes[6];
+	//Side planes
+	planes[0] = computePlaneFromTriangle(nearPlane[0], nearPlane[1], farPlane[0]);
+	planes[1] = computePlaneFromTriangle(nearPlane[1], nearPlane[2], farPlane[1]);
+	planes[2] = computePlaneFromTriangle(nearPlane[2], nearPlane[3], farPlane[2]);
+	planes[3] = computePlaneFromTriangle(nearPlane[3], nearPlane[0], farPlane[3]);
+
+	//Near plane
+	planes[4] = computePlaneFromTriangle(nearPlane[0], nearPlane[2], farPlane[1]);
+
+	//Far plane
+	planes[5] = computePlaneFromTriangle(farPlane[0], farPlane[1], farPlane[2]);
+
+
+	//Do the culling
+	hkArray<const hkpBroadPhaseHandle*> handles;
+	handles.reserve(4096 / sizeof(const hkpBroadPhaseHandle*));
+	mHybridBroadphase->queryConvex(planes, 6, handles, static_cast<hkUint32>(hkpHybridBroadPhase::ALL_GROUPS));
+
+	std::vector<const hkpBroadPhaseHandle*> hkHandles(handles.begin(), handles.end());
+
+	std::vector<const bsBroadphaseHandle*> bsHandles(handles.getSize());
+	for (int i = 0; i < handles.getSize(); ++i)
+	{
+		bsHandles[i] = static_cast<const bsBroadphaseHandle*>(handles[i]);
+	}
+
+	for (int i = 0; i < handles.getSize(); ++i)
+	{
+		auto handle = mHybridBroadphase->getHandleFromObject(handles[i]);
+		i = i;
+	}
+	
+	//mHybridBroadphase->getHandleFromObject(hkHandles[0]).
 }

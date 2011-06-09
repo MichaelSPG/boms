@@ -7,6 +7,8 @@
 #include <vector>
 #include <functional>
 
+#include <d3d11.h>
+
 #include "bsRenderSystem.h"
 
 class bsDx11Renderer;
@@ -77,6 +79,15 @@ private:
 	std::shared_ptr<bsPixelShader>	mMergerPixelShader;
 
 	std::vector<std::function<void(void)>>	mEndOfRenderCallbacks;
+
+	ID3D11RasterizerState*	mGeometryRasterizerState;
+	ID3D11RasterizerState*	mLightRasterizerState;
+
+	ID3D11BlendState*		mGeometryBlendState;
+	ID3D11BlendState*		mLightBlendState;
+
+	ID3D11DepthStencilState*	mDepthEnabledStencilState;
+	ID3D11DepthStencilState*	mDepthDisabledStencilState;
 };
 
 #endif // BS_DEFERREDRENDERER_H

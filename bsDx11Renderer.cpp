@@ -100,11 +100,27 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 		BS_ASSERT(!"Failed to create depth stencil texture");
 	}
 
-	//Depth stencil view
 
+	/*
+	//Defaults
 	D3D11_DEPTH_STENCIL_DESC dsd;
-	dsd.DepthEnable;
-
+	memset(&dsd, 0, sizeof(dsd));
+	dsd.DepthEnable = true;
+	dsd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	dsd.StencilEnable = false;
+	dsd.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+	dsd.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+	dsd.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	dsd.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	dsd.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	dsd.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dsd.DepthFunc = D3D11_COMPARISON_LESS;//D3D11_COMPARISON_LESS_EQUAL
+	ID3D11DepthStencilState* dss;
+	mDevice->CreateDepthStencilState(&dsd, &dss);
+	mDeviceContext->OMSetDepthStencilState(dss, 0);
+	*/
+	
+	//Depth stencil view
 	D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDesc;
 	memset(&depthViewDesc, 0, sizeof(depthViewDesc));
 	depthViewDesc.Format = depthDesc.Format;

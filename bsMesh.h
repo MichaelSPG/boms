@@ -26,9 +26,9 @@ class bsMesh : public bsRenderable
 	friend class bsSceneNode;
 	friend class bsRenderQueue;
 
+public:
 	bsMesh();
 
-public:
 	~bsMesh();
 
 	void draw(bsDx11Renderer* dx11Renderer) const;
@@ -65,12 +65,6 @@ private:
 	std::vector<bsMesh*>	mSubMeshes;
 
 	unsigned int	mID;
-#if BS_DEBUG_LEVEL > 1
-	/*	Contains the mesh' file name.
-		For debugging purposes only, never rely on this variable existing.
-	*/
-	std::string		mName;
-#endif
 
 	bool			mFinished;
 };

@@ -18,6 +18,7 @@
 
 class bsSceneGraph;
 class bsHavokManager;
+class hkpHybridBroadPhase;
 
 
 /*	Projection information used to construct the camera.
@@ -72,9 +73,19 @@ public:
 
 	/*	Returns the camera's position in world space.
 	*/
-	inline hkVector4 getPosition() const
+	inline const hkVector4& getPosition() const
 	{
 		return mTransform.getTranslation();
+	}
+
+	inline const hkTransform& getTransform() const
+	{
+		return mTransform;
+	}
+
+	inline const hkTransform& getTransform2() const
+	{
+		return mPhantom->getTransform();
 	}
 
 	/*	Returns a reference to the currently active projection info.
@@ -98,10 +109,7 @@ public:
 
 	/*	Returns a vector of all scene nodes that overlap with the frustum.
 	*/
-	inline std::vector<bsSceneNode*> getVisibleSceneNodes() const
-	{
-		return mPhantom->getOverlappingSceneNodes();
-	}
+	std::vector<bsSceneNode*> getVisibleSceneNodes() const;
 
 	/*	Updates and uploads transformation matrix to the GPU if it has changed.
 	*/
@@ -116,6 +124,8 @@ public:
 	void rotateY(float angleRadians);
 
 private:
+	void constructFrustum();
+
 	/*	Updates the view matrix and then updates the view projection matrix.
 	*/
 	void updateView();
@@ -148,13 +158,12 @@ private:
 
 	bsProjectionInfo	mProjectionInfo;
 
-	ID3D11Buffer*	mViewBuffer;
-	ID3D11Buffer*	mProjectionBuffer;
 	ID3D11Buffer*	mViewProjectionBuffer;
 
 
-	bsSceneGraph*			mSceneGraph;
-	ID3D11DeviceContext*	mDeviceContext;
+	bsSceneGraph*				mSceneGraph;
+	const hkpHybridBroadPhase*	mHybridBroadphase;
+	ID3D11DeviceContext*		mDeviceContext;
 
 	bsNodeCollectorPhantom*		mPhantom;
 	hkpRigidBody*				mRigidBody;

@@ -28,6 +28,8 @@ do																			\
 		<< "File: " << __FILE__ << '(' << __LINE__ << ")\n"					\
 		<< "Function: " << __FUNCTION__;									\
 		bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);			\
+		ss << "\n";															\
+		OutputDebugStringA(ss.str().c_str());								\
 		BS_BREAKPOINT();													\
 	}																		\
 } while (false)
@@ -44,11 +46,14 @@ do																			\
 		<< "File: " << __FILE__ << '(' << __LINE__ << ")\n"					\
 		<< "Function: " << __FUNCTION__;									\
 		bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);			\
+		ss << "\n";															\
+		OutputDebugStringA(ss.str().c_str());								\
 		BS_BREAKPOINT();													\
 	}																		\
 } while (false)
 
 #else // BS_DEBUG_LEVEL > 0
+//Cast to void to avoid unused variable warning
 #define BS_ASSERT2(condition, text) do { (void)(condition); (void)(text); } while (false)
 #define BS_ASSERT(condition) do { (void)(condition); } while (false)
 #endif // BS_DEBUG_LEVEL > 0

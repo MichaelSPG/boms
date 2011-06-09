@@ -56,10 +56,11 @@ void bsLog::logMessage(const char *message,
 
 #ifndef BS_DISABLE_LOG_CALLBACKS
 	//Execute all the callbacks with the message
-	for (unsigned int i = 0, count = mCallbacks.size(); i < count; ++i)
+	std::for_each(mCallbacks.cbegin(), mCallbacks.cend(),
+		[&message](const std::function<void(const char*)>& func)
 	{
-		mCallbacks[i](message);
-	}
+		func(message);
+	});
 #endif
 }
 

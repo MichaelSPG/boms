@@ -20,6 +20,8 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 	: mDx11Renderer(dx11Renderer)
 	, mCamera(camera)
 	, mShaderManager(shaderManager)
+	, mGeometryRasterizerState(nullptr)
+	, mLightRasterizerState(nullptr)
 {
 	BS_ASSERT(dx11Renderer);
 	BS_ASSERT(camera);
@@ -29,12 +31,86 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 	mRenderQueue->setCamera(mCamera);
 
 	ID3D11Device* device = mDx11Renderer->getDevice();
+	ID3D11DeviceContext* deviceContext = mDx11Renderer->getDeviceContext();
+
 	const int windowWidth = window->getWindowWidth(), windowHeight = window->getWindowHeight();
 	
 	mGBuffer.position	= new bsRenderTarget(windowWidth, windowHeight, device);
 	mGBuffer.normal		= new bsRenderTarget(windowWidth, windowHeight, device);
 	mGBuffer.diffuse	= new bsRenderTarget(windowWidth, windowHeight, device);
 	mLightRenderTarget	= new bsRenderTarget(windowWidth, windowHeight, device);
+
+	D3D11_RASTERIZER_DESC rasterizerDesc;
+	memset(&rasterizerDesc, 0, sizeof(rasterizerDesc));
+	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
+	rasterizerDesc.CullMode = D3D11_CULL_BACK;
+	rasterizerDesc.DepthClipEnable = true;
+
+	device->CreateRasterizerState(&rasterizerDesc, &mGeometryRasterizerState);
+
+	rasterizerDesc.CullMode = D3D11_CULL_BACK;
+	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
+	rasterizerDesc.DepthClipEnable = false;
+	device->CreateRasterizerState(&rasterizerDesc, &mLightRasterizerState);
+
+	deviceContext->RSSetState(mGeometryRasterizerState);
+
+	mFullScreenQuad = new bsFullScreenQuad(device);
+
+	createShaders();
+
+	//Blending states
+	D3D11_BLEND_DESC blendDesc;
+	memset(&blendDesc, 0, sizeof(blendDesc));
+	blendDesc.IndependentBlendEnable = false;
+	blendDesc.RenderTarget[0].BlendEnable = false;
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	HRESULT hresult = device->CreateBlendState(&blendDesc, &mGeometryBlendState);
+	BS_ASSERT2(SUCCEEDED(hresult), "Failed to create blend state");
+
+	blendDesc.RenderTarget[0].BlendEnable = true;
+	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	hresult = device->CreateBlendState(&blendDesc, &mLightBlendState);
+	BS_ASSERT2(SUCCEEDED(hresult), "Failed to create blend state");
+
+	deviceContext->OMSetBlendState(mGeometryBlendState, nullptr, 0xFFFFFFFF);
+
+
+	//Depth stencils
+	D3D11_DEPTH_STENCIL_DESC depthStencilDescription;
+	memset(&depthStencilDescription, 0, sizeof(depthStencilDescription));
+	depthStencilDescription.DepthEnable = true;
+	depthStencilDescription.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	depthStencilDescription.StencilEnable = false;
+	depthStencilDescription.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+	depthStencilDescription.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+	depthStencilDescription.BackFace.StencilFunc = D3D11_COMPARISON_NEVER;
+	depthStencilDescription.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDescription.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDescription.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+
+	depthStencilDescription.FrontFace.StencilFunc = D3D11_COMPARISON_NEVER;
+	depthStencilDescription.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDescription.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDescription.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDescription.DepthFunc = D3D11_COMPARISON_LESS;
+	
+	device->CreateDepthStencilState(&depthStencilDescription, &mDepthEnabledStencilState);
+	depthStencilDescription.DepthEnable = true;
+	depthStencilDescription.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	//depthStencilDescription.DepthFunc = D3D11_COMPARISON_LESS;
+	device->CreateDepthStencilState(&depthStencilDescription, &mDepthDisabledStencilState);
+
+	deviceContext->OMSetDepthStencilState(mDepthEnabledStencilState, 0);
+
+	
+
 
 #if BS_DEBUG_LEVEL > 0
 	//Set names for debugging purposes
@@ -89,15 +165,36 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 	debugData = "RTT Light";
 	mLightRenderTarget->getRenderTargetTexture()->SetPrivateData(WKPDID_D3DDebugObjectName,
 		debugData.size(), debugData.c_str());
+
+	//Rasterizer states
+	debugData = "RasterizerState Geometry";
+	mGeometryRasterizerState->SetPrivateData(WKPDID_D3DDebugObjectName, debugData.size(),
+		debugData.c_str());
+
+	debugData = "RasterizerState Light";
+	mLightRasterizerState->SetPrivateData(WKPDID_D3DDebugObjectName, debugData.size(),
+		debugData.c_str());
+
+	//Blend states
+	debugData = "BlendState Geometry";
+	mGeometryBlendState->SetPrivateData(WKPDID_D3DDebugObjectName, debugData.size(),
+		debugData.c_str());
+
+	debugData = "BlendState Light";
+	mLightBlendState->SetPrivateData(WKPDID_D3DDebugObjectName, debugData.size(),
+		debugData.c_str());
+
 #endif
-
-	mFullScreenQuad = new bsFullScreenQuad(device);
-
-	createShaders();
 }
 
 bsDeferredRenderer::~bsDeferredRenderer()
 {
+	mGeometryRasterizerState->Release();
+	mLightRasterizerState->Release();
+
+	mGeometryBlendState->Release();
+	mLightBlendState->Release();
+
 	delete mFullScreenQuad;
 
 	delete mLightRenderTarget;
@@ -130,8 +227,9 @@ void bsDeferredRenderer::createShaders()
 
 void bsDeferredRenderer::renderOneFrame()
 {
-	mRenderQueue->reset();
+	ID3D11DeviceContext* deviceContext = mDx11Renderer->getDeviceContext();
 
+	mRenderQueue->reset();
 
 	//Set and clear G buffer
 	mDx11Renderer->setRenderTargets(&mGBuffer.position, 3);
@@ -147,20 +245,31 @@ void bsDeferredRenderer::renderOneFrame()
 	shaderResourceViews[0] = mGBuffer.position->getShaderResourceView();
 	shaderResourceViews[1] = mGBuffer.normal->getShaderResourceView();
 	shaderResourceViews[2] = mGBuffer.diffuse->getShaderResourceView();
-	mDx11Renderer->getDeviceContext()->PSSetShaderResources(0, 3, shaderResourceViews);
+	deviceContext->PSSetShaderResources(0, 3, shaderResourceViews);
+
+	//////////////////////////////////////////////////////////////////////////
+	//Render lights
 
 	//Set the light render target.
 	mDx11Renderer->setRenderTargets(&mLightRenderTarget, 1);
 
-	//Draw lights
-	//mDx11Renderer->clearBackBuffer();
+	//Enable light rasterization, ie no cull backfacing
+	deviceContext->RSSetState(mLightRasterizerState);
+	//Enable blending
+	deviceContext->OMSetBlendState(mLightBlendState, nullptr, 0xFFFFFFFF);
+	//Disable depth
+	deviceContext->OMSetDepthStencilState(mDepthDisabledStencilState, 0);
+	
 	mRenderQueue->drawLights();
+
+	//////////////////////////////////////////////////////////////////////////
+	//
 
 	mDx11Renderer->setRenderTargets(nullptr, 1);
 
 	shaderResourceViews[3] = mLightRenderTarget->getShaderResourceView();
 
-	mDx11Renderer->getDeviceContext()->PSSetShaderResources(0, 4, shaderResourceViews);
+	deviceContext->PSSetShaderResources(0, 4, shaderResourceViews);
 
 	//////////////////////////////////////////////////////////////////////////
 
@@ -169,13 +278,18 @@ void bsDeferredRenderer::renderOneFrame()
 
 	mDx11Renderer->setBackBufferAsRenderTarget();
 
+	//Enable geometry rasterization for fullscreen quad and next geometry pass
+	deviceContext->RSSetState(mGeometryRasterizerState);
+	deviceContext->OMSetBlendState(mGeometryBlendState, nullptr, 0xFFFFFFFF);
+	deviceContext->OMSetDepthStencilState(mDepthEnabledStencilState, 0);
+
 	//Draw a fullscreen quad with the merger shader to produce final output.
 	mFullScreenQuad->draw(mDx11Renderer->getDeviceContext());
 
 	//Unbind shader resource views.
 	memset(shaderResourceViews, 0, sizeof(ID3D11ShaderResourceView*)
 		* ARRAYSIZE(shaderResourceViews));
-	mDx11Renderer->getDeviceContext()->PSSetShaderResources(0, 4, shaderResourceViews);
+	deviceContext->PSSetShaderResources(0, 4, shaderResourceViews);
 
 	//Call the callbacks
 	for (unsigned int i = 0, count = mEndOfRenderCallbacks.size(); i < count; ++i)

@@ -118,11 +118,11 @@ inline unsigned int toUintRgba(const XMFLOAT4& colorRgba)
 /*	Converts 4 floats to an unsigned int.
 	The input colors should be between 0.0 and 1.0.
 */
-inline unsigned int toUintAbgr(const XMFLOAT4& colorFloat)
+inline unsigned int toUintAbgr(const XMFLOAT4& colorRgba)
 {
-	return toAbgr((unsigned char)(colorFloat.x * 255.0f),
-		(unsigned char)(colorFloat.y * 255.0f), (unsigned char)(colorFloat.z * 255.0f),
-		(unsigned char)(colorFloat.w * 255.0f));
+	return toAbgr((unsigned char)(colorRgba.x * 255.0f),
+		(unsigned char)(colorRgba.y * 255.0f), (unsigned char)(colorRgba.z * 255.0f),
+		(unsigned char)(colorRgba.w * 255.0f));
 }
 
 /*	Converts an unsigned int to 4 floats

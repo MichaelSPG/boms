@@ -1,5 +1,7 @@
 #include "bsSceneNode.h"
 
+#include <Physics/Dynamics/hkpDynamics.h>
+#include <Physics/Dynamics/World/hkpWorld.h>
 #include <Physics/Collide/Shape/Convex/Box/hkpBoxShape.h>
 
 #include "bsSceneGraph.h"
@@ -8,6 +10,7 @@
 #include "bsMesh.h"
 #include "bsLine3D.h"
 #include "bsAssert.h"
+#include "bsBroadphaseHandle.h"
 
 
 bsSceneNode::bsSceneNode(const hkVector4& localTranslation, int id, bsSceneGraph* sceneGraph)
@@ -29,14 +32,32 @@ bsSceneNode::bsSceneNode(const hkVector4& localTranslation, int id, bsSceneGraph
 	//from other phantoms' lists of overlapping phantoms.
 	mPhantom->setUserData(reinterpret_cast<hkUlong>(this));
 	mSceneGraph->mGraphicsWorld->addPhantom(mPhantom);
+
+	mBroadphaseHandle = new bsBroadphaseHandle(this);
+	
+	hkpHybridBroadPhase* bp = static_cast<hkpHybridBroadPhase*>(mSceneGraph->mGraphicsWorld->getBroadPhase());
+	hkpBroadPhaseHandle* handles[1] =
+	{
+		mBroadphaseHandle
+	};
+	hkAabb aabb;
+	mPhantom->calcAabb(aabb);
+	//mPhantom->getCollidable()->getBroadPhaseHandle()
+	bp->addUserObjects(1, (hkpBroadPhaseHandle**)&mBroadphaseHandle, &mAabb);
 }
 
 bsSceneNode::~bsSceneNode()
 {
 	mPhantom->removeReference();
 
+	delete mBroadphaseHandle;
+
+	//TODO: Figure out if these asserts are useful at all. Probably not unless future
+	//features depend on them.
+	/*
 	BS_ASSERT2(!mRenderables.size(), "Destroying a scene node which still has renderables attached");
 	BS_ASSERT2(!mChildren.size(), "Destroying a scene node which still has children");
+	*/
 }
 
 bsSceneNode* bsSceneNode::createChildSceneNode(const hkVector4& position /*= hkVector4(0.0f, 0.0f, 0.0f, 0.0f)*/)
@@ -137,6 +158,16 @@ void bsSceneNode::detachRenderable(const std::shared_ptr<bsRenderable>& renderab
 		}
 	}
 
+	if (mRenderables.empty())
+	{
+		//Can't reconstruct the phantom with an empty AABB, so make it really small instead
+		mAabb.m_min.setAll3(-FLT_MIN);
+		mAabb.m_max.setAll3(FLT_MIN);
+		updatePhantomShape();
+
+		return;
+	}
+
 	//Rebuild the AABB.
 	mAabb.setEmpty();
 	for (unsigned int i = 0, count = mRenderables.size(); i < count; ++i)
@@ -149,8 +180,10 @@ void bsSceneNode::detachRenderable(const std::shared_ptr<bsRenderable>& renderab
 
 void bsSceneNode::updatePhantomShape()
 {
+	//Create a new box shape with half extents equal to this node's AABB's half extents.
 	hkVector4 halfExtents;
 	mAabb.getHalfExtents(halfExtents);
 	hkpBoxShape* shape = new hkpBoxShape(halfExtents);
 	mPhantom->setShape(shape);
+	shape->removeReference();
 }

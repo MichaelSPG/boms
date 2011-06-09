@@ -2,19 +2,20 @@
 
 #include "bsMeshManager.h"
 #include "bsDx11Renderer.h"
+#include "bsAssert.h"
 
 
 bsLight::bsLight(LightType lightType, bsMeshManager* meshManager,
 	const bsPointLightCInfo& cInfo)
-	: mMesh(meshManager->getMesh("sphere_1m_d.bsm"))
+	: mLightType(lightType)
+	, mMesh(meshManager->getMesh("sphere_1m_d.bsm"))
 	, mColor(cInfo.color)
 	, mRadius(cInfo.radius)
 	, mIntensity(cInfo.intensity)
 {
 	memset(&mDirection, 0, sizeof(mDirection));
 
-	//TODO: Set this to equal parameter
-	mLightType = LT_POINT;
+	BS_ASSERT2(lightType == LT_POINT, "Only points lights are functional");
 
 	const float halfRadius = mRadius * 0.5f;
 	mAabb.m_min.setAll3(-halfRadius);

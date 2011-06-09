@@ -24,7 +24,8 @@
 
 
 bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shaderManager)
-	: mDx11Renderer(dx11Renderer)
+	: mCamera(nullptr)
+	, mDx11Renderer(dx11Renderer)
 	, mShaderManager(shaderManager)
 {
 	BS_ASSERT(dx11Renderer);
@@ -182,14 +183,16 @@ void bsRenderQueue::setLightConstantBuffer(const CBLight& cbLight)
 
 void bsRenderQueue::sortRenderables()
 {
+	BS_ASSERT2(mCamera, "Camera must be set before attempting to render a frame");
+
 	std::vector<bsSceneNode*> sceneNodes = mCamera->getVisibleSceneNodes();
 
 	//Remove nodes that are marked as not visible.
 	sceneNodes.erase(std::remove_if(sceneNodes.begin(), sceneNodes.end(),
 		[](const bsSceneNode* sceneNode)
-		{
-			return !sceneNode->isVisible();
-		}), sceneNodes.end());
+	{
+		return !sceneNode->isVisible();
+	}), sceneNodes.end());
 
 	mFrameStats.visibleSceneNodeCount = sceneNodes.size();
 	if (sceneNodes.empty())
@@ -371,7 +374,7 @@ void bsRenderQueue::drawLights()
 
 	for (auto itr = mLightsToDraw.begin(), end = mLightsToDraw.end(); itr != end; ++itr)
 	{
-		bsLight* currentLight = itr->first;
+		const bsLight* currentLight = itr->first;
 		const std::vector<bsSceneNode*>& sceneNodes = itr->second;
 
 		mFrameStats.visibleLights += sceneNodes.size();
@@ -387,7 +390,8 @@ void bsRenderQueue::drawLights()
 			//world._44 = 1.0f / currentLight->mRadius;
 			//world._44 = 0.3f;
 			
-			float scale = 15.0f;
+			//float scale = 15.0f;
+			float scale = currentLight->mRadius;
 			/*
 			world._11 *= scale;
 			world._22 *= scale;
@@ -412,10 +416,11 @@ void bsRenderQueue::drawLights()
 			setWorldConstantBuffer(world);
 
 			CBLight cbLight;
-			cbLight.color = currentLight->mColor;
-			cbLight.lightType = currentLight->mLightType;
-			cbLight.intensity = currentLight->mIntensity;
-			cbLight.radius = currentLight->mRadius;
+			memcpy(&cbLight.lightColor.x, &currentLight->mColor.x, sizeof(XMFLOAT3));
+			cbLight.lightColor.w = currentLight->mIntensity;
+			const hkQuadReal& position = sceneNodes[i]->getDerivedPosition().getQuad();
+			memcpy(&cbLight.lightPosition.x, &position.x, sizeof(XMFLOAT3));
+			cbLight.lightPosition.w = currentLight->mRadius;
 
 			setLightConstantBuffer(cbLight);
 

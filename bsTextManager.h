@@ -46,8 +46,13 @@ public:
 	*/
 	void drawAllTexts();
 
-	//Updates all the texts, making them scroll or applies other effects if applicable.
+	/*	Updates all the texts, making them scroll or applies other effects if applicable.
+	*/
 	void updateTexts(float deltaTime);
+
+	/*	Toggles the visibility of every text object.		
+	*/
+	void toggleVisibility();
 	
 private:
 	bsDx11Renderer*	mDx11Renderer;

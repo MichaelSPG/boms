@@ -35,12 +35,15 @@ public:
 		return mQuit;
 	}
 
+	void createSomeLights();
+
 private:
 	OIS::InputManager	*mInputManager;
 	OIS::Keyboard		*mKeyboard;
 	OIS::Mouse			*mMouse;
 
 	bool w, a, s, d, space, c, shift, rightMouseDown, leftMouseDown, mQuit, pause;
+	float mCameraSpeed;
 
 	bsCore*		mCore;
 

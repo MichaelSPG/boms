@@ -30,8 +30,7 @@ inline void unordered_erase(std::vector<T>& vec, T& elem)
 	vec.pop_back();
 }
 
-/*	Removes every element from the map for which pred evaluates to true.
-	TODO: See if this actually works
+/*	Removes every element from the map for which the predicate evaluates to true.
 */
 template<typename Key, typename Value, typename Comp, typename Alloc, typename Predicate>
 void map_remove_if(std::map<Key, Value, typename Comp, typename Alloc>& m, const Predicate& pred)

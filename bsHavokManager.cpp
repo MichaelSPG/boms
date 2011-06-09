@@ -12,6 +12,7 @@
 #define HK_CLASSES_FILE <Common/Serialize/Classlist/hkKeyCodeClasses.h>
 
 #include <Common/Base/Config/hkProductFeatures.cxx>
+
 #include <string>
 
 #include "bsLog.h"
@@ -30,6 +31,11 @@ static void HK_CALL errorReport(const char* message, void* userArgGivenToInit)
 		correctedMessage.pop_back();
 	}
 	bsLog::logMessage(correctedMessage.c_str(), pantheios::SEV_WARNING);
+
+#if BS_DEBUG_LEVEL > 0
+	correctedMessage.push_back('\n');
+	OutputDebugStringA(correctedMessage.c_str());
+#endif
 }
 
 
@@ -95,6 +101,9 @@ void bsHavokManager::createGraphicsWorld(bool createVisualDebugger /*= false*/)
 	worldCinfo.m_solverDamp = 1.0f;
 	worldCinfo.m_solverTau = 1.0f;
 	worldCinfo.setBroadPhaseWorldSize(mWorldSize * 12.0f);
+
+	//Need hybrid broadphase for culling
+	worldCinfo.m_useHybridBroadphase = true;
 
 	mGraphicsWorld = new hkpWorld(worldCinfo);
 	hkpAgentRegisterUtil::registerAllAgents(mGraphicsWorld->getCollisionDispatcher());

@@ -18,6 +18,7 @@
 #include <Physics/Collide/Shape/Convex/Box/hkpBoxShape.h>
 #include <Physics/Collide/Shape/Convex/Sphere/hkpSphereShape.h>
 #include <Physics/Collide/Dispatch/hkpAgentRegisterUtil.h>
+#include <Physics/Internal/BroadPhase/HybridBroadphase/hkpHybridBroadphase.h>
 
 #include <Physics/Collide/Query/CastUtil/hkpWorldRayCastInput.h>
 #include <Physics/Collide/Query/CastUtil/hkpWorldRayCastOutput.h>

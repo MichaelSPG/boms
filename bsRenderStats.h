@@ -13,6 +13,7 @@ public:
 		: mFps(0.0f)
 		, mAverageFps(1.0f)
 		, mFrameTimeMs(0.0f)
+		, mAverageTimeMs(16.67f)
 		, mAverageWeight(1.0f)
 		, mHistoryDuration(10000.0f)
 

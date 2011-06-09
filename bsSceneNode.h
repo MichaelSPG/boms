@@ -16,6 +16,7 @@
 #include "bsTemplates.h"
 
 class bsSceneGraph;
+class bsBroadphaseHandle;
 
 
 /*	Scene nodes are used to represent a node in 3D space which can have multiple objects
@@ -153,6 +154,7 @@ private:
 	hkTransform				mLocalTransform;
 	hkAabb					mAabb;
 	hkpCachingShapePhantom*	mPhantom;
+	bsBroadphaseHandle*		mBroadphaseHandle;
 };
 
 #endif // BS_SCENE_NODE_H

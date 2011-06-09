@@ -56,10 +56,11 @@ void bsRenderStats::setFrameTime(const float timeMs)
 	}
 
 	//Remove expired
-	bsT::map_remove_if(mTrackedTimes, [&](const std::pair<float, float>& time)
-		{
-			return time.second > mHistoryDuration;
-		});
+	bsT::map_remove_if(mTrackedTimes,
+		[&](const std::pair<float, float>& time)
+	{
+		return time.second > mHistoryDuration;
+	});
 
 	//Check if current is actually the value it should be, and update it if not
 	if (!mTrackedTimes.empty())
