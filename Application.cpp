@@ -92,7 +92,7 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 	//////////////////////////////////////////////////////////////////////////
 
 	bsLog::logMessage("Initialization completed successfully", pantheios::SEV_NOTICE);
-
+	
 	createSomeLights();
 }
 
@@ -116,73 +116,21 @@ void Application::update(float deltaTime)
 	bsCamera* camera = mCore->getSceneGraph()->getCamera();
 
 	//Movement + speedup if shift is pressed
-	
-#if 0
 	{
 		const hkTransform& cameraTransform = camera->getTransform2();
-		hkVector4 translation(0.0f, 0.0f, 0.0f);
-		translation(0) = (a ? (-mCameraSpeed) : (d ? mCameraSpeed : 0.0f));
-		translation(1) = (s ? (-mCameraSpeed) : (w ? mCameraSpeed : 0.0f));
-		translation(2) = (c ? (-mCameraSpeed) : (space ? mCameraSpeed : 0.0f));
+		hkVector4 translation(a ? (-mCameraSpeed) : (d ? mCameraSpeed : 0.0f),
+			c ? (-mCameraSpeed) : (space ? mCameraSpeed : 0.0f),
+			s ? (-mCameraSpeed) : (w ? mCameraSpeed : 0.0f));
 		
 		if (shift)
 		{
-			translation.mul4(2.5f);
+			translation.mul(hkSimdReal::convert(2.5f));
 		}
 		
-		translation.setMul3(transform.getRotation(), translation);
+		translation.setRotatedDir(cameraTransform.getRotation(), translation);
 		camera->translate(translation);
 	}
-#endif
-	
-	if (w)
-	{
-		//camera->translate(hkVector4(0.0f, 0.0f, shift ? mCameraSpeed * 2.5f : mCameraSpeed));
-		const hkTransform& transform = camera->getTransform2();
-		hkVector4 translation(0.0f, 0.0f, shift ? mCameraSpeed * 2.5f : mCameraSpeed);
-		translation.setMul3(transform.getRotation(), translation);
-		camera->translate(translation);
-	}
-	if (s)
-	{
-		//camera->translate(hkVector4(0.0f, 0.0f, shift ? -mCameraSpeed * 2.5f : -mCameraSpeed));
-		const hkTransform& transform = camera->getTransform2();
-		hkVector4 translation(0.0f, 0.0f, shift ? -mCameraSpeed * 2.5f : -mCameraSpeed);
-		translation.setMul3(transform.getRotation(), translation);
-		camera->translate(translation);
-	}
-	if (a)
-	{
-		//camera->translate(hkVector4(shift ? -mCameraSpeed * 2.5f : -mCameraSpeed, 0.0f, 0.0f));
-		const hkTransform& transform = camera->getTransform2();
-		hkVector4 translation(shift ? -mCameraSpeed * 2.5f : -mCameraSpeed, 0.0f, 0.0f);
-		translation.setMul3(transform.getRotation(), translation);
-		camera->translate(translation);
-	}
-	if (d)
-	{
-		//camera->translate(hkVector4(shift ? mCameraSpeed * 2.5f : mCameraSpeed, 0.0f, 0.0f));
-		const hkTransform& transform = camera->getTransform2();
-		hkVector4 translation(shift ? mCameraSpeed * 2.5f : mCameraSpeed, 0.0f, 0.0f);
-		translation.setMul3(transform.getRotation(), translation);
-		camera->translate(translation);
-	}
-	if (space)
-	{
-		//camera->translate(hkVector4(0.0f, shift ? mCameraSpeed * 2.5f : mCameraSpeed, 0.0f));
-		const hkTransform& transform = camera->getTransform2();
-		hkVector4 translation(0.0f, shift ? mCameraSpeed * 2.5f : mCameraSpeed, 0.0f);
-		translation.setMul3(transform.getRotation(), translation);
-		camera->translate(translation);
-	}
-	if (c)
-	{
-		//camera->translate(hkVector4(0.0f, shift ? -mCameraSpeed * 2.5f : -mCameraSpeed, 0.0f));
-		const hkTransform& transform = camera->getTransform2();
-		hkVector4 translation(0.0f, shift ? -mCameraSpeed * 2.5f : -mCameraSpeed, 0.0f);
-		translation.setMul3(transform.getRotation(), translation);
-		camera->translate(translation);
-	}
+
 	
 	camera->update();
 	
@@ -464,8 +412,12 @@ bool Application::mouseMoved(const OIS::MouseEvent& arg)
 	{
 		bsCamera* camera = mCore->getSceneGraph()->getCamera();
 
-		camera->rotateX(-(float)arg.state.X.rel * 0.01f);
-		camera->rotateY(-(float)arg.state.Y.rel * 0.01f);
+		const float rotationX = (float)arg.state.X.rel;
+		const float rotationY = (float)arg.state.Y.rel;
+		const float sensitivity = 0.01f;
+
+		camera->rotateX(-rotationX * sensitivity);
+		camera->rotateY(-rotationY * sensitivity);
 	}
 	
 	return true;
@@ -574,7 +526,4 @@ void Application::createSomeLights()
 		}
 	}
 #endif
-
-	auto bp = static_cast<hkpHybridBroadPhase*>(mCore->getHavokManager()->getGraphicsWorld()->getBroadPhase());
-	bp->fullOptimize();
 }

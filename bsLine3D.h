@@ -4,6 +4,8 @@
 
 #include <vector>
 
+#include <Common/Base/hkBase.h>
+
 #include "bsRenderable.h"
 #include "bsMath.h"
 

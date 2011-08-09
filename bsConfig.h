@@ -8,6 +8,7 @@
 #define BS_DEBUG
 #endif // _DEBUG
 
+//#include "bsHavokManager.h"
 
 
 //Disables all logging to file.

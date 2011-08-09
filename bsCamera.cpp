@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include <Physics/Internal/BroadPhase/HybridBroadphase/hkpHybridBroadphase.h>
+#include <Physics/Internal/BroadPhase/TreeBroadPhase/hkpTreeBroadPhase.h>
 
 #include "bsMath.h"
 #include "bsSceneGraph.h"
@@ -19,14 +19,14 @@ hkVector4 computePlaneFromTriangle(const hkVector4& vertex1, const hkVector4& ve
 	const hkVector4& vertex3)
 {
 	hkVector4 v12;
-	v12.setSub4(vertex2, vertex1);
+	v12.setSub(vertex2, vertex1);
 	hkVector4 v13;
-	v13.setSub4(vertex3, vertex1);
+	v13.setSub(vertex3, vertex1);
 
 	hkVector4 plane;
 	plane.setCross(v12, v13);
-	plane.normalize3();
-	plane(3) = -plane.dot3(vertex1);
+	plane.normalize<3>();
+	plane.setW(-plane.dot<3>(vertex1));
 
 	return plane;
 }
@@ -41,7 +41,7 @@ bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGr
 	, mProjectionInfo(projectionInfo)
 
 	, mSceneGraph(sceneGraph)
-	, mHybridBroadphase(static_cast<const hkpHybridBroadPhase*>(havokManager->getGraphicsWorld()->getBroadPhase()))
+	, mHybridBroadphase(static_cast<const hkpTreeBroadPhase*>(havokManager->getGraphicsWorld()->getBroadPhase()))
 	, mDeviceContext(mSceneGraph->getRenderer()->getDeviceContext())
 
 	, mTransform(hkTransform::getIdentity())
@@ -115,19 +115,21 @@ bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGr
 	
 	//TODO: Remove at some point. The RB's only purpose is to make sure stuff looks right
 	//in the VDB.
+	/*
 	hkpRigidBodyCinfo cInfo;
 	cInfo.m_shape = shape;
 	cInfo.m_enableDeactivation = false;
 	cInfo.m_motionType = hkpMotion::MOTION_KEYFRAMED;
 	mRigidBody = new hkpRigidBody(cInfo);
 	havokManager->getGraphicsWorld()->addEntity(mRigidBody);
+	*/
 }
 
 bsCamera::~bsCamera()
 {
 	mViewProjectionBuffer->Release();
 	mPhantom->removeReference();
-	mRigidBody->removeReference();
+	//mRigidBody->removeReference();
 }
 
 void bsCamera::update()
@@ -224,7 +226,7 @@ void bsCamera::setPosition(const hkVector4& position)
 {
 	//Get the translation based on current position and new position
 	hkVector4 translation(position);
-	translation.sub3clobberW(mTransform.getTranslation());
+	translation.sub(mTransform.getTranslation());
 
 	translate(translation);
 }
@@ -232,7 +234,7 @@ void bsCamera::translate(const hkVector4& translation)
 {
 	//Generate the new position
 	hkVector4 position(mTransform.getTranslation());
-	position.sub3clobberW(translation);
+	position.sub(translation);
 
 	mTransform.setTranslation(position);
 
@@ -259,10 +261,10 @@ void bsCamera::updatePhantomTransform()
 {
 	hkTransform rotatedTransform(mTransform);
 	rotatedTransform.getRotation().invert(0.00001f);
-	rotatedTransform.getTranslation().mul4(-1.0f);
+	rotatedTransform.getTranslation().mul(hkSimdReal::convert(-1.0f));
 
 	mPhantom->setTransform(rotatedTransform);
-	mRigidBody->setTransform(rotatedTransform);
+	//mRigidBody->setTransform(rotatedTransform);
 }
 
 std::vector<bsSceneNode*> bsCamera::getVisibleSceneNodes() const
@@ -329,7 +331,7 @@ void bsCamera::constructFrustum()
 	//Do the culling
 	hkArray<const hkpBroadPhaseHandle*> handles;
 	handles.reserve(4096 / sizeof(const hkpBroadPhaseHandle*));
-	mHybridBroadphase->queryConvex(planes, 6, handles, static_cast<hkUint32>(hkpHybridBroadPhase::ALL_GROUPS));
+	mHybridBroadphase->queryConvex(planes, 6, handles, static_cast<hkUint32>(hkpTreeBroadPhase::ALL_GROUPS));
 
 	std::vector<const hkpBroadPhaseHandle*> hkHandles(handles.begin(), handles.end());
 

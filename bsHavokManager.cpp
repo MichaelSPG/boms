@@ -7,8 +7,20 @@
 #undef HK_FEATURE_PRODUCT_CLOTH
 #undef HK_FEATURE_PRODUCT_DESTRUCTION
 #undef HK_FEATURE_PRODUCT_BEHAVIOR
+
 #define HK_EXCLUDE_LIBRARY_hkgpConvexDecomposition
+
 #define HK_FEATURE_REFLECTION_PHYSICS
+#define HK_EXCLUDE_FEATURE_SerializeDeprecatedPre700
+#define HK_EXCLUDE_FEATURE_RegisterVersionPatches
+// Vdb needs the reflected classes
+//#define HK_EXCLUDE_FEATURE_RegisterReflectedClasses
+//#define HK_EXCLUDE_FEATURE_MemoryTracker
+//#define HK_EXCLUDE_FEATURE_hkpAccurateInertiaTensorComputer
+//#define HK_EXCLUDE_FEATURE_CompoundShape
+//#define HK_EXCLUDE_FEATURE_hkpAabbTreeWorldManager
+//#define HK_EXCLUDE_FEATURE_hkpKdTreeWorldManager
+
 #define HK_CLASSES_FILE <Common/Serialize/Classlist/hkKeyCodeClasses.h>
 
 #include <Common/Base/Config/hkProductFeatures.cxx>
@@ -89,9 +101,9 @@ void bsHavokManager::createGraphicsWorld(bool createVisualDebugger /*= false*/)
 	if (mGraphicsWorld)
 	{
 		bsLog::logMessage("Graphics world already exists", pantheios::SEV_CRITICAL);
+		BS_ASSERT2(!mGraphicsWorld, "Graphics world already exists");
 		return;
 	}
-	BS_ASSERT2(!mGraphicsWorld, "Graphics world already exists");
 
 	if (!mNonWorldObjectsCreated)
 	{
@@ -99,18 +111,21 @@ void bsHavokManager::createGraphicsWorld(bool createVisualDebugger /*= false*/)
 	}
 
 	hkpWorldCinfo worldCinfo;
-	worldCinfo.m_simulationType = hkpWorldCinfo::SIMULATION_TYPE_DISCRETE;
-	worldCinfo.m_broadPhaseBorderBehaviour = hkpWorldCinfo::BROADPHASE_BORDER_ASSERT;
-	worldCinfo.m_gravity.setAll3(0.0f);
-	worldCinfo.m_solverIterations = 1;
-	worldCinfo.m_solverDamp = 1.0f;
-	worldCinfo.m_solverTau = 1.0f;
-	worldCinfo.setBroadPhaseWorldSize(mWorldSize * 12.0f);
+	//worldCinfo.m_simulationType = hkpWorldCinfo::SIMULATION_TYPE_DISCRETE;
+	//worldCinfo.m_broadPhaseBorderBehaviour = hkpWorldCinfo::BROADPHASE_BORDER_ASSERT;
+	worldCinfo.m_gravity.setZero();
+	//worldCinfo.m_solverIterations = 1;
+	//worldCinfo.m_solverDamp = 1.0f;
+	//worldCinfo.m_solverTau = 1.0f;
+	//worldCinfo.setBroadPhaseWorldSize(mWorldSize * 12.0f);
+	worldCinfo.m_broadPhaseWorldAabb.m_max.set(250.0f, 250.0f, 250.0f);
+	worldCinfo.m_broadPhaseWorldAabb.m_min.setNeg<4>(worldCinfo.m_broadPhaseWorldAabb.m_max);
 
-	//Need hybrid broadphase for culling
-	worldCinfo.m_useHybridBroadphase = true;
+	//Need tree broadphase for culling.
+	worldCinfo.m_broadPhaseType = hkpWorldCinfo::BROADPHASE_TYPE_TREE;
 
 	mGraphicsWorld = new hkpWorld(worldCinfo);
+
 	hkpAgentRegisterUtil::registerAllAgents(mGraphicsWorld->getCollisionDispatcher());
 
 	if (createVisualDebugger)

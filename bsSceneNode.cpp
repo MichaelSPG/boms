@@ -33,17 +33,23 @@ bsSceneNode::bsSceneNode(const hkVector4& localTranslation, int id, bsSceneGraph
 	mPhantom->setUserData(reinterpret_cast<hkUlong>(this));
 	mSceneGraph->mGraphicsWorld->addPhantom(mPhantom);
 
+
+
+	//TODO: Fix this stuff, move addUserObjects elsewhere
+	
 	mBroadphaseHandle = new bsBroadphaseHandle(this);
 	
-	hkpHybridBroadPhase* bp = static_cast<hkpHybridBroadPhase*>(mSceneGraph->mGraphicsWorld->getBroadPhase());
+	hkpTreeBroadPhase* bp = static_cast<hkpTreeBroadPhase*>(mSceneGraph->mGraphicsWorld->getBroadPhase());
 	hkpBroadPhaseHandle* handles[1] =
 	{
 		mBroadphaseHandle
 	};
-	hkAabb aabb;
-	mPhantom->calcAabb(aabb);
-	//mPhantom->getCollidable()->getBroadPhaseHandle()
-	bp->addUserObjects(1, (hkpBroadPhaseHandle**)&mBroadphaseHandle, &mAabb);
+	hkAabb aabbs[1] =
+	{
+		mAabb
+	};
+	mPhantom->calcAabb(aabbs[0]);
+	bp->addUserObjects(1, handles, aabbs);
 }
 
 bsSceneNode::~bsSceneNode()
@@ -114,20 +120,20 @@ void bsSceneNode::updateDerivedTransform() const
 void bsSceneNode::setPosition(const hkVector4& newPosition)
 {
 	hkVector4 translation(mLocalTransform.getTranslation());
-	translation.sub3clobberW(newPosition);
+	translation.subXYZ(newPosition);
 
 	mLocalTransform.setTranslation(newPosition);
 	//mLocalTransform.getTranslation().set(x, y, z, 0.0f);
 
 	//Get translation
-	translation.sub3clobberW(mLocalTransform.getTranslation());
+	translation.subXYZ(mLocalTransform.getTranslation());
 	
 	updateDerivedTransform();
 }
 
 void bsSceneNode::translate(const hkVector4& translation)
 {
-	mLocalTransform.getTranslation().add3clobberW(translation);
+	mLocalTransform.getTranslation().addXYZ(translation);
 	
 	updateDerivedTransform();
 }
@@ -161,8 +167,8 @@ void bsSceneNode::detachRenderable(const std::shared_ptr<bsRenderable>& renderab
 	if (mRenderables.empty())
 	{
 		//Can't reconstruct the phantom with an empty AABB, so make it really small instead
-		mAabb.m_min.setAll3(-FLT_MIN);
-		mAabb.m_max.setAll3(FLT_MIN);
+		mAabb.m_min.setAll(-FLT_MIN);
+		mAabb.m_max.setAll(FLT_MIN);
 		updatePhantomShape();
 
 		return;

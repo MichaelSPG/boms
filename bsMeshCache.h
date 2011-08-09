@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 
+#include <Common/Base/hkBase.h>
+
 #include "bsMesh.h"
 #include "bsVertexTypes.h"
 #include "bsMeshCreator.h"

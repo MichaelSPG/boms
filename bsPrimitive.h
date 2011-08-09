@@ -1,3 +1,5 @@
+#if 0
+
 #pragma once
 
 #include "bsConfig.h"
@@ -7,6 +9,8 @@
 #include <d3d11.h>
 #include <Windows.h>
 #include <xnamath.h>
+
+#include <Common/Base/hkBase.h>
 
 #include "bsRenderable.h"
 
@@ -59,3 +63,5 @@ private:
 
 	bool			mFinished;
 };
+
+#endif

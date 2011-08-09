@@ -18,12 +18,14 @@ namespace bsMath
 
 inline XMFLOAT3 toXM3(const hkVector4& vec)
 {
-	return XMFLOAT3(vec.getSimdAt(0), vec.getSimdAt(1), vec.getSimdAt(2));
+	return XMFLOAT3(vec.getComponent<0>().getReal(), vec.getComponent<1>().getReal(),
+		vec.getComponent<2>().getReal());
 }
 
 inline XMFLOAT4 toXM4(const hkVector4& vec)
 {
-	return XMFLOAT4(vec.getSimdAt(0), vec.getSimdAt(1), vec.getSimdAt(2), vec.getSimdAt(3));
+	return XMFLOAT4(vec.getComponent<0>().getReal(), vec.getComponent<1>().getReal(),
+		vec.getComponent<2>().getReal(), vec.getComponent<3>().getReal());
 }
 
 inline hkVector4 toHK(const XMFLOAT3& vec)

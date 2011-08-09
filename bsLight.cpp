@@ -18,8 +18,8 @@ bsLight::bsLight(LightType lightType, bsMeshCache* meshCache,
 	BS_ASSERT2(lightType == LT_POINT, "Only points lights are functional");
 
 	const float halfRadius = mRadius * 0.5f;
-	mAabb.m_min.setAll3(-halfRadius);
-	mAabb.m_max.setAll3(halfRadius);
+	mAabb.m_min.setAll(-halfRadius);
+	mAabb.m_max.setAll(halfRadius);
 }
 
 bsLight::~bsLight()

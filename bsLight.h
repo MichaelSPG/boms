@@ -7,6 +7,8 @@
 #include <Windows.h>
 #include <xnamath.h>
 
+#include <Common/Base/hkBase.h>
+
 #include "bsRenderable.h"
 
 class bsMesh;

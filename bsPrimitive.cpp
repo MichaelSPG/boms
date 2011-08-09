@@ -1,3 +1,5 @@
+#if 0
+
 #include "bsPrimitive.h"
 
 #include <vector>
@@ -84,23 +86,50 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer,
 	const hkVector4& minHalfExtents = aabb.m_min;
 	
 	std::vector<XMFLOAT3> vertices(8);
-	vertices.push_back(XMFLOAT3(minHalfExtents.getSimdAt(0), maxHalfExtents.getSimdAt(1),
-		minHalfExtents.getSimdAt(2)));//Upper left, front
-	vertices.push_back(XMFLOAT3(maxHalfExtents.getSimdAt(0), maxHalfExtents.getSimdAt(1),
-		minHalfExtents.getSimdAt(2)));//Upper right, front
-	vertices.push_back(XMFLOAT3(maxHalfExtents.getSimdAt(0), minHalfExtents.getSimdAt(1),
-		minHalfExtents.getSimdAt(2)));//Lower right, front
-	vertices.push_back(XMFLOAT3(minHalfExtents.getSimdAt(0), minHalfExtents.getSimdAt(1),
-		minHalfExtents.getSimdAt(2)));//Lower left, front
+	float vertex[3];
+	minHalfExtents.storeNotAligned<3>(vertex);//Upper left, front
+	vertices.push_back(XMFLOAT3(vertex));
+	maxHalfExtents.storeNotAligned<3>(vertex);//Upper right, front
+	vertices.push_back(XMFLOAT3(vertex));
+	maxHalfExtents.storeNotAligned<3>(vertex);//Lower right, front
+	vertices.push_back(XMFLOAT3(vertex));
+	minHalfExtents.storeNotAligned<3>(vertex);//Lower left, front
+	vertices.push_back(XMFLOAT3(vertex));
 
-	vertices.push_back(XMFLOAT3(minHalfExtents.getSimdAt(0), maxHalfExtents.getSimdAt(1),
-		maxHalfExtents.getSimdAt(2)));//Upper left, back
-	vertices.push_back(XMFLOAT3(maxHalfExtents.getSimdAt(0), maxHalfExtents.getSimdAt(1),
-		maxHalfExtents.getSimdAt(2)));//Upper right, back
-	vertices.push_back(XMFLOAT3(maxHalfExtents.getSimdAt(0), minHalfExtents.getSimdAt(1),
-		maxHalfExtents.getSimdAt(2)));//Lower right, back
-	vertices.push_back(XMFLOAT3(minHalfExtents.getSimdAt(0), minHalfExtents.getSimdAt(1),
-		maxHalfExtents.getSimdAt(2)));//Lower left, back
+	minHalfExtents.storeNotAligned<3>(vertex);//Upper left, front
+	vertices.push_back(XMFLOAT3(vertex));
+	maxHalfExtents.storeNotAligned<3>(vertex);//Upper right, front
+	vertices.push_back(XMFLOAT3(vertex));
+	maxHalfExtents.storeNotAligned<3>(vertex);//Lower right, front
+	vertices.push_back(XMFLOAT3(vertex));
+	minHalfExtents.storeNotAligned<3>(vertex);//Lower left, front
+	vertices.push_back(XMFLOAT3(vertex));
+
+	vertices.push_back(XMFLOAT3(minHalfExtents.getComponent<0>().getReal(),
+		maxHalfExtents.getComponent<1>().getReal(),
+		minHalfExtents.getComponent<2>().getReal()));//Upper left, front
+	vertices.push_back(XMFLOAT3(maxHalfExtents.getComponent<0>().getReal(),
+		maxHalfExtents.getComponent<1>().getReal(),
+		minHalfExtents.getComponent<2>().getReal()));//Upper right, front
+	vertices.push_back(XMFLOAT3(maxHalfExtents.getComponent<0>().getReal(),
+		minHalfExtents.getComponent<1>().getReal(),
+		minHalfExtents.getComponent<2>().getReal()));//Lower right, front
+	vertices.push_back(XMFLOAT3(minHalfExtents.getComponent<0>().getReal(),
+		minHalfExtents.getComponent<1>().getReal(),
+		minHalfExtents.getComponent<2>().getReal()));//Lower left, front
+
+	vertices.push_back(XMFLOAT3(minHalfExtents.getComponent<0>().getReal(),
+		maxHalfExtents.getComponent<1>().getReal(),
+		maxHalfExtents.getComponent<2>().getReal()));//Upper left, back
+	vertices.push_back(XMFLOAT3(maxHalfExtents.getComponent<0>().getReal(),
+		maxHalfExtents.getComponent<1>().getReal(),
+		maxHalfExtents.getComponent<2>().getReal()));//Upper right, back
+	vertices.push_back(XMFLOAT3(maxHalfExtents.getComponent<0>().getReal(),
+		minHalfExtents.getComponent<1>().getReal(),
+		maxHalfExtents.getComponent<2>().getReal()));//Lower right, back
+	vertices.push_back(XMFLOAT3(minHalfExtents.getComponent<0>().getReal(),
+		minHalfExtents.getComponent<1>().getReal(),
+		maxHalfExtents.getComponent<2>().getReal()));//Lower left, back
 
 	
 	//Vertex buffer
@@ -186,3 +215,5 @@ void bsPrimitive::draw(bsDx11Renderer* dx11Renderer)
 
 	context->DrawIndexed(24, 0, 0);
 }
+
+#endif

@@ -6,6 +6,8 @@
 
 #include <d3d11.h>
 
+#include <Common/Base/hkBase.h>
+
 #include "bsVertexTypes.h"
 #include "bsMeshSerializer.h"
 

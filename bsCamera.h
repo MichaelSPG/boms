@@ -17,7 +17,7 @@
 
 class bsSceneGraph;
 class bsHavokManager;
-class hkpHybridBroadPhase;
+class hkpTreeBroadPhase;
 
 
 /*	Projection information used to construct the camera.
@@ -161,7 +161,7 @@ private:
 
 
 	bsSceneGraph*				mSceneGraph;
-	const hkpHybridBroadPhase*	mHybridBroadphase;
+	const hkpTreeBroadPhase*	mHybridBroadphase;
 	ID3D11DeviceContext*		mDeviceContext;
 
 	bsNodeCollectorPhantom*		mPhantom;

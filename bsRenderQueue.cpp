@@ -233,7 +233,7 @@ void bsRenderQueue::sortRenderables()
 					finder->second.push_back(sceneNodes[i]);
 				}
 			}
-			else if (identifier == bsRenderable::WIREFRAME_PRIMITIVE)
+			/*else if (identifier == bsRenderable::WIREFRAME_PRIMITIVE)
 			{
 				bsPrimitive* primitive = static_cast<bsPrimitive*>(renderables[j].get());
 				auto finder = mPrimitivesToDraw.find(primitive);
@@ -250,7 +250,7 @@ void bsRenderQueue::sortRenderables()
 					//Found
 					finder->second.push_back(sceneNodes[i]);
 				}
-			}
+			}*/
 			else if (identifier == bsRenderable::LINE)
 			{
 				bsLine3D* line = static_cast<bsLine3D*>(renderables[j].get());
@@ -418,8 +418,11 @@ void bsRenderQueue::drawLights()
 			CBLight cbLight;
 			memcpy(&cbLight.lightColor.x, &currentLight->mColor.x, sizeof(XMFLOAT3));
 			cbLight.lightColor.w = currentLight->mIntensity;
-			const hkQuadReal& position = sceneNodes[i]->getDerivedPosition().getQuad();
-			memcpy(&cbLight.lightPosition.x, &position.x, sizeof(XMFLOAT3));
+
+			//TODO: Verify that this actually works and doesn't break anything.
+			sceneNodes[i]->getDerivedPosition().storeNotAligned<3>(&cbLight.lightPosition.x);
+			
+			//memcpy(&cbLight.lightPosition.x, &position.v[0], sizeof(XMFLOAT3));
 			cbLight.lightPosition.w = currentLight->mRadius;
 
 			setLightConstantBuffer(cbLight);
