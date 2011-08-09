@@ -1,5 +1,4 @@
-#ifndef BS_TIMER_H
-#define BS_TIMER_H
+#pragma once
 
 #include <windows.h>
 
@@ -43,5 +42,3 @@ private:
 	mutable LARGE_INTEGER mEnd;
 	float mOneOverFrequency;
 };
-
-#endif // BS_TIMER_H

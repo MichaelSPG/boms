@@ -1,5 +1,4 @@
-#ifndef BS_CONVERT_H
-#define BS_CONVERT_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -56,6 +55,4 @@ inline XMFLOAT4X4 toXM(const hkTransform& transform)
 	return xmTransform;
 }
 
-} // bsMath
-
-#endif // BS_CONVERT_H
+} // namespace bsMath

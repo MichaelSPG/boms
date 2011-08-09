@@ -34,13 +34,16 @@ void bsRenderStats::setFrameTime(const float timeMs)
 	mFrameTimeMs = timeMs;
 	mAverageTimeMs = mAverageTimeMs * (1.0f - mAverageWeight) + timeMs * mAverageWeight;
 
-	mTrackedTimes.insert(std::make_pair<float, float>(timeMs, 0.0f));
+	mTrackedTimes.insert(std::make_pair<float, float>(timeMs, 0.0f));	
 
 	//Increase age
-	for (auto itr = mTrackedTimes.begin(), end = mTrackedTimes.end(); itr != end; ++itr)
+	std::for_each(mTrackedTimes.begin(), mTrackedTimes.end(),
+		[timeMs](const std::pair<float, float>& p)
 	{
-		itr->second += timeMs;
-	}
+		//Need to cast const away because we can't modify the pair (set key), but it's ok
+		//since we're only using the pair's first as key, not second.
+		const_cast<std::pair<float, float>&>(p).second += timeMs;
+	});
 
 	mCurrentMin.second += timeMs;
 	mCurrentMax.second += timeMs;
@@ -56,7 +59,7 @@ void bsRenderStats::setFrameTime(const float timeMs)
 	}
 
 	//Remove expired
-	bsT::map_remove_if(mTrackedTimes,
+	bs::remove_if(mTrackedTimes, mTrackedTimes.begin(), mTrackedTimes.end(),
 		[&](const std::pair<float, float>& time)
 	{
 		return time.second > mHistoryDuration;

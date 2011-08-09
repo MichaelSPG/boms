@@ -1,5 +1,4 @@
-#ifndef BS_CORE_H
-#define BS_CORE_H
+#pragma once
 
 #include "bsConfig.h"
 #include "bsAssert.h"
@@ -97,5 +96,3 @@ private:
 
 	bsCoreCInfo			mCInfo;
 };
-
-#endif // BS_CORE_H

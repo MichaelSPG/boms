@@ -1,5 +1,4 @@
-#ifndef BS_RENDERQUEUE_H
-#define BS_RENDERQUEUE_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -169,5 +168,3 @@ private:
 	std::unordered_map<bsPrimitive*, std::vector<bsSceneNode*>>	mPrimitivesToDraw;
 	std::unordered_map<bsLight*, std::vector<bsSceneNode*>>		mLightsToDraw;
 };
-
-#endif // BS_RENDERQUEUE_H

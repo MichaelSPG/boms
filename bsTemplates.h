@@ -1,5 +1,4 @@
-#ifndef BS_TEMPLATES_H
-#define BS_TEMPLATES_H
+#pragma once
 
 #include <vector>
 #include <map>
@@ -7,7 +6,7 @@
 
 /*	Contains some template functions to perform operations on certain STL containers.	
 */
-namespace bsT
+namespace bs
 {
 
 /*	Erases an element from anywhere in the vector in constant time, but the order of the
@@ -52,6 +51,24 @@ void map_remove_if(std::map<Key, Value, typename Comp, typename Alloc>& m, const
 	}
 }
 
-} // bsT
+/*	Removes every element from a container for which the predicate evalutes to true.
+	This works on containers where std::remove_if fails, such as std::set and std::map.
+	Will most likely fail if used with std::vector, or be slower than std::remove_if if not.
+*/
+template<typename Container, typename Iterator, typename Predicate>
+void remove_if(Container& container, Iterator begin, Iterator end, const Predicate& pred)
+{
+	for (auto itr = begin; itr != end;)
+	{
+		if (pred(*itr))
+		{
+			container.erase(itr++);
+		}
+		else
+		{
+			++itr;
+		}
+	}
+}
 
-#endif // BS_TEMPLATES_H
+} // namespace bs

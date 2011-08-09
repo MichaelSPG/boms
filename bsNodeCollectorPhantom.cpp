@@ -43,7 +43,7 @@ void bsNodeCollectorPhantom::removeOverlappingCollidable(hkpCollidable* collidab
 			{
 				if (node == mSceneNodes[i])
 				{
-					bsT::unordered_erase(mSceneNodes, mSceneNodes[i]);
+					bs::unordered_erase(mSceneNodes, mSceneNodes[i]);
 
 					hkpCachingShapePhantom::removeOverlappingCollidable(collidable);
 

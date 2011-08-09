@@ -1,5 +1,4 @@
-#ifndef BS_STRINGUTILS_H
-#define BS_STRINGUTILS_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -57,5 +56,3 @@ inline std::string toStringWithPrecision(const T& t, const unsigned int precisio
 	return ss.str();
 }
 };
-
-#endif // BS_STRINGUTILS_H

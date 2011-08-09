@@ -9,8 +9,7 @@
 bsFileSystem::bsFileSystem(const std::string& basePath)
 	: mBasePath(basePath)
 {
-	BS_ASSERT2(basePath.length(), "Zero length base path is not ok. Use \".\" (without"
-		"quotes for current path");
+	BS_ASSERT2(mBasePath.length(), "Zero length base path is not OK.");
 
 	buildFileSystem();
 }
@@ -38,17 +37,16 @@ void bsFileSystem::buildFileSystem()
 			{
 				//Add the file and path to the map.
 				mFilePaths[fileName] = pathName;
-#if BS_DEBUG_LEVEL > 1
+#ifdef BS_DEBUG
 				std::string message("Adding file '");
 				message += fileName + "' to resource locations (path: '"
 					+ pathName + "'";
 				bsLog::logMessage(message.c_str(), pantheios::SEV_DEBUG);
 #endif
 			}
-#if BS_DEBUG_LEVEL > 0
 			else
 			{
-				//Duplicate file name name found
+				//Duplicate file name name found, which is probably not intended.
 				std::string message("Duplicate file found, file name: '");
 				message += fileName + "' with path '" + pathName
 					+ "'. Will use previously found path '" + findResult->second
@@ -56,7 +54,6 @@ void bsFileSystem::buildFileSystem()
 
 				bsLog::logMessage(message.c_str(), pantheios::SEV_WARNING);
 			}
-#endif
 		}
 	}
 }
@@ -65,14 +62,6 @@ std::string bsFileSystem::getPathFromFilename(const std::string& fileName) const
 {
 	auto findResult = mFilePaths.find(fileName);
 
-	if (findResult == mFilePaths.end())
-	{
-		//Not found
-		return std::string("");
-	}
-	else
-	{
-		//Found
-		return findResult->second;
-	}
+	//Return empty string if not found, else the actual path
+	return findResult == mFilePaths.end() ? "" : findResult->second;
 }

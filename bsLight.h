@@ -1,5 +1,4 @@
-#ifndef BS_LIGHT_H
-#define BS_LIGHT_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -11,7 +10,7 @@
 #include "bsRenderable.h"
 
 class bsMesh;
-class bsMeshManager;
+class bsMeshCache;
 class bsDx11Renderer;
 
 
@@ -41,7 +40,7 @@ public:
 		LT_SPOT
 	};
 
-	bsLight(LightType lightType, bsMeshManager* meshManager,
+	bsLight(LightType lightType, bsMeshCache* meshCache,
 		const bsPointLightCInfo& cInfo);
 
 	~bsLight();
@@ -76,5 +75,3 @@ private:
 	float		mRadius;
 	float		mIntensity;
 };
-
-#endif // BS_LIGHT_H

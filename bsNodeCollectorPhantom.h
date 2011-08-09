@@ -1,5 +1,4 @@
-#ifndef BS_SHAPEPHANTOM_H
-#define BS_SHAPEPHANTOM_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -46,5 +45,3 @@ public:
 private:
 	std::vector<bsSceneNode*>		mSceneNodes;
 };
-
-#endif // BS_SHAPEPHANTOM_H

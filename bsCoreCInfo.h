@@ -1,5 +1,4 @@
-#ifndef BS_CORECINFO_H
-#define BS_CORECINFO_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -57,5 +56,3 @@ struct bsCoreCInfo
 			&& (windowHeight > 0) && windowName.length() && hInstance && (showCmd != -1);
 	}
 };
-
-#endif // BS_CORECINFO_H

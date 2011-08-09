@@ -1,5 +1,4 @@
-#ifndef BS_COLORUTIL_H
-#define BS_COLORUTIL_H
+#pragma once
 
 #include "bsConfig.h"
 #include "bsMath.h"
@@ -153,6 +152,5 @@ const unsigned int rgbaBlue = 0x0000ff00;
 const unsigned int abgrRed	= 0x000000ff;
 const unsigned int abgrGreen = 0x0000ff00;
 const unsigned int abgrBlue = 0x00ff0000;
-};
 
-#endif // BS_COLORUTIL_H
+} // namespace bsColorUtil

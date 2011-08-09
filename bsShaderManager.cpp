@@ -152,7 +152,7 @@ std::shared_ptr<bsVertexShader> bsShaderManager::createVertexShader(const std::s
 		vertexLayout, getUniqueShaderID()));
 	vs.second->mInputLayoutDescriptions = inputDesc;
 
-#if BS_DEBUG_LEVEL > 0
+#ifdef BS_DEBUG
 	//Set debug data in the D3D objects.
 	std::string bufferName("VS ");
 	bufferName.append(fileName);
@@ -163,7 +163,7 @@ std::shared_ptr<bsVertexShader> bsShaderManager::createVertexShader(const std::s
 	bufferName.append(fileName);
 	vs.second->mInputLayout->SetPrivateData(WKPDID_D3DDebugObjectName,
 		bufferName.size(), bufferName.c_str());
-#endif // BS_DEBUG_LEVEL > 0
+#endif // BS_DEBUG
 
 	mVertexShaders.insert(vs);
 
@@ -215,14 +215,14 @@ std::shared_ptr<bsPixelShader> bsShaderManager::createPixelShader(const std::str
 	auto ps = std::make_pair(fileName, std::make_shared<bsPixelShader>(pixelShader,
 		getUniqueShaderID()));
 
-#if BS_DEBUG_LEVEL > 0
+#ifdef BS_DEBUG
 	//Set debug data in the D3D object.
 
 	std::string bufferName("PS ");
 	bufferName.append(fileName);
 	ps.second->mPixelShader->SetPrivateData(WKPDID_D3DDebugObjectName,
 		bufferName.size(), bufferName.c_str());
-#endif // _DEBUG
+#endif // BS_DEBUG
 
 	mPixelShaders.insert(ps);
 

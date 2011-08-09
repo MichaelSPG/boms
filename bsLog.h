@@ -1,5 +1,4 @@
-#ifndef BS_LOG_H
-#define BS_LOG_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -93,5 +92,3 @@ private:
 	void operator=(const bsLog&);
 };
 #endif // BS_DISABLE_LOGGING
-
-#endif // BS_LOG_H

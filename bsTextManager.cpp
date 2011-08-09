@@ -3,7 +3,6 @@
 #include "bsDx11Renderer.h"
 #include "bsLog.h"
 #include "bsAssert.h"
-#include "bsTemplates.h"
 #include "bsScrollingText2D.h"
 
 

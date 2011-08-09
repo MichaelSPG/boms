@@ -1,5 +1,4 @@
-#ifndef BS_DX11_RENDERER_H
-#define BS_DX11_RENDERER_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -75,5 +74,3 @@ private:
 	bool	mVsyncEnabled;
 	float	mRenderTargetClearColor[4];
 };
-
-#endif // BS_DX11_RENDERER_H

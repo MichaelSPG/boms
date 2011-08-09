@@ -1,5 +1,4 @@
-#ifndef BS_TEXTMANAGER_H
-#define BS_TEXTMANAGER_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -61,5 +60,3 @@ private:
 	std::vector<std::shared_ptr<bsText2D>>			mTexts;
 	std::vector<std::shared_ptr<bsScrollingText2D>>	mTextBoxes;
 };
-
-#endif // BS_TEXTMANAGER_H

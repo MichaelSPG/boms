@@ -1,5 +1,4 @@
-#ifndef BS_WINDOW_H
-#define BS_WINDOW_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -50,5 +49,3 @@ private:
 	int		mWindowWidth;
 	int		mWindowHeight;
 };
-
-#endif // BS_WINDOW_H

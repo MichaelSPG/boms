@@ -1,5 +1,4 @@
-#ifndef BS_RENDERABLE_H
-#define BS_RENDERABLE_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -47,5 +46,3 @@ public:
 protected:
 	hkAabb			mAabb;
 };
-
-#endif // BS_RENDERABLE_H

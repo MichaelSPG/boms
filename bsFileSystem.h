@@ -1,5 +1,4 @@
-#ifndef BS_FILESYSTEM_H
-#define BS_FILESYSTEM_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -28,6 +27,8 @@ public:
 	*/
 	std::string getPathFromFilename(const std::string& fileName) const;
 
+	void addAsyncLoadRequest();
+
 private:
 	/*	Builds the file system by scanning the base path and all the folders it contains
 		and maps file names to file paths.
@@ -38,5 +39,3 @@ private:
 	std::string	mBasePath;
 	std::unordered_map<std::string, std::string>	mFilePaths;
 };
-
-#endif // BS_FILESYSTEM_H

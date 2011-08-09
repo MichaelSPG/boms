@@ -1,5 +1,4 @@
-#ifndef BS_SCENE_GRAPH_H
-#define BS_SCENE_GRAPH_H
+#pragma once
 
 #include <vector>
 #include <memory>
@@ -73,5 +72,3 @@ private:
 
 	hkpWorld*			mGraphicsWorld;
 };
-
-#endif // BS_SCENE_GRAPH_H

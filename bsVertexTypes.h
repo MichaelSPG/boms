@@ -1,5 +1,4 @@
-#ifndef BS_VERTEX_TYPE_H
-#define BS_VERTEX_TYPE_H
+#pragma once
 
 #include "bsConfig.h"
 #include <Windows.h>
@@ -39,5 +38,3 @@ struct VertexNormalTex
 	XMFLOAT3 normal;
 	XMFLOAT2 textureCoord;
 };
-
-#endif // BS_VERTEX_TYPE_H

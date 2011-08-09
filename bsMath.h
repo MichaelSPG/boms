@@ -1,5 +1,4 @@
-#ifndef BS_MATH_H
-#define BS_MATH_H
+#pragma once
 
 #include <math.h>
 #include <stdlib.h>//rand()
@@ -100,6 +99,4 @@ inline XMFLOAT4X4 XMFloat4x4Identity()
 	XMStoreFloat4x4(&identity, XMMatrixIdentity());
 	return identity;
 }
-}
-
-#endif // BS_MATH_H
+} // namespace bsMath

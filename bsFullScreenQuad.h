@@ -1,5 +1,4 @@
-#ifndef BS_FULLSCREENQUAD_H
-#define BS_FULLSCREENQUAD_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -29,5 +28,3 @@ private:
 
 	ID3D11SamplerState*	mSamplerState;
 };
-
-#endif // BS_FULLSCREENQUAD_H

@@ -1,5 +1,4 @@
-#ifndef BS_RENDERTARGET_H
-#define BS_RENDERTARGET_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -39,5 +38,3 @@ private:
 	ID3D11RenderTargetView*		mRenderTargetView;
 	ID3D11ShaderResourceView*	mShaderResourceView;
 };
-
-#endif // BS_RENDERTARGET_H

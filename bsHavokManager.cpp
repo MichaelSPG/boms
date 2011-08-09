@@ -15,6 +15,8 @@
 
 #include <string>
 
+#include <Windows.h>
+
 #include "bsLog.h"
 #include "bsAssert.h"
 
@@ -32,9 +34,12 @@ static void HK_CALL errorReport(const char* message, void* userArgGivenToInit)
 	}
 	bsLog::logMessage(correctedMessage.c_str(), pantheios::SEV_WARNING);
 
-#if BS_DEBUG_LEVEL > 0
-	correctedMessage.push_back('\n');
-	OutputDebugStringA(correctedMessage.c_str());
+#ifdef BS_DEBUG
+	if (IsDebuggerPresent() != 0)
+	{
+		correctedMessage.push_back('\n');
+		OutputDebugStringA(correctedMessage.c_str());
+	}
 #endif
 }
 

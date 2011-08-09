@@ -1,5 +1,4 @@
-#ifndef BS_TEXT2D_H
-#define BS_TEXT2D_H
+#pragma once
 
 #include <string>
 
@@ -126,5 +125,3 @@ private:
 	XMFLOAT2		mPosition;
 	unsigned int	mFlags;
 };
-
-#endif // BS_TEXT2D_H

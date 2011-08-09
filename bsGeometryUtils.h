@@ -1,5 +1,4 @@
-#ifndef BS_GEOMETRYUTILS_H
-#define BS_GEOMETRYUTILS_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -27,6 +26,4 @@ void createLinesFromAabb(const hkAabb& aabb, bsLine3D* line3D)
 	delete shape;
 }
 
-};
-
-#endif // BS_GEOMETRYUTILS_H
+} // namespace bsGeometryUtils

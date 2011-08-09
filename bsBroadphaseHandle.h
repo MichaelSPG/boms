@@ -1,5 +1,4 @@
-#ifndef BS_BROADPHASEHANDLE_H
-#define BS_BROADPHASEHANDLE_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -29,5 +28,3 @@ public:
 private:
 	bsSceneNode*	mSceneNode;
 };
-
-#endif // BS_BROADPHASEHANDLE_H

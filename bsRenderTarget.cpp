@@ -56,7 +56,7 @@ bsRenderTarget::bsRenderTarget(unsigned int width, unsigned int height,
 		&mShaderResourceView);
 	BS_ASSERT2(SUCCEEDED(hr), "Failed to create shader resource view");
 
-#if BS_DEBUG_LEVEL > 0
+#ifdef BS_DEBUG
 	std::string debugString("ID3D11Texture2D render target");
 	mRenderTargetTexture->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
 		debugString.c_str());

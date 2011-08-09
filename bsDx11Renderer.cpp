@@ -41,7 +41,7 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 	swapChainDesc.Windowed = true;
 
 	unsigned int deviceFlags = 0;
-#if BS_DEBUG_LEVEL > 0
+#ifdef BS_DEBUG
 	deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
@@ -149,7 +149,7 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 	mRenderTargetClearColor[3] = 0.0f;
 
 
-#if BS_DEBUG_LEVEL > 0
+#ifdef BS_DEBUG
 	//Set debug info in D3D objects to help debugging their lifetimes if necessary.
 	std::string debugString("IDXGISwapChain");
 	mSwapChain->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),

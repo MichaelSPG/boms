@@ -1,10 +1,9 @@
-#ifndef BS_RESOURCE_MANAGER_H
-#define BS_RESOURCE_MANAGER_H
+#pragma once
 
 #include "bsConfig.h"
 
 #include "bsShaderManager.h"
-#include "bsMeshManager.h"
+#include "bsMeshCache.h"
 #include "bsFileSystem.h"
 #include "bsTextManager.h"
 
@@ -30,7 +29,7 @@ public:
 
 	void initShaderManager(bsDx11Renderer* dx11Renderer);
 
-	void initMeshManager(bsDx11Renderer* dx11Renderer);
+	void initMeshCache(bsDx11Renderer* dx11Renderer);
 
 	void initTextManager(bsDx11Renderer* dx11Renderer);
 
@@ -44,9 +43,9 @@ public:
 		return mShaderManager;
 	}
 
-	inline bsMeshManager* getMeshManager() const
+	inline bsMeshCache* getMeshCache() const
 	{
-		return mMeshManager;
+		return mMeshCache;
 	}
 
 	inline bsTextManager* getTextManager() const
@@ -57,8 +56,6 @@ public:
 private:
 	bsFileSystem*		mFileSystem;
 	bsShaderManager*	mShaderManager;
-	bsMeshManager*		mMeshManager;
+	bsMeshCache*		mMeshCache;
 	bsTextManager*		mTextManager;
 };
-
-#endif // BS_RESOURCE_MANAGER_H

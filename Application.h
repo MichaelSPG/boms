@@ -1,5 +1,4 @@
-#ifndef APPLICATION_H
-#define APPLICATION_H
+#pragma once
 
 #include <OIS.h>
 #include <string>
@@ -49,5 +48,3 @@ private:
 
 	bsDeferredRenderer*	mDeferredRenderer;
 };
-
-#endif // APPLICATION_H

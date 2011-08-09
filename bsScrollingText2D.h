@@ -1,5 +1,4 @@
-#ifndef BS_SCROLLINGTEXT2D_H
-#define BS_SCROLLINGTEXT2D_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -74,5 +73,3 @@ private:
 	float	mFadeDelay;
 	bool	mNeedTextSync;
 };
-
-#endif // BS_SCROLLINGTEXT2D_H

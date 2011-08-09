@@ -1,9 +1,19 @@
-#ifndef BS_RENDERSTATS_H
-#define BS_RENDERSTATS_H
+#pragma once
 
 #include <string>
 #include <map>
+#include <set>
+#include <deque>
 
+class bsTrackedTimeCompare
+{
+public:
+	inline bool operator()(const std::pair<float, float>& lhs,
+		const std::pair<float, float>& rhs) const
+	{
+		return lhs.first < rhs.first;
+	}
+};
 
 class bsRenderStats
 {
@@ -53,7 +63,5 @@ private:
 	//pair<frame time, age in ms>
 	std::pair<float, float>	mCurrentMin;
 	std::pair<float, float>	mCurrentMax;
-	std::map<float, float>	mTrackedTimes;
+	std::set<std::pair<float, float>, bsTrackedTimeCompare>	mTrackedTimes;
 };
-
-#endif // BS_RENDERSTATS_H

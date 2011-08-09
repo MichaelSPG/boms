@@ -71,11 +71,11 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer,
 		&mBuffer);
 	BS_ASSERT2(SUCCEEDED(hres), "Failed to create a buffer");
 
-#if BS_DEBUG_LEVEL > 0
+#ifdef BS_DEBUG
 	std::string bufferName("CB Primitive");
 	mBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, bufferName.length(),
 		bufferName.c_str());
-#endif // BS_DEBUG_LEVEL > 0
+#endif // BS_DEBUG
 
 	
 	hkVector4 halfExtents;
@@ -117,11 +117,11 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer,
 		BS_ASSERT(!"Failed to create vertex buffer");
 	}
 
-#if BS_DEBUG_LEVEL > 0
+#ifdef BS_DEBUG
 	std::string vertexBufferName("VB Primitive");
 	mVertexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, vertexBufferName.length(),
 		vertexBufferName.c_str());
-#endif // BS_DEBUG_LEVEL > 0
+#endif // BS_DEBUG
 
 
 	///Index buffer
@@ -152,11 +152,11 @@ void bsPrimitive::createPrimitive(bsDx11Renderer* dx11Renderer,
 		&mIndexBuffer);
 	BS_ASSERT2(SUCCEEDED(hres), "Failed to create index buffer");
 
-#if BS_DEBUG_LEVEL > 0
+#ifdef BS_DEBUG
 	std::string indexBufferName("PrimitiveIndexBuffer");
 	mIndexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, indexBufferName.length(),
 		indexBufferName.c_str());
-#endif // BS_DEBUG_LEVEL > 0
+#endif // BS_DEBUG
 
 	mFinished = true;
 }

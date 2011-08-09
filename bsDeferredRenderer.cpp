@@ -68,14 +68,25 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 	HRESULT hresult = device->CreateBlendState(&blendDesc, &mGeometryBlendState);
 	BS_ASSERT2(SUCCEEDED(hresult), "Failed to create blend state");
 
-	blendDesc.RenderTarget[0].BlendEnable = true;
-	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
-	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+	/*
+	blendDesc.RenderTarget[0].BlendEnable = TRUE;
+	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;//D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;//D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA;//D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;//D3D11_BLEND_ZERO;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	*/
+	blendDesc.RenderTarget[0].BlendEnable = TRUE;
+	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
 	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
 	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
 	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
 	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = 0x0f;
+
 	hresult = device->CreateBlendState(&blendDesc, &mLightBlendState);
 	BS_ASSERT2(SUCCEEDED(hresult), "Failed to create blend state");
 
@@ -104,6 +115,7 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 	device->CreateDepthStencilState(&depthStencilDescription, &mDepthEnabledStencilState);
 	depthStencilDescription.DepthEnable = true;
 	depthStencilDescription.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	depthStencilDescription.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	//depthStencilDescription.DepthFunc = D3D11_COMPARISON_LESS;
 	device->CreateDepthStencilState(&depthStencilDescription, &mDepthDisabledStencilState);
 
@@ -112,7 +124,7 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 	
 
 
-#if BS_DEBUG_LEVEL > 0
+#ifdef BS_DEBUG
 	//Set names for debugging purposes
 	//Position
 	std::string debugData = "SRV GBuffer Position";

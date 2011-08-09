@@ -267,7 +267,7 @@ void bsCamera::updatePhantomTransform()
 
 std::vector<bsSceneNode*> bsCamera::getVisibleSceneNodes() const
 {
-	const_cast<bsCamera*>(this)->constructFrustum();
+	//const_cast<bsCamera*>(this)->constructFrustum();
 
 
 

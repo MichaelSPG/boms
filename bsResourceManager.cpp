@@ -7,7 +7,7 @@
 bsResourceManager::bsResourceManager()
 	: mFileSystem(nullptr)
 	, mShaderManager(nullptr)
-	, mMeshManager(nullptr)
+	, mMeshCache(nullptr)
 	, mTextManager(nullptr)
 {
 }
@@ -22,9 +22,9 @@ bsResourceManager::~bsResourceManager()
 	{
 		delete mShaderManager;
 	}
-	if (mMeshManager)
+	if (mMeshCache)
 	{
-		delete mMeshManager;
+		delete mMeshCache;
 	}
 	if (mTextManager)
 	{
@@ -37,7 +37,7 @@ void bsResourceManager::initAll(const std::string& fileSystemBasePath,
 {
 	initFileSystem(fileSystemBasePath);
 	initShaderManager(dx11Renderer);
-	initMeshManager(dx11Renderer);
+	initMeshCache(dx11Renderer);
 	initTextManager(dx11Renderer);
 }
 
@@ -59,14 +59,14 @@ void bsResourceManager::initShaderManager(bsDx11Renderer* dx11Renderer)
 	mShaderManager = new bsShaderManager(dx11Renderer, this);
 }
 
-void bsResourceManager::initMeshManager(bsDx11Renderer* dx11Renderer)
+void bsResourceManager::initMeshCache(bsDx11Renderer* dx11Renderer)
 {
 	BS_ASSERT(dx11Renderer);
 
-	BS_ASSERT2(!mMeshManager, "Attempting to initialize mesh manager multiple times, "
+	BS_ASSERT2(!mMeshCache, "Attempting to initialize mesh manager multiple times, "
 		"memory will leak and other problems may arise");
 
-	mMeshManager = new bsMeshManager(dx11Renderer, this);
+	mMeshCache = new bsMeshCache(dx11Renderer, this);
 }
 
 void bsResourceManager::initTextManager(bsDx11Renderer* dx11Renderer)

@@ -1,5 +1,4 @@
-#ifndef BS_VERTEX_SHADER_H
-#define BS_VERTEX_SHADER_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -51,5 +50,3 @@ private:
 	unsigned int		mID;
 	std::vector<D3D11_INPUT_ELEMENT_DESC>	mInputLayoutDescriptions;
 };
-
-#endif // BS_VERTEX_SHADER_H

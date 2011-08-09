@@ -1,5 +1,4 @@
-#ifndef BS_SHADER_MANAGER_H
-#define BS_SHADER_MANAGER_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -68,5 +67,3 @@ private:
 	bsDx11Renderer*		mDx11Renderer;
 	unsigned int		mNumCreatedShaders;
 };
-
-#endif // BS_SHADER_MANAGER_H

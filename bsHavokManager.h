@@ -1,5 +1,4 @@
-#ifndef BS_HAVOKMANAGER_H
-#define BS_HAVOKMANAGER_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -91,5 +90,3 @@ private:
 
 	float		mWorldSize;
 };
-
-#endif // BS_HAVOKMANAGER_H

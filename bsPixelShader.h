@@ -1,5 +1,4 @@
-#ifndef BS_PIXEL_SHADER_H
-#define BS_PIXEL_SHADER_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -40,5 +39,3 @@ private:
 	ID3D11PixelShader*	mPixelShader;
 	unsigned int		mID;
 };
-
-#endif // BS_PIXEL_SHADER_H

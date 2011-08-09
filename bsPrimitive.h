@@ -1,5 +1,4 @@
-#ifndef BS_PRIMITIVE_H
-#define BS_PRIMITIVE_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -60,5 +59,3 @@ private:
 
 	bool			mFinished;
 };
-
-#endif // BS_PRIMITIVE_H

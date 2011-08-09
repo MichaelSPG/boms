@@ -1,5 +1,4 @@
-#ifndef BS_DEFERREDRENDERER_H
-#define BS_DEFERREDRENDERER_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -89,5 +88,3 @@ private:
 	ID3D11DepthStencilState*	mDepthEnabledStencilState;
 	ID3D11DepthStencilState*	mDepthDisabledStencilState;
 };
-
-#endif // BS_DEFERREDRENDERER_H

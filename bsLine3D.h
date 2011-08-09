@@ -1,5 +1,4 @@
-#ifndef BS_LINE3D_H
-#define BS_LINE3D_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -79,5 +78,3 @@ private:
 	ID3D11Buffer*		mVertexBuffer;
 	ID3D11Buffer*		mIndexBuffer;
 };
-
-#endif // BS_LINE3D_H

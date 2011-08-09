@@ -1,5 +1,4 @@
-#ifndef BS_CONSTANTBUFFERS_H
-#define BS_CONSTANTBUFFERS_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -36,5 +35,3 @@ struct CBLight
 	XMFLOAT4	lightPosition;
 	XMFLOAT4	lightColor;
 };
-
-#endif // BS_CONSTANTBUFFERS_H

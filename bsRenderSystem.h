@@ -1,5 +1,4 @@
-#ifndef BS_RENDERER_H
-#define BS_RENDERER_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -15,5 +14,3 @@ public:
 
 	virtual void renderOneFrame() = 0;
 };
-
-#endif // BS_RENDERER_H

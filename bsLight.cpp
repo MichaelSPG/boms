@@ -1,14 +1,14 @@
 #include "bsLight.h"
 
-#include "bsMeshManager.h"
+#include "bsMeshCache.h"
 #include "bsDx11Renderer.h"
 #include "bsAssert.h"
 
 
-bsLight::bsLight(LightType lightType, bsMeshManager* meshManager,
+bsLight::bsLight(LightType lightType, bsMeshCache* meshCache,
 	const bsPointLightCInfo& cInfo)
 	: mLightType(lightType)
-	, mMesh(meshManager->getMesh("sphere_1m_d.bsm"))
+	, mMesh(meshCache->getMesh("sphere_1m_d.bsm"))
 	, mColor(cInfo.color)
 	, mRadius(cInfo.radius)
 	, mIntensity(cInfo.intensity)

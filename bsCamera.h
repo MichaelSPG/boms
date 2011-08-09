@@ -1,5 +1,4 @@
-#ifndef BS_CAMERA_H
-#define BS_CAMERA_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -173,5 +172,3 @@ private:
 	float	mRotationX;
 	float	mRotationY;
 };
-
-#endif // BS_CAMERA_H

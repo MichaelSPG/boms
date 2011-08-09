@@ -76,7 +76,7 @@ bsFullScreenQuad::bsFullScreenQuad(ID3D11Device* const device)
 	}
 
 
-#if BS_DEBUG_LEVEL > 0
+#ifdef BS_DEBUG
 	std::string debugString("VertexBuffer fullscreen quad");
 	
 	mVertexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),

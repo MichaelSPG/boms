@@ -152,8 +152,8 @@ void bsSceneNode::detachRenderable(const std::shared_ptr<bsRenderable>& renderab
 	{
 		if (mRenderables[i] == renderable)
 		{
-			bsT::unordered_erase(mRenderables, mRenderables[i]);
-
+			bs::unordered_erase(mRenderables, mRenderables[i]);
+			
 			break;
 		}
 	}

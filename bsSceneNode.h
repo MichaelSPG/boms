@@ -1,5 +1,4 @@
-#ifndef BS_SCENE_NODE_H
-#define BS_SCENE_NODE_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -156,5 +155,3 @@ private:
 	hkpCachingShapePhantom*	mPhantom;
 	bsBroadphaseHandle*		mBroadphaseHandle;
 };
-
-#endif // BS_SCENE_NODE_H

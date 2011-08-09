@@ -116,6 +116,25 @@ void Application::update(float deltaTime)
 	bsCamera* camera = mCore->getSceneGraph()->getCamera();
 
 	//Movement + speedup if shift is pressed
+	
+#if 0
+	{
+		const hkTransform& cameraTransform = camera->getTransform2();
+		hkVector4 translation(0.0f, 0.0f, 0.0f);
+		translation(0) = (a ? (-mCameraSpeed) : (d ? mCameraSpeed : 0.0f));
+		translation(1) = (s ? (-mCameraSpeed) : (w ? mCameraSpeed : 0.0f));
+		translation(2) = (c ? (-mCameraSpeed) : (space ? mCameraSpeed : 0.0f));
+		
+		if (shift)
+		{
+			translation.mul4(2.5f);
+		}
+		
+		translation.setMul3(transform.getRotation(), translation);
+		camera->translate(translation);
+	}
+#endif
+	
 	if (w)
 	{
 		//camera->translate(hkVector4(0.0f, 0.0f, shift ? mCameraSpeed * 2.5f : mCameraSpeed));
@@ -171,16 +190,16 @@ void Application::update(float deltaTime)
 	static bsResourceManager* resourceManager = mCore->getResourceManager();
 
 	static auto context = mCore->getDx11Renderer()->getDeviceContext();
-	static bsMeshManager* meshManager = resourceManager->getMeshManager();
+	static bsMeshCache* meshCache(resourceManager->getMeshCache());
+	
+	static std::shared_ptr<bsMesh> roi(meshCache->getMesh("roi.bsm"));
+	static std::shared_ptr<bsMesh> duck(meshCache->getMesh("duck.bsm"));
+	static std::shared_ptr<bsMesh> teapot(meshCache->getMesh("teapot.bsm"));
+	static std::shared_ptr<bsMesh> gourd(meshCache->getMesh("gourd.bsm"));
+	static std::shared_ptr<bsMesh> greeble(meshCache->getMesh("greeble.bsm"));
+	static std::shared_ptr<bsMesh> sphere(meshCache->getMesh("sphere_1m_d.bsm"));
 
-	static auto roi = meshManager->getMesh("roi.bsm");
-	static auto duck = meshManager->getMesh("duck.bsm");
-	static auto teapot = meshManager->getMesh("teapot.bsm");
-	static auto gourd = meshManager->getMesh("gourd.bsm");
-	static auto greeble = meshManager->getMesh("greeble.bsm");
-	static auto sphere = meshManager->getMesh("sphere_1m_d.bsm");
-
-	static auto cubeWithOffset = meshManager->getMesh("cubeWithOffset.bsm");
+	static std::shared_ptr<bsMesh> cubeWithOffset(meshCache->getMesh("cubeWithOffset.bsm"));
 
 	static bsSceneGraph* sceneGraph = mCore->getSceneGraph();
 	static bsSceneNode* identityNode = sceneGraph->createSceneNode();
@@ -192,11 +211,15 @@ void Application::update(float deltaTime)
 	static bsSceneNode* derivedNode3 = derivedNode2->createChildSceneNode(hkVector4(50.0f, 0.0f, 0.0f));
 
 	static bsSceneNode* greebleTownNode = sceneGraph->createSceneNode();
-	static auto greebleTown = meshManager->getMesh("greeble_town_small.bsm");
+	static std::shared_ptr<bsMesh> greebleTown(meshCache->getMesh("greeble_town_small.bsm"));
+
+	//static std::shared_ptr<bsMesh> greebleTownBig(meshCache->getMesh("greeble_town.bsm"));
+
 	static bool greebleOnce = false;
 	if (!greebleOnce)
 	{
 		greebleTownNode->attachRenderable(greebleTown);
+		//greebleTownNode->attachRenderable(greebleTownBig);
 		greebleOnce = true;
 	}
 	
@@ -235,7 +258,7 @@ void Application::update(float deltaTime)
 			ci.color = XMFLOAT3(1.0f, 1.0f, 0.0f);
 			ci.intensity = 1.0f;
 			ci.radius = 10.0f;
-			std::shared_ptr<bsLight> light(std::make_shared<bsLight>(bsLight::LT_POINT, meshManager, ci));
+			std::shared_ptr<bsLight> light(std::make_shared<bsLight>(bsLight::LT_POINT, meshCache, ci));
 
 			for (unsigned int i = 0; i < derivedNodes.size(); ++i)
 			{
@@ -292,7 +315,6 @@ void Application::update(float deltaTime)
 	frameStats->addFlags(FW1_RESTORESTATE);
 	frameStats->setColor(0xff00ff00);
 	frameStats->setFontSize(14.0f);
-	
 	frameStats->setText(mDeferredRenderer->getRenderQueue()->getFrameStats().getFrameStatsStringWide());
 	
 	//Add callback for the log so messages will also be shown on the screen during runtime
@@ -481,6 +503,8 @@ bool Application::mouseReleased(const OIS::MouseEvent &arg, OIS::MouseButtonID i
 	return true;
 }
 
+#include <Common/Base/Algorithm/PseudoRandom/hkPseudoRandomGenerator.h>
+
 void Application::createSomeLights()
 {
 	std::vector<bsSceneNode*> nodes(5);
@@ -498,15 +522,15 @@ void Application::createSomeLights()
 		bsPointLightCInfo ci;
 		ci.color = lights[i];
 		ci.intensity = 1.0f;
-		ci.radius = 10.0f;
-		//ci.radius = 25.0f;
+		//ci.radius = 10.0f;
+		ci.radius = 50.0f;
 		std::shared_ptr<bsLight> light(std::make_shared<bsLight>(bsLight::LT_POINT,
-			mCore->getResourceManager()->getMeshManager(), ci));
+			mCore->getResourceManager()->getMeshCache(), ci));
 
 		nodes[i] = mCore->getSceneGraph()->createSceneNode();
 		nodes[i]->attachRenderable(light);
 	}
-	auto torus = mCore->getResourceManager()->getMeshManager()->getMesh("torus_knot.bsm");
+	//auto torus = mCore->getResourceManager()->getMeshCache()->getMesh("torus_knot.bsm");
 	//nodes[0]->attachRenderable(torus);
 
 
@@ -515,4 +539,42 @@ void Application::createSomeLights()
 	nodes[2]->setPosition(hkVector4(0.0f, 2.5f, -25.0f));
 	nodes[3]->setPosition(hkVector4(25.0f, 2.5f, 0.0f));
 	nodes[4]->setPosition(hkVector4(-25.0f, 2.5f, 0.0f));
+
+#if 0
+	{
+		hkPseudoRandomGenerator rng(GetTickCount());
+		const float worldSize = 250.0f;
+		const hkVector4 minRange(-worldSize, 1.0f, -worldSize);
+		const hkVector4 maxRange(worldSize, 10.0f, worldSize);
+		hkVector4 out;
+
+		bsPointLightCInfo lightCi;
+		lightCi.intensity = 1.0f;
+
+
+		std::vector<bsSceneNode*> sceneNodes(500);
+		for (unsigned int i = 0; i < sceneNodes.size(); ++i)
+		{
+			//Random position
+			rng.getRandomVectorRange(minRange, maxRange, out);
+			out(1) = 5.0f;
+			sceneNodes[i] = mCore->getSceneGraph()->createSceneNode(out);
+
+			//Random color
+			rng.getRandomVector01(out);
+			memcpy(&lightCi.color, &out(0), 12);
+
+			//Random radius
+			lightCi.radius = rng.getRandRange(25, 75.0f);
+
+			std::shared_ptr<bsLight> light(std::make_shared<bsLight>(bsLight::LT_POINT,
+				mCore->getResourceManager()->getMeshCache(), lightCi));
+
+			sceneNodes[i]->attachRenderable(light);
+		}
+	}
+#endif
+
+	auto bp = static_cast<hkpHybridBroadPhase*>(mCore->getHavokManager()->getGraphicsWorld()->getBroadPhase());
+	bp->fullOptimize();
 }
