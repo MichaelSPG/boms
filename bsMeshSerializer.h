@@ -1,5 +1,4 @@
-#ifndef BS_MESH_SERIALIZER_H
-#define BS_MESH_SERIALIZER_H
+#pragma once
 
 #include "bsConfig.h"
 
@@ -30,12 +29,31 @@ struct bsSerializedMesh
 {
 	friend class boost::serialization::access;
 	template<class Archive>
-	void serialize(Archive& ar, const unsigned int)
+	inline void serialize(Archive& ar, const unsigned int)
 	{
 		ar & vertices;
 		ar & indices;
 		ar & minExtents;
 		ar & maxExtents;
+	}
+
+	//Clears all internal buffers.
+	//If deallocateMemory is true, the swap trick is used to deallocate the memory owned
+	//by the vectors.
+	inline void clear(bool deallocateMemory)
+	{
+		vertices.clear();
+		indices.clear();
+		minExtents.clear();
+		maxExtents.clear();
+
+		if (deallocateMemory)
+		{
+			vertices.swap(std::vector<std::vector<VertexNormalTex>>());
+			indices.swap(std::vector<std::vector<unsigned int>>());
+			minExtents.swap(std::vector<XMFLOAT3>());
+			maxExtents.swap(std::vector<XMFLOAT3>());
+		}
 	}
 
 	//Vertex and index buffers for each mesh.
@@ -83,14 +101,4 @@ void serialize(Archive& ar, XMFLOAT2& xmf2, const unsigned int)
 	
 	This version supports loading only.
 */
-class bsMeshSerializer
-{
-	friend class bsMeshManager;
-
-	/*	Loads a file and puts its contents in the mesh parameter.
-		Returns true on succes.
-	*/
-	bool load(const std::string& meshName, bsSerializedMesh& mesh);
-};
-
-#endif // BS_MESH_SERIALIZER_H
+bool bsLoadSerializedMesh(const std::string& meshName, bsSerializedMesh& meshOut);

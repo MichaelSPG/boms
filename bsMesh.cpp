@@ -11,14 +11,27 @@
 #include "bsDx11Renderer.h"
 
 
-bsMesh::bsMesh()
-	: mID(0)
-	, mVertexBuffer(nullptr)
-	, mIndexBuffer(nullptr)
-	, mIndices(0)
-	, mFinished(nullptr)
+bsMesh::bsMesh(unsigned int id, unsigned int numSubMeshes, ID3D11Buffer* vertexBuffer,
+	ID3D11Buffer* indexBuffer, unsigned int indices)
+	: mID(id)
+	, mVertexBuffer(vertexBuffer)
+	, mIndexBuffer(indexBuffer)
+	, mIndices(indices)
+	, mFinished(true)
 {
 	mAabb.setEmpty();
+}
+
+bsMesh::bsMesh(bsMesh&& other)
+	: mVertexBuffer(other.mVertexBuffer)
+	, mIndexBuffer(other.mIndexBuffer)
+	, mIndices(other.mIndices)
+	, mSubMeshes(std::move(other.mSubMeshes))
+	, mID(other.mID)
+	, mFinished(other.mFinished)
+{
+	other.mVertexBuffer = nullptr;
+	other.mIndexBuffer = nullptr;
 }
 
 bsMesh::~bsMesh()
@@ -31,11 +44,28 @@ bsMesh::~bsMesh()
 	{
 		mIndexBuffer->Release();
 	}
+	/*
 	std::for_each(mSubMeshes.begin(), mSubMeshes.end(),
 		[](bsMesh* mesh)
 	{
 		delete mesh;	
 	});
+	*/
+}
+
+bsMesh& bsMesh::operator=(bsMesh&& other)
+{
+	mVertexBuffer = other.mVertexBuffer;
+	mIndexBuffer = other.mIndexBuffer;
+	mIndices = other.mIndices;
+	mSubMeshes = std::move(other.mSubMeshes);
+	mID = other.mID;
+	mFinished = other.mFinished;
+
+	other.mVertexBuffer = nullptr;
+	other.mIndexBuffer = nullptr;
+
+	return *this;
 }
 
 void bsMesh::draw(bsDx11Renderer* dx11Renderer) const
@@ -56,17 +86,26 @@ void bsMesh::draw(bsDx11Renderer* dx11Renderer) const
 
 	for (unsigned int i = 0; i < mSubMeshes.size(); ++i)
 	{
-		mSubMeshes[i]->draw(dx11Renderer);
+		mSubMeshes[i].draw(dx11Renderer);
 	}
 }
 
-void bsMesh::updateAABB()
+void bsMesh::setAabb(const hkVector4& min, const hkVector4& max)
 {
+	mAabb.m_min = min;
+	mAabb.m_max = max;
+
+	updateAabb();
+}
+
+void bsMesh::updateAabb()
+{
+	//Update all sub meshes' AABBs, and then include them all in this mesh' AABB.
 	for (unsigned int i = 0; i < mSubMeshes.size(); ++i)
 	{
-		mSubMeshes[i]->updateAABB();
+		mSubMeshes[i].updateAabb();
 
-		const hkAabb& subMeshAabb = mSubMeshes[i]->mAabb;
+		const hkAabb& subMeshAabb = mSubMeshes[i].mAabb;
 
 		if (!mAabb.contains(subMeshAabb))
 		{
