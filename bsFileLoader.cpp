@@ -3,6 +3,8 @@
 #include <string>
 
 #include "bsWindowsUtils.h"
+#include "bsLog.h"
+#include "bsAssert.h"
 
 
 bsFileLoader::bsFileLoader(const std::string& fileName, LoadingMethod loadingMethod,
@@ -14,12 +16,14 @@ bsFileLoader::bsFileLoader(const std::string& fileName, LoadingMethod loadingMet
 	, mFileName(fileName)
 	, mCompletionCallback(completionCallback)
 {
-	//assert(!fileName.empty());
+	BS_ASSERT(!fileName.empty());
 
-	//assert(loadingMethod == BLOCKING || loadingMethod == ASYNCHRONOUS && "Invalid loading method.");
+	BS_ASSERT2(loadingMethod == SYNCHRONOUS || loadingMethod == ASYNCHRONOUS,
+		"Invalid loading method.");
 	if (mLoadingMethod == ASYNCHRONOUS)
 	{
-		//assert(completionCallback && "A callback function must be provided when loading asynchronously.");
+		BS_ASSERT2(completionCallback,
+			"A callback function must be provided when loading asynchronously.");
 	}
 
 	memset(&mOverlapped, 0, sizeof(mOverlapped));
@@ -56,7 +60,8 @@ bsFileLoader::bsFileLoader(bsFileLoader&& other)
 {
 	//Move constructor is not valid for async loading, since it requires the 'this'
 	//pointer's address to be constant while the loading is being performed.
-	//assert(other.mLoadingMethod == SYNCHRONOUS);
+	BS_ASSERT2(other.mLoadingMethod == SYNCHRONOUS,
+		"Move constructor is only valid for synchronous file loading");
 
 	other.mDataSize = 0;
 	other.mData = nullptr;
@@ -80,7 +85,12 @@ void bsFileLoader::createHandle()
 	{
 		//Probably invalid file/not permission to access.
 
-		printf("Failed to create file handle: %s", errorCodeToString(GetLastError()).c_str());
+#ifdef BS_DEBUG
+		std::stringstream ss("Failed to create file handle for \'");
+		ss << mFileName << "\': " << bs::winApiErrorCodeToString(GetLastError());
+
+		bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);
+#endif
 
 		mLoadState = FAILED;
 
@@ -125,7 +135,12 @@ void bsFileLoader::loadFileAsync()
 
 		if (readFileSuccess == 0)
 		{
-			printf("Failed to read file: %s", errorCodeToString(GetLastError()).c_str());
+#ifdef BS_DEBUG
+			std::stringstream ss("Failed to read file \'");
+			ss << mFileName << "\': " << bs::winApiErrorCodeToString(GetLastError());
+
+			bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);
+#endif
 
 			mLoadState = FAILED;
 			mCompletionCallback(*this);
@@ -160,7 +175,12 @@ void bsFileLoader::loadFileBlocking()
 
 		if (readFileSuccess == 0)
 		{
-			printf("Failed to read file: %s", errorCodeToString(GetLastError()).c_str());
+#ifdef BS_DEBUG
+			std::stringstream ss("Failed to read file \'");
+			ss << mFileName << "\': " << bs::winApiErrorCodeToString(GetLastError());
+
+			bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);
+#endif
 
 			mLoadState = FAILED;
 		}
@@ -186,7 +206,12 @@ void WINAPI bsFileLoader::loadingFinishedCallback(DWORD errorCode, DWORD numByte
 	{
 		//Something went wrong while loading.
 
-		printf(errorCodeToString(errorCode).c_str());
+#ifdef BS_DEBUG
+		std::stringstream ss("An error occured while reading file \'");
+		ss << loader.mFileName << "\': " << bs::winApiErrorCodeToString(GetLastError());
+
+		bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);
+#endif
 
 		loader.mLoadState = FAILED;
 		loader.mCompletionCallback(loader);
@@ -202,7 +227,12 @@ void WINAPI bsFileLoader::loadingFinishedCallback(DWORD errorCode, DWORD numByte
 	{
 		//Overlapped operation failed.
 
-		printf(errorCodeToString(GetLastError()).c_str());
+#ifdef BS_DEBUG
+		std::stringstream ss("An error occured getting overlapped result \'");
+		ss << loader.mFileName << "\': " << bs::winApiErrorCodeToString(GetLastError());
+
+		bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);
+#endif
 
 		loader.mLoadState = FAILED;
 		loader.mCompletionCallback(loader);

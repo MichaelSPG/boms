@@ -4,8 +4,16 @@
 
 #include <Windows.h>
 
-extern std::string errorCodeToString(DWORD errorCode);
+#include "bsLog.h"
+#include "bsAssert.h"
 
+
+namespace bs
+{
+//#include "bsWindowsUtils.h" gives a linker error for some reason.
+
+extern std::string winApiErrorCodeToString(DWORD errorCode);
+}
 
 
 void bsFileIoManager::threadLoop()
@@ -21,6 +29,7 @@ void bsFileIoManager::threadLoop()
 		{
 			processRequest();
 		}
+
 		SleepEx(1, true);
 	}
 
@@ -33,8 +42,7 @@ void bsFileIoManager::processRequest()
 	FilenameCallbackPair asyncFileLoader;
 	while (mAsynchronousLoadRequests.try_pop(asyncFileLoader))
 	{
-		//assert(asyncFileLoader);
-
+		//Create a new async file loader to process the popped request.
 		mAsynchronousLoaders.push_back(new bsFileLoader(asyncFileLoader.first,
 			bsFileLoader::ASYNCHRONOUS, asyncFileLoader.second));
 	};
@@ -68,7 +76,7 @@ void bsFileIoManager::shutdown()
 	HANDLE currentHandle;
 	BOOL success;
 
-	//Cancel async IO requests and close file handles for all loaders.
+	//Cancel any remaining async IO requests and close file handles for all loaders.
 	for (size_t i = 0; i < mAsynchronousLoaders.size(); ++i)
 	{
 		currentHandle = mAsynchronousLoaders[i]->getFileHandle();
@@ -76,12 +84,12 @@ void bsFileIoManager::shutdown()
 		success = CancelIo(currentHandle);
 		if (success == 0)
 		{
-			printf(errorCodeToString(GetLastError()).c_str());
+			bsLog::logMessage(bs::winApiErrorCodeToString(GetLastError()).c_str());
 		}
 		success = CloseHandle(currentHandle);
 		if (success == 0)
 		{
-			printf(errorCodeToString(GetLastError()).c_str());
+			bsLog::logMessage(bs::winApiErrorCodeToString(GetLastError()).c_str());
 		}
 
 		delete mAsynchronousLoaders[i];
