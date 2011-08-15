@@ -243,4 +243,10 @@ void WINAPI bsFileLoader::loadingFinishedCallback(DWORD errorCode, DWORD numByte
 	//All went well.
 	loader.mLoadState = SUCCEEDED;
 	loader.mCompletionCallback(loader);
+
+#ifdef BS_DEBUG
+	std::stringstream ss("Successfully loaded \'");
+	ss << loader.mFileName << '\'';
+	bsLog::logMessage(ss.str().c_str(), pantheios::SEV_DEBUG);
+#endif
 }
