@@ -44,13 +44,6 @@ bsMesh::~bsMesh()
 	{
 		mIndexBuffer->Release();
 	}
-	/*
-	std::for_each(mSubMeshes.begin(), mSubMeshes.end(),
-		[](bsMesh* mesh)
-	{
-		delete mesh;	
-	});
-	*/
 }
 
 bsMesh& bsMesh::operator=(bsMesh&& other)
@@ -64,6 +57,7 @@ bsMesh& bsMesh::operator=(bsMesh&& other)
 
 	other.mVertexBuffer = nullptr;
 	other.mIndexBuffer = nullptr;
+	other.mIndices = 0;
 
 	return *this;
 }
@@ -76,8 +70,8 @@ void bsMesh::draw(bsDx11Renderer* dx11Renderer) const
 	{
 		ID3D11DeviceContext* context = dx11Renderer->getDeviceContext();
 
-		UINT offsets =  0;
-		UINT stride = sizeof(VertexNormalTex);
+		const UINT offsets =  0;
+		const UINT stride = sizeof(VertexNormalTex);
 		context->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offsets);
 		context->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 

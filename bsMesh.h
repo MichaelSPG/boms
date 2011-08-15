@@ -37,6 +37,7 @@ public:
 	inline bsMesh()
 		: mVertexBuffer(nullptr)
 		, mIndexBuffer(nullptr)
+		, mIndices(0)
 	{}
 
 	//Initialize a mesh with data created from bsMeshCreator.
@@ -49,10 +50,13 @@ public:
 
 	bsMesh& operator=(bsMesh&& other);
 
+	/*	Renders the mesh.
+	*/
 	void draw(bsDx11Renderer* dx11Renderer) const;
 
 	/*	Returns the collection of sub-meshes owned by this mesh.
-		This may contain zero elements if this mesh has no sub-meshes.
+		This may contain zero elements if this mesh has no sub-meshes or if the mesh is
+		empty.
 	*/
 	inline const std::vector<bsMesh>& getSubMeshes() const
 	{
