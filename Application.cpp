@@ -269,8 +269,8 @@ void Application::update(float deltaTime)
 	static bool logCallBackOnce = false;
 	if (!logCallBackOnce)
 	{
-		bsScrollingText2D* tb = textBox.get();
-		bsLog::addCallback(boost::bind(&bsScrollingText2D::addTextLine, tb, _1));
+		//bsScrollingText2D* tb = textBox.get();
+		//bsLog::addCallback(boost::bind(&bsScrollingText2D::addTextLine, tb, _1));
 		logCallBackOnce = true;
 	}
 
