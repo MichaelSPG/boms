@@ -36,11 +36,19 @@ bsCore::bsCore(const bsCoreCInfo& cInfo)
 	mRenderQueue = new bsRenderQueue(mDx11Renderer, mResourceManager->getShaderManager());
 	mRenderQueue->setCamera(mSceneGraph->getCamera());
 
+
+	mFileIoThread = tbb::tbb_thread(std::bind(&bsFileIoManager::threadLoop, &mFileIoManager));
+
 	bsLog::logMessage("Initialization of core completed successfully", pantheios::SEV_NOTICE);
 }
 
 bsCore::~bsCore()
 {
+	//Shutdown file IO manager and join the thread it was using to avoid it trying to
+	//access data that goes out of scope once this destructor returns.
+	mFileIoManager.quit();
+	mFileIoThread.join();
+
 	delete mRenderQueue;
 
 	delete mSceneGraph;

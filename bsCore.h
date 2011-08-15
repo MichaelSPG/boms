@@ -1,8 +1,12 @@
 #pragma once
 
 #include "bsConfig.h"
+
+#include <tbb/tbb_thread.h>
+
 #include "bsAssert.h"
 #include "bsCoreCInfo.h"
+#include "bsFileIoManager.h"
 
 class bsSceneGraph;
 class bsDx11Renderer;
@@ -95,4 +99,7 @@ private:
 	bsRenderSystem*		mRenderSystem;
 
 	bsCoreCInfo			mCInfo;
+
+	bsFileIoManager		mFileIoManager;
+	tbb::tbb_thread		mFileIoThread;
 };
