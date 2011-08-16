@@ -36,10 +36,9 @@ private:
 		Returns true on success.
 	*/
 	bool createBuffers(ID3D11Buffer*& vertexBuffer, ID3D11Buffer*& indexBuffer,
-		const std::string& meshName, unsigned int meshIndex);
+		const std::string& meshName, unsigned int meshIndex, bsSerializedMesh& serializedMesh);
 
 
 	bsMeshCache&		mMeshCache;
 	bsDx11Renderer&		mDx11Renderer;
-	bsSerializedMesh	mSerializedMesh;
 };

@@ -9,78 +9,86 @@
 #include "bsConstantBuffers.h"
 #include "bsVertexTypes.h"
 #include "bsDx11Renderer.h"
+#include "bsAssert.h"
 
 
-bsMesh::bsMesh(unsigned int id, unsigned int numSubMeshes, ID3D11Buffer* vertexBuffer,
-	ID3D11Buffer* indexBuffer, unsigned int indices)
-	: mID(id)
-	, mVertexBuffer(vertexBuffer)
-	, mIndexBuffer(indexBuffer)
-	, mIndices(indices)
-	, mFinished(true)
+bsMesh::bsMesh(unsigned int id, std::vector<ID3D11Buffer*>&& vertexBuffers,
+	std::vector<ID3D11Buffer*>&& indexBuffers,
+	std::vector<unsigned int>&& indices)
+	: mVertexBuffers(std::move(vertexBuffers))
+	, mIndexBuffers(std::move(indexBuffers))
+	, mIndexCounts(std::move(indices))
+	, mID(id)
+	, mLoadingFinished(true)
 {
-	mAabb.setEmpty();
-}
+	BS_ASSERT2(mVertexBuffers.size() == mIndexBuffers.size()
+		&& mVertexBuffers.size() == mIndexCounts.size(),
+		"A mesh is required to have the same amount of the same amount of vertex and"
+		"index buffers, as well as one set of indices for each vertex/index buffer pair");
 
-bsMesh::bsMesh(bsMesh&& other)
-	: mVertexBuffer(other.mVertexBuffer)
-	, mIndexBuffer(other.mIndexBuffer)
-	, mIndices(other.mIndices)
-	, mSubMeshes(std::move(other.mSubMeshes))
-	, mID(other.mID)
-	, mFinished(other.mFinished)
-{
-	other.mVertexBuffer = nullptr;
-	other.mIndexBuffer = nullptr;
+	BS_ASSERT2(!mVertexBuffers.empty(), "Encountered a mesh with no index or vertex buffers"
+		", which most likely means an error has occured with exporting");
+
+	BS_ASSERT2(mVertexBuffers.size() <= D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT,
+		"Vertex/index buffer count too large for a single mesh");
 }
 
 bsMesh::~bsMesh()
 {
-	if (mVertexBuffer)
+	const size_t bufferCount = mVertexBuffers.size();
+
+	for (size_t i = 0; i < bufferCount; ++i)
 	{
-		mVertexBuffer->Release();
+		mVertexBuffers[i]->Release();
 	}
-	if (mIndexBuffer)
+	for (size_t i = 0; i < bufferCount; ++i)
 	{
-		mIndexBuffer->Release();
+		mIndexBuffers[i]->Release();
 	}
 }
 
 bsMesh& bsMesh::operator=(bsMesh&& other)
 {
-	mVertexBuffer = other.mVertexBuffer;
-	mIndexBuffer = other.mIndexBuffer;
-	mIndices = other.mIndices;
-	mSubMeshes = std::move(other.mSubMeshes);
+	mVertexBuffers = std::move(other.mVertexBuffers);
+	mIndexBuffers = std::move(other.mIndexBuffers);
+	mIndexCounts = std::move(other.mIndexCounts);
 	mID = other.mID;
-	mFinished = other.mFinished;
 
-	other.mVertexBuffer = nullptr;
-	other.mIndexBuffer = nullptr;
-	other.mIndices = 0;
+	other.mVertexBuffers.clear();
+	other.mIndexBuffers.clear();
+
+	//Set finished flag last so that when it is set, all other data has been set, making
+	//it safe to read that data without a mutex/lock.
+	//TODO: Verify that this is not stupid.
+	mLoadingFinished = other.mLoadingFinished;
 
 	return *this;
 }
 
 void bsMesh::draw(bsDx11Renderer* dx11Renderer) const
 {
-	//If both of these are null, this is probably a mesh which only owns sub-meshes
-	//without having any defined triangles itself.
-	if (mVertexBuffer && mIndices)
+	BS_ASSERT2(mLoadingFinished, "Trying to draw a mesh that has not finished loading yet!");
+
+	ID3D11DeviceContext* context = dx11Renderer->getDeviceContext();
+
+	//Not using any buffers where offset starts at anything but zero.
+	const unsigned int offsets[D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
+
+	unsigned int strides[D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT];
+	for (unsigned int i = 0; i < D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i)
 	{
-		ID3D11DeviceContext* context = dx11Renderer->getDeviceContext();
-
-		const UINT offsets =  0;
-		const UINT stride = sizeof(VertexNormalTex);
-		context->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offsets);
-		context->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
-
-		context->DrawIndexed(mIndices, 0, 0);
+		strides[i] = sizeof(VertexNormalTex);
 	}
 
-	for (unsigned int i = 0; i < mSubMeshes.size(); ++i)
+	const size_t bufferCount = mVertexBuffers.size();
+
+	//Draw all vertex/index buffers.
+	for (size_t i = 0; i < bufferCount; ++i)
 	{
-		mSubMeshes[i].draw(dx11Renderer);
+		context->IASetVertexBuffers(0, 1, &mVertexBuffers[i], strides, offsets);
+		context->IASetIndexBuffer(mIndexBuffers[i], DXGI_FORMAT_R32_UINT, 0);
+
+		context->DrawIndexed(mIndexCounts[i], 0, 0);
 	}
 }
 
@@ -88,22 +96,4 @@ void bsMesh::setAabb(const hkVector4& min, const hkVector4& max)
 {
 	mAabb.m_min = min;
 	mAabb.m_max = max;
-
-	updateAabb();
-}
-
-void bsMesh::updateAabb()
-{
-	//Update all sub meshes' AABBs, and then include them all in this mesh' AABB.
-	for (unsigned int i = 0; i < mSubMeshes.size(); ++i)
-	{
-		mSubMeshes[i].updateAabb();
-
-		const hkAabb& subMeshAabb = mSubMeshes[i].mAabb;
-
-		if (!mAabb.contains(subMeshAabb))
-		{
-			mAabb.includeAabb(subMeshAabb);
-		}
-	}
 }

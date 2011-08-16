@@ -58,8 +58,6 @@ std::shared_ptr<bsMesh> bsMeshCache::getMesh(const std::string& meshName) const
 	std::shared_ptr<bsMesh> mesh(const_cast<bsMeshCache*>(this)->loadMesh(meshName));
 	BS_ASSERT2(mesh != nullptr, std::string("Something went wrong while creating \'") + meshName + '\'');
 
-	mesh->mFinished = true;
-
 	return mesh;
 }
 

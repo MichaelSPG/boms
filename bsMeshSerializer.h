@@ -38,22 +38,12 @@ struct bsSerializedMesh
 	}
 
 	//Clears all internal buffers.
-	//If deallocateMemory is true, the swap trick is used to deallocate the memory owned
-	//by the vectors.
-	inline void clear(bool deallocateMemory)
+	inline void clear()
 	{
 		vertices.clear();
 		indices.clear();
 		minExtents.clear();
 		maxExtents.clear();
-
-		if (deallocateMemory)
-		{
-			vertices.swap(std::vector<std::vector<VertexNormalTex>>());
-			indices.swap(std::vector<std::vector<unsigned int>>());
-			minExtents.swap(std::vector<XMFLOAT3>());
-			maxExtents.swap(std::vector<XMFLOAT3>());
-		}
 	}
 
 	//Vertex and index buffers for each mesh.
