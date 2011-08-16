@@ -62,33 +62,13 @@ std::shared_ptr<bsMesh> bsMeshCreator::loadMesh(const std::string& meshName)
 	message << "Loaded mesh '" << meshName << "'";
 	bsLog::logMessage(message.str().c_str(), pantheios::SEV_NOTICE);
 
-
-
-	//Temporary bad solution to calculate AABBs.
-	//TODO: Move this to when meshes are serialized.
-	XMFLOAT3 minPos = serializedMesh.minExtents[0];
-	XMFLOAT3 maxPos = serializedMesh.maxExtents[0];
-	
-	for (size_t i = 1; i < meshCount; ++i)
-	{
-		const XMFLOAT3& serializedMin = serializedMesh.minExtents[i];
-		minPos.x = min(minPos.x, serializedMin.x);
-		minPos.y = min(minPos.y, serializedMin.y);
-		minPos.z = min(minPos.z, serializedMin.z);
-	}
-
-	for (size_t i = 1; i < meshCount; ++i)
-	{
-		const XMFLOAT3& serializedMax = serializedMesh.minExtents[i];
-		maxPos.x = max(maxPos.x, serializedMax.x);
-		maxPos.y = max(maxPos.y, serializedMax.y);
-		maxPos.z = max(maxPos.z, serializedMax.z);
-	}
+	const hkAabb meshAabb(bsMath::toHK(serializedMesh.minExtents),
+		bsMath::toHK(serializedMesh.maxExtents));
 
 	std::shared_ptr<bsMesh> mesh(std::make_shared<bsMesh>(mMeshCache.getNewMeshId(),
-		std::move(vertexBuffers), std::move(indexBuffers), std::move(indexCounts)));
+		std::move(vertexBuffers), std::move(indexBuffers), std::move(indexCounts),
+		meshAabb));
 	
-	mesh->setAabb(bsMath::toHK(minPos), bsMath::toHK(maxPos));
 
 	return mesh;
 }

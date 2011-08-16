@@ -1,6 +1,10 @@
 #pragma once
 
-#include "bsConfig.h"
+
+/*	Contains functions for saving and loading of meshes from disk.
+	Define BS_SUPPORT_MESH_CREATION to enable creating bsSerializedMesh from
+	other mesh formats. Note that this requires assimp to work.
+*/
 
 #include <string>
 #include <vector>
@@ -19,17 +23,22 @@
 #include "bsVertexTypes.h"
 
 
+#ifdef BS_SUPPORT_MESH_CREATION
+struct aiMesh;
+#endif //BS_SUPPORT_MESH_CREATION
+
+
 /*	Structure containing a serialized mesh' vertices and indices,
 	as well as min and max extents used for AABB creation.
 	
-	The structure uses boost's serialization functionality to quickly load and save the
-	contents to and from files.
+	The structure uses boost's binary serialization functionality to quickly load and
+	save the contents from and to files.
 */
-struct bsSerializedMesh
+class bsSerializedMesh
 {
 	friend class boost::serialization::access;
 	template<class Archive>
-	inline void serialize(Archive& ar, const unsigned int)
+	void serialize(Archive& ar, const unsigned int)
 	{
 		ar & vertices;
 		ar & indices;
@@ -37,25 +46,22 @@ struct bsSerializedMesh
 		ar & maxExtents;
 	}
 
-	//Clears all internal buffers.
-	inline void clear()
-	{
-		vertices.clear();
-		indices.clear();
-		minExtents.clear();
-		maxExtents.clear();
-	}
+public:
+	bsSerializedMesh()
+		: minExtents(XMFLOAT3(FLT_MAX, FLT_MAX, FLT_MAX))
+		, maxExtents(XMFLOAT3(FLT_MIN, FLT_MIN, FLT_MIN))
+	{}
 
-	//Vertex and index buffers for each mesh.
+
+	//Vertex and index buffers for each submesh.
 	std::vector<std::vector<VertexNormalTex>>	vertices;
 	std::vector<std::vector<unsigned int>>		indices;
-
+	
 	//For AABB.
-	std::vector<XMFLOAT3>	minExtents;
-	std::vector<XMFLOAT3>	maxExtents;
+	XMFLOAT3	minExtents;
+	XMFLOAT3	maxExtents;
 };
 
-//Functions for serialization of structures used by the serialized mesh structure.
 namespace boost
 {
 namespace serialization
@@ -83,12 +89,23 @@ void serialize(Archive& ar, XMFLOAT2& xmf2, const unsigned int)
 	ar & xmf2.y;
 }
 
-}// namespace serialization
-}// namespace boost
+}//namespace serialization
+}//namespace boost
 
-/*	This mesh serializer uses boost's serialization functionality,
-	specifically the binary archive for better load times.
-	
-	This version supports loading only.
+
+/*	Loads a serialized mesh from disk into the output parameter.
+	Returns true on successful load.
 */
-bool bsLoadSerializedMesh(const std::string& meshName, bsSerializedMesh& meshOut);
+bool bsLoadSerializedMesh(const std::string& fileName, bsSerializedMesh& meshOut);
+
+/*	Save the serialized mesh to disk with the given filename.
+	Returns true on successful save.
+*/
+bool bsSaveSerializedMesh(const std::string& fileName, const bsSerializedMesh& mesh);
+
+#ifdef BS_SUPPORT_MESH_CREATION
+/*	Loads a mesh from disk and converts it to the bsSerializedMesh format.
+	Returns true on success.
+*/
+bool bsSerializeMesh(const std::string& fileName, bsSerializedMesh& meshOut);
+#endif // BS_SUPPORT_MESH_CREATION

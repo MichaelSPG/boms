@@ -28,10 +28,13 @@ public:
 		: mLoadingFinished(false)
 	{}
 
-	//Initialize a mesh with data created from bsMeshCreator.
+	/*	Creates a mesh given a unique ID, vertex and index buffer(s), index count for each
+		index/vertex buffer pair, and an AABB whose extents covers every single vertex
+		in the vertex buffer.
+	*/
 	bsMesh(unsigned int id, std::vector<ID3D11Buffer*>&& vertexBuffers,
 		std::vector<ID3D11Buffer*>&& indexBuffers,
-		std::vector<unsigned int>&& indices);
+		std::vector<unsigned int>&& indices, const hkAabb& aabb);
 
 	~bsMesh();
 
@@ -54,9 +57,6 @@ public:
 	{
 		return mLoadingFinished;
 	}
-
-	//Set min and max point of this mesh' AABB.
-	void setAabb(const hkVector4& min, const hkVector4& max);
 
 
 private:

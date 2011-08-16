@@ -14,7 +14,7 @@
 
 bsMesh::bsMesh(unsigned int id, std::vector<ID3D11Buffer*>&& vertexBuffers,
 	std::vector<ID3D11Buffer*>&& indexBuffers,
-	std::vector<unsigned int>&& indices)
+	std::vector<unsigned int>&& indices, const hkAabb& aabb)
 	: mVertexBuffers(std::move(vertexBuffers))
 	, mIndexBuffers(std::move(indexBuffers))
 	, mIndexCounts(std::move(indices))
@@ -31,6 +31,10 @@ bsMesh::bsMesh(unsigned int id, std::vector<ID3D11Buffer*>&& vertexBuffers,
 
 	BS_ASSERT2(mVertexBuffers.size() <= D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT,
 		"Vertex/index buffer count too large for a single mesh");
+
+	//TODO: Move this to initialization list once the class' inheritance from bsRenderable
+	//is removed.
+	mAabb = aabb;
 }
 
 bsMesh::~bsMesh()
@@ -90,10 +94,4 @@ void bsMesh::draw(bsDx11Renderer* dx11Renderer) const
 
 		context->DrawIndexed(mIndexCounts[i], 0, 0);
 	}
-}
-
-void bsMesh::setAabb(const hkVector4& min, const hkVector4& max)
-{
-	mAabb.m_min = min;
-	mAabb.m_max = max;
 }
