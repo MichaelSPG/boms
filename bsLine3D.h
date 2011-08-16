@@ -32,7 +32,8 @@ public:
 	}
 
 	//Returns true if there are are least 2 points and an even number of points.
-	inline bool isOkForRendering() const
+	//TODO: Rename this function.
+	inline bool hasFinishedLoading() const
 	{
 		return mPoints.size() && ((mPoints.size() & 1) == 0);
 	}

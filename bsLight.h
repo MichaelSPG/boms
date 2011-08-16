@@ -54,7 +54,7 @@ public:
 		return LIGHT;
 	}
 
-	virtual bool isOkForRendering() const
+	virtual bool hasFinishedLoading() const
 	{
 		return true;
 	}

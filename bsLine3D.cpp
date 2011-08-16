@@ -44,7 +44,7 @@ void bsLine3D::addPoints(const std::vector<XMFLOAT3>& points)
 
 bool bsLine3D::create(bsDx11Renderer* dx11Renderer)
 {
-	BS_ASSERT2(isOkForRendering(), "Tried to create line while the data was in a non-good state");
+	BS_ASSERT2(hasFinishedLoading(), "Tried to create line while the data was in a non-good state");
 
 	const unsigned int pointCount = mPoints.size();
 

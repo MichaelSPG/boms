@@ -36,7 +36,7 @@ public:
 	virtual inline RenderableType getRenderableType() const = 0;
 
 	//Whether this renderable is ready for rendering
-	virtual bool isOkForRendering() const = 0;
+	virtual bool hasFinishedLoading() const = 0;
 
 	virtual const hkAabb& getAabb() const
 	{
