@@ -46,7 +46,7 @@ public:
 		It is OK to call this function multiple times, but results will not be merged,
 		old results will be cleared before starting a new parse.
 	*/
-	void parseData(const char* data);
+	void parseData(const char* data, size_t dataSizeBytes);
 
 
 	/*	Returns the section with the specified name.

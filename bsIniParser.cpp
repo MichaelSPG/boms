@@ -2,20 +2,23 @@
 
 #include <sstream>
 
+#include "bsAssert.h"
 
-void bsIniParser::parseData(const char* data)
+
+void bsIniParser::parseData(const char* data, size_t dataSizeBytes)
 {
+	BS_ASSERT(data);
+	BS_ASSERT(dataSizeBytes > 0);
+
 	//Don't want old data from previous parses mixed in with this parse.
 	mSections.clear();
 
-	const size_t stringLength = strlen(data);
-
 	//Assume line length, save some reallocation, possibly waste some space
 	std::vector<std::string> lines;
-	lines.reserve(stringLength / 30);
+	lines.reserve(dataSizeBytes / 30);
 
 	//Split into individual lines.
-	std::stringstream ss(std::move(std::string(data)));
+	std::stringstream ss(std::move(std::string(data, data + dataSizeBytes)));
 	std::string line;
 	while (std::getline(ss, line))
 	{
