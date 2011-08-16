@@ -18,24 +18,30 @@ namespace bsMath
 
 inline XMFLOAT3 toXM3(const hkVector4& vec)
 {
-	return XMFLOAT3(vec.getComponent<0>().getReal(), vec.getComponent<1>().getReal(),
-		vec.getComponent<2>().getReal());
+	XMFLOAT3 temp;
+	vec.storeNotAligned<3>(&temp.x);
+	return temp;
 }
 
 inline XMFLOAT4 toXM4(const hkVector4& vec)
 {
-	return XMFLOAT4(vec.getComponent<0>().getReal(), vec.getComponent<1>().getReal(),
-		vec.getComponent<2>().getReal(), vec.getComponent<3>().getReal());
+	XMFLOAT4 temp;
+	vec.storeNotAligned<4>(&temp.x);
+	return temp;
 }
 
 inline hkVector4 toHK(const XMFLOAT3& vec)
 {
-	return hkVector4(vec.x, vec.y, vec.z, 0.0f);
+	hkVector4 temp;
+	temp.loadNotAligned<3>(&vec.x);
+	return temp;
 }
 
 inline hkVector4 toHK(const XMFLOAT4& vec)
 {
-	return hkVector4(vec.x, vec.y, vec.z, vec.w);
+	hkVector4 temp;
+	temp.loadNotAligned<4>(&vec.x);
+	return temp;
 }
 
 //Matrices
