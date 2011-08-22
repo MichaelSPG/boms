@@ -140,10 +140,6 @@ void bsSceneNode::translate(const hkVector4& translation)
 
 void bsSceneNode::attachRenderable(const std::shared_ptr<bsRenderable>& renderable)
 {
-	//TODO: Consider removing this if implementing async file loading
-	BS_ASSERT2(renderable->hasFinishedLoading(), "Trying to attach a renderable to a scene"
-		" node which is not ready to be rendered");
-
 	//Extend this node's AABB to include that of the new renderable.
 	mAabb.includeAabb(renderable->getAabb());
 

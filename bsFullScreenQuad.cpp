@@ -13,7 +13,7 @@ bsFullScreenQuad::bsFullScreenQuad(ID3D11Device* const device)
 {
 	BS_ASSERT(device);
 
-	VertexTex vertices[] = 
+	bsVertexTex vertices[] = 
 	{
 		XMFLOAT3( 1.0f,  1.0f,  0.0f), XMFLOAT2(1.0f, 0.0f), //Upper right
 		XMFLOAT3( 1.0f, -1.0f,  0.0f), XMFLOAT2(1.0f, 1.0f), //Lower right
@@ -32,7 +32,7 @@ bsFullScreenQuad::bsFullScreenQuad(ID3D11Device* const device)
 	memset(&bufferDescription, 0, sizeof(bufferDescription));
 
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
-	bufferDescription.ByteWidth = sizeof(VertexTex) * ARRAYSIZE(vertices);
+	bufferDescription.ByteWidth = sizeof(bsVertexTex) * ARRAYSIZE(vertices);
 	bufferDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
 	D3D11_SUBRESOURCE_DATA initData;
@@ -106,7 +106,7 @@ void bsFullScreenQuad::draw(ID3D11DeviceContext* const deviceContext) const
 	deviceContext->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R16_UINT, 0);
 
 	UINT offsets =  0;
-	UINT stride = sizeof(VertexTex);
+	UINT stride = sizeof(bsVertexTex);
 	deviceContext->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offsets);
 
 	deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

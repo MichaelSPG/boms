@@ -27,7 +27,7 @@ bsCore::bsCore(const bsCoreCInfo& cInfo)
 	mDx11Renderer = new bsDx11Renderer(mWindow->getHwnd(), cInfo.windowWidth, cInfo.windowHeight);
 
 	mResourceManager = new bsResourceManager();
-	mResourceManager->initAll(cInfo.assetDirectory, mDx11Renderer);
+	mResourceManager->initAll(cInfo.assetDirectory, mDx11Renderer, mFileIoManager);
 
 	mHavokManager = new bsHavokManager(cInfo.worldSize);
 

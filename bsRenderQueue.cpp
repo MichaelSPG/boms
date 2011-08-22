@@ -309,6 +309,10 @@ void bsRenderQueue::drawMeshes()
 	for (auto itr = mMeshesToDraw.begin(), end = mMeshesToDraw.end(); itr != end; ++itr)
 	{
 		bsMesh* mesh = itr->first;
+		if (!mesh->hasFinishedLoading())
+		{
+			continue;
+		}
 		const std::vector<bsSceneNode*>& sceneNodes = itr->second;
 
 		mFrameStats.totalMeshesDrawn += sceneNodes.size();

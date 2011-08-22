@@ -3,8 +3,7 @@
 #include "bsConfig.h"
 
 #include <algorithm>
-
-#include <boost/bind.hpp>
+#include <functional>
 
 #include <vld.h>
 
@@ -87,7 +86,7 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 	bsTextManager* textManager = mCore->getResourceManager()->getTextManager();
 
 	//Register the text manager with the rendering system so that it'll draw texts
-	mDeferredRenderer->registerEndOfRenderCallback(boost::bind(&bsTextManager::drawAllTexts, textManager));
+	mDeferredRenderer->registerEndOfRenderCallback(std::bind(&bsTextManager::drawAllTexts, textManager));
 	
 	//////////////////////////////////////////////////////////////////////////
 
@@ -144,13 +143,12 @@ void Application::update(float deltaTime)
 	static std::shared_ptr<bsMesh> duck(meshCache->getMesh("duck.bsm"));
 	static std::shared_ptr<bsMesh> teapot(meshCache->getMesh("teapot.bsm"));
 	static std::shared_ptr<bsMesh> gourd(meshCache->getMesh("gourd.bsm"));
-	static std::shared_ptr<bsMesh> greeble(meshCache->getMesh("greeble.bsm"));
+	//static std::shared_ptr<bsMesh> greeble(meshCache->getMesh("greeble.bsm"));
 	static std::shared_ptr<bsMesh> sphere(meshCache->getMesh("sphere_1m_d.bsm"));
-
-	static std::shared_ptr<bsMesh> cubeWithOffset(meshCache->getMesh("cubeWithOffset.bsm"));
 
 	static bsSceneGraph* sceneGraph = mCore->getSceneGraph();
 	static bsSceneNode* identityNode = sceneGraph->createSceneNode();
+	//identityNode->attachRenderable(teapot);
 
 	static bsSceneNode* testNode1 = sceneGraph->createSceneNode(hkVector4(-70.0f, 0.0f, 0.0f));
 
