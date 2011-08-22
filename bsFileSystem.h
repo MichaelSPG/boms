@@ -27,8 +27,6 @@ public:
 	*/
 	std::string getPathFromFilename(const std::string& fileName) const;
 
-	void addAsyncLoadRequest();
-
 private:
 	/*	Builds the file system by scanning the base path and all the folders it contains
 		and maps file names to file paths.
