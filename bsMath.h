@@ -36,6 +36,26 @@ inline int randomRange(int min, int max)
 	return (int)(r + (r < 0.0f ? -0.5f : 0.5f));
 }
 
+/*	Compare two floats to see if they're within an epsilon of eachother, returing true if so.
+*/
+inline bool approximatelyEqual(float number1, float number2, float epsilon = 0.00001f)
+{
+	return (fabsf(number1 - number2) < epsilon);
+}
+
+/*	
+	Compare two vectors to see if each x, y and z element is within an epsilon of the
+	other vector's x, y and z elements.
+	Returns true only if all three elements are within the epsilon of eachother.
+*/
+inline bool approximatelyEqual(const XMFLOAT3& vec1, const XMFLOAT3& vec2,
+	float epsilon = 0.00001f)
+{
+	return approximatelyEqual(vec1.x, vec2.x, epsilon)
+		&& approximatelyEqual(vec1.y, vec2.y, epsilon)
+		&& approximatelyEqual(vec1.z, vec2.z, epsilon);
+}
+
 
 //Translation
 //Get
