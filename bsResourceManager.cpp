@@ -33,11 +33,11 @@ bsResourceManager::~bsResourceManager()
 }
 
 void bsResourceManager::initAll(const std::string& fileSystemBasePath,
-	bsDx11Renderer* dx11Renderer)
+	bsDx11Renderer* dx11Renderer, bsFileIoManager& fileIoManager)
 {
 	initFileSystem(fileSystemBasePath);
 	initShaderManager(dx11Renderer);
-	initMeshCache(dx11Renderer);
+	initMeshCache(dx11Renderer, fileIoManager);
 	initTextManager(dx11Renderer);
 }
 
@@ -59,14 +59,14 @@ void bsResourceManager::initShaderManager(bsDx11Renderer* dx11Renderer)
 	mShaderManager = new bsShaderManager(dx11Renderer, this);
 }
 
-void bsResourceManager::initMeshCache(bsDx11Renderer* dx11Renderer)
+void bsResourceManager::initMeshCache(bsDx11Renderer* dx11Renderer, bsFileIoManager& fileIoManager)
 {
 	BS_ASSERT(dx11Renderer);
 
 	BS_ASSERT2(!mMeshCache, "Attempting to initialize mesh manager multiple times, "
 		"memory will leak and other problems may arise");
 
-	mMeshCache = new bsMeshCache(dx11Renderer, this);
+	mMeshCache = new bsMeshCache(dx11Renderer, *getFileSystem(), fileIoManager);
 }
 
 void bsResourceManager::initTextManager(bsDx11Renderer* dx11Renderer)

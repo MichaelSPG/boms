@@ -8,6 +8,7 @@
 #include "bsTextManager.h"
 
 class bsDx11Renderer;
+class bsFileIoManager;
 
 
 /*	Contains all the resource managers used by the engine.
@@ -23,13 +24,14 @@ public:
 	~bsResourceManager();
 
 	//Initiates all resource managers
-	void initAll(const std::string& fileSystemBasePath, bsDx11Renderer* dx11Renderer);
+	void initAll(const std::string& fileSystemBasePath, bsDx11Renderer* dx11Renderer,
+		bsFileIoManager& fileIoManager);
 
 	void initFileSystem(const std::string& basePath);
 
 	void initShaderManager(bsDx11Renderer* dx11Renderer);
 
-	void initMeshCache(bsDx11Renderer* dx11Renderer);
+	void initMeshCache(bsDx11Renderer* dx11Renderer, bsFileIoManager& fileIoManager);
 
 	void initTextManager(bsDx11Renderer* dx11Renderer);
 
