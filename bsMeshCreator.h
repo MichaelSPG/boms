@@ -14,12 +14,13 @@
 class bsMesh;
 class bsMeshCache;
 class bsDx11Renderer;
+struct ID3D11Device;
 
 
 class bsMeshCreator
 {
 public:
-	bsMeshCreator(bsMeshCache& meshCache, bsDx11Renderer& dx11Renderer);
+	bsMeshCreator(bsMeshCache& meshCache, const bsDx11Renderer& dx11Renderer);
 
 	~bsMeshCreator();
 
@@ -40,5 +41,5 @@ private:
 
 
 	bsMeshCache&		mMeshCache;
-	bsDx11Renderer&		mDx11Renderer;
+	ID3D11Device*		mD3dDevice;
 };

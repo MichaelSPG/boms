@@ -81,7 +81,7 @@ void bsMesh::draw(bsDx11Renderer* dx11Renderer) const
 	unsigned int strides[D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT];
 	for (unsigned int i = 0; i < D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i)
 	{
-		strides[i] = sizeof(VertexNormalTex);
+		strides[i] = sizeof(bsVertexNormalTex);
 	}
 
 	const size_t bufferCount = mVertexBuffers.size();

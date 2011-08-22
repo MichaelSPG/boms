@@ -13,7 +13,8 @@
 #include "bsVertexTypes.h"
 #include "bsMeshCreator.h"
 
-class bsResourceManager;
+class bsFileSystem;
+class bsFileIoManager;
 
 
 /*	The mesh manager keeps track of every loaded mesh, and it loads meshes.
@@ -23,7 +24,8 @@ class bsResourceManager;
 class bsMeshCache
 {
 public:
-	bsMeshCache(bsDx11Renderer* dx11Renderer, bsResourceManager* resourceManager);
+	bsMeshCache(bsDx11Renderer* dx11Renderer, const bsFileSystem& fileSystem,
+		bsFileIoManager& fileIoManager);
 
 	~bsMeshCache();
 
@@ -33,7 +35,7 @@ public:
 	*/
 	std::shared_ptr<bsMesh> getMesh(const std::string& meshName) const;
 
-	/*	Loads a mesh from disk.
+	/*	Loads a mesh from disk asynchronously.
 		This function will be called automatically by getMesh if the requested mesh has not
 		already been loaded, but it is also possible to call it manually if preferred.
 
@@ -41,8 +43,22 @@ public:
 		corruption.
 	*/
 	std::shared_ptr<bsMesh> loadMesh(const std::string& meshName);
+
+	/*	Loads a mesh from disk, but unlike loadMesh, this function blocks until the mesh
+		has completed loading.
+
+		This function can be used to ensure that a mesh exists before rendering starts or
+		similar, but calling it during rendering may cause stuttering.
+
+		Attempting to load an already load a mesh may result in memory leaks and internal
+		corruption.
+	*/
+	std::shared_ptr<bsMesh> loadMeshBlocking(const std::string& meshName);
+
+
+
 	
-	/*	Increments loaded mesh count and returns the value.
+	/*	Used for giving new meshes unique IDs.
 		For internal use only.
 	*/
 	inline unsigned int getNewMeshId()
@@ -52,9 +68,22 @@ public:
 
 
 private:
+	/*	Verifies that the mesh specified by the parameter has not already been loaded.
+		Returns true if the mesh is not in the cache.
+	*/
+	inline bool verifyMeshIsNotAlreadyInCache(const std::string& meshName);
+
+	/*	Verifies that the mesh path is valid, ie not empty.
+		Returns true if the path is valid.
+	*/
+	inline bool verifyMeshPathIsValid(const std::string& meshPath,
+		const std::string& meshName);
+
+
 	std::unordered_map<std::string, std::shared_ptr<bsMesh>>	mMeshes;
 
-	bsResourceManager*	mResourceManager;
+	const bsFileSystem&	mFileSystem;
+	bsFileIoManager&	mFileIoManager;
 	unsigned int		mNumLoadedMeshes;
 
 	bsMeshCreator	mMeshCreator;

@@ -10,9 +10,9 @@
 #include "bsMath.h"
 
 
-bsMeshCreator::bsMeshCreator(bsMeshCache& meshCache, bsDx11Renderer& dx11Renderer)
+bsMeshCreator::bsMeshCreator(bsMeshCache& meshCache, const bsDx11Renderer& dx11Renderer)
 	: mMeshCache(meshCache)
-	, mDx11Renderer(dx11Renderer)
+	, mD3dDevice(dx11Renderer.getDevice())
 {
 	
 }
@@ -35,10 +35,7 @@ std::shared_ptr<bsMesh> bsMeshCreator::loadMesh(const std::string& meshName)
 		return nullptr;
 	}
 
-	BS_ASSERT2(serializedMesh.indices.size() == serializedMesh.vertices.size(),
-		"Vertex/index buffer mismatch");
-
-	const unsigned int meshCount = serializedMesh.indices.size();
+	const unsigned int meshCount = serializedMesh.bufferCount;
 	std::vector<ID3D11Buffer*> vertexBuffers(meshCount);
 	std::vector<ID3D11Buffer*> indexBuffers(meshCount);
 	std::vector<unsigned int>  indexCounts(meshCount);
@@ -55,7 +52,7 @@ std::shared_ptr<bsMesh> bsMeshCreator::loadMesh(const std::string& meshName)
 			return nullptr;
 		}
 
-		indexCounts[i] = serializedMesh.indices[i].size();
+		indexCounts[i] = serializedMesh.indexBuffers[i].indexCount;
 	}
 
 	std::stringstream message;
@@ -76,26 +73,26 @@ std::shared_ptr<bsMesh> bsMeshCreator::loadMesh(const std::string& meshName)
 bool bsMeshCreator::createBuffers(ID3D11Buffer*& vertexBuffer, ID3D11Buffer*& indexBuffer,
 	const std::string& meshName, unsigned int meshIndex, bsSerializedMesh& serializedMesh)
 {
-	BS_ASSERT(meshIndex <= serializedMesh.vertices.size());
+	BS_ASSERT(meshIndex <= serializedMesh.bufferCount);
 	//This assert avoids unused formal parameter warning in non-debug builds.
 	BS_ASSERT(!meshName.empty());
 
-	//Index/vertex buffers of this specific mesh.
-	const std::vector<VertexNormalTex>& vertices(serializedMesh.vertices[meshIndex]);
-	const std::vector<unsigned int>& indices(serializedMesh.indices[meshIndex]);
+	const bsVertexBuffer& currentVertexBuffer = serializedMesh.vertexBuffers[meshIndex];
+	const bsIndexBuffer& currentIndexBuffer = serializedMesh.indexBuffers[meshIndex];
 
 	//Vertex buffer
 	D3D11_BUFFER_DESC bufferDescription;
 	memset(&bufferDescription, 0, sizeof(bufferDescription));
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
-	bufferDescription.ByteWidth = sizeof(VertexNormalTex) * vertices.size();
+	bufferDescription.ByteWidth = sizeof(bsVertexNormalTex)
+		* currentVertexBuffer.vertexCount;
 	bufferDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
 	D3D11_SUBRESOURCE_DATA initData;
 	memset(&initData, 0, sizeof(initData));
-	initData.pSysMem = &vertices[0];
+	initData.pSysMem = currentVertexBuffer.vertices;
 
-	if (FAILED(mDx11Renderer.getDevice()->CreateBuffer(&bufferDescription, &initData,
+	if (FAILED(mD3dDevice->CreateBuffer(&bufferDescription, &initData,
 		&vertexBuffer)))
 	{
 		BS_ASSERT(!"Failed to create vertex buffer, aborting mesh creation");
@@ -105,13 +102,13 @@ bool bsMeshCreator::createBuffers(ID3D11Buffer*& vertexBuffer, ID3D11Buffer*& in
 
 	//Index buffer
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
-	bufferDescription.ByteWidth = sizeof(unsigned int) * indices.size();
+	bufferDescription.ByteWidth = sizeof(unsigned int) * currentIndexBuffer.indexCount;
 	bufferDescription.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	bufferDescription.CPUAccessFlags = 0;
 
-	initData.pSysMem = &indices[0];
+	initData.pSysMem = currentIndexBuffer.indices;
 
-	if (FAILED(mDx11Renderer.getDevice()->CreateBuffer(&bufferDescription, &initData,
+	if (FAILED(mD3dDevice->CreateBuffer(&bufferDescription, &initData,
 		&indexBuffer)))
 	{
 		BS_ASSERT(!"Failed to create index buffer, aborting mesh creation");

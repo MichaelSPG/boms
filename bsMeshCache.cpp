@@ -17,14 +17,16 @@
 //and this does not have a vtable, so no undefined/unsafe behavior is occuring.
 #pragma warning(disable:4355)// warning C4355: 'this' : used in base member initializer list
 
-bsMeshCache::bsMeshCache(bsDx11Renderer* dx11Renderer, bsResourceManager* resourceManager)
+bsMeshCache::bsMeshCache(bsDx11Renderer* dx11Renderer, const bsFileSystem& fileSystem,
+	bsFileIoManager& fileIoManager)
 	: mNumLoadedMeshes(0)
-	, mResourceManager(resourceManager)
+	, mFileSystem(fileSystem)
+	, mFileIoManager(fileIoManager)
 	, mMeshCreator(*this, *dx11Renderer)
 {
 	BS_ASSERT(dx11Renderer);
-	BS_ASSERT(resourceManager);
 }
+
 #pragma warning(pop)
 
 bsMeshCache::~bsMeshCache()
@@ -63,10 +65,40 @@ std::shared_ptr<bsMesh> bsMeshCache::getMesh(const std::string& meshName) const
 
 std::shared_ptr<bsMesh> bsMeshCache::loadMesh(const std::string& meshName)
 {
-	//Get relative path of the mesh file.
-	const std::string meshPath(mResourceManager->getFileSystem()->getPathFromFilename(meshName));
-
 #ifdef BS_DEBUG
+	if (!verifyMeshIsNotAlreadyInCache(meshName))
+	{
+		return nullptr;
+	}
+#endif
+
+	//Get relative path of the mesh file.
+	const std::string meshPath(mFileSystem.getPathFromFilename(meshName));
+
+	if (!verifyMeshPathIsValid(meshPath, meshName))
+	{
+		return nullptr;
+	}
+
+	std::shared_ptr<bsMesh> mesh(mMeshCreator.loadMesh(meshPath));
+
+	//Add the mesh to the cache, allowing it to not be reloaded the next time it's requested.
+	mMeshes[meshName] = mesh;
+
+	return mesh;
+}
+
+std::shared_ptr<bsMesh> bsMeshCache::loadMeshBlocking(const std::string& meshName)
+{
+	const std::string meshPath(mFileSystem.getPathFromFilename(meshName));
+
+	BS_ASSERT2(false, "incomplete");
+
+	return nullptr;
+}
+
+inline bool bsMeshCache::verifyMeshIsNotAlreadyInCache(const std::string& meshName)
+{
 	//Verify that the mesh has not already been loaded. This should only happen due to
 	//incorrect usage of this class.
 	if (mMeshes.find(meshName) != mMeshes.end())
@@ -81,28 +113,28 @@ std::shared_ptr<bsMesh> bsMeshCache::loadMesh(const std::string& meshName)
 		BS_ASSERT2(mMeshes.find(meshName) == mMeshes.end(), "bsMeshCache::loadMesh was "
 			"called, but the requested mesh has already been loaded!");
 
-		return nullptr;
+		return false;
 	}
-#endif
 
+	return true;
+}
+
+inline bool bsMeshCache::verifyMeshPathIsValid(const std::string& meshPath,
+	const std::string& meshName)
+{
 	//Verify that the path of the mesh actually exists.
 	if (meshPath.empty())
 	{
 		std::string message(meshName);
 		message += "' does not exist in any known resource paths,"
-			" it will not be created";
+			" it will not be loaded";
 
 		bsLog::logMessage(message.c_str(), pantheios::SEV_CRITICAL);
 
 		BS_ASSERT2(!"Failed to load mesh", message.c_str());
 
-		return nullptr;
+		return false;
 	}
 
-	std::shared_ptr<bsMesh> mesh(mMeshCreator.loadMesh(meshPath));
-
-	//Add the mesh to the cache, allowing it to not be reloaded the next time it's requested.
-	mMeshes[meshName] = mesh;
-
-	return mesh;
+	return true;
 }
