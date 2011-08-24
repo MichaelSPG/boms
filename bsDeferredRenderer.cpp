@@ -207,6 +207,9 @@ bsDeferredRenderer::~bsDeferredRenderer()
 	mGeometryBlendState->Release();
 	mLightBlendState->Release();
 
+	mDepthEnabledStencilState->Release();
+	mDepthDisabledStencilState->Release();
+
 	delete mFullScreenQuad;
 
 	delete mLightRenderTarget;
