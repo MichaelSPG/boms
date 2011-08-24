@@ -15,7 +15,6 @@ LRESULT CALLBACK WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	case WM_DESTROY:
 		PostQuitMessage(0);
-		//quit = true;
 		return 0;
 	}
 
@@ -37,22 +36,15 @@ bsWindow::bsWindow(int windowWidth, int windowHeight, const std::string& name,
 	wndClassex.lpfnWndProc = WinProc;
 	wndClassex.hInstance = hInstance;
 	wndClassex.lpszClassName = name.c_str();
-	//wndClassex.hCursor = (HCURSOR)LoadImage(nullptr, MAKEINTRESOURCE(IDC_ARROW), IMAGE_CURSOR, 0, 0, LR_SHARED);
-
 	RegisterClassEx(&wndClassex);
 
-	int additionalWidth = GetSystemMetrics(SM_CXFIXEDFRAME) * 2;
-	int additionalHeight = (GetSystemMetrics(SM_CYFIXEDFRAME) * 2)
-		+ GetSystemMetrics(SM_CYCAPTION);
-
-	RECT rect = { 0, 0, windowWidth + additionalWidth, windowHeight + additionalHeight };
+	RECT rect = { 0, 0, windowWidth, windowHeight };
 
 	DWORD winStyleEx = WS_EX_CLIENTEDGE;
 	DWORD winStyle = WS_CAPTION | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
 
-	
-	//WS_EX_CLIENTEDGE
-
+	//Need to adjust the rect so that the size of the window borders are taken into account
+	//when calling CreateWindowEx.
 	AdjustWindowRectEx(&rect, winStyle, false, winStyleEx);
 
 	mHwnd = CreateWindowEx(winStyleEx, name.c_str(), name.c_str(), winStyle, CW_USEDEFAULT,
