@@ -1,6 +1,6 @@
 #pragma once
 
-#include "bsConfig.h"
+
 #include <Windows.h>
 #include <xnamath.h>
 

@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsRenderTarget.h"
 
 #include <string>

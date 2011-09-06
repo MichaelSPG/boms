@@ -1,6 +1,5 @@
 #pragma once
 
-#include "bsConfig.h"
 
 #include <Common/Base/Types/Geometry/Aabb/hkAabb.h>
 #include <Common/Base/Types/Geometry/Aabb/hkAabbUtil.h>

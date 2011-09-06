@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "bsConfig.h"
 
 #include <memory>
 

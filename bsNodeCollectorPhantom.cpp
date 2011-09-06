@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsNodeCollectorPhantom.h"
 
 #include <algorithm>

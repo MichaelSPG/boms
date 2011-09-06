@@ -1,6 +1,5 @@
 #pragma once
 
-#include "bsConfig.h"
 
 #include <Physics/Collide/BroadPhase/hkpBroadPhaseHandle.h>
 

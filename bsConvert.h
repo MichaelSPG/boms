@@ -1,6 +1,5 @@
 #pragma once
 
-#include "bsConfig.h"
 
 #include <Common/Base/hkBase.h>
 

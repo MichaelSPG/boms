@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsScrollingText2D.h"
 
 #include <sstream>

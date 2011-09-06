@@ -1,6 +1,5 @@
 #pragma once
 
-#include "bsConfig.h"
 
 #include <Windows.h>
 #include <string>

@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsFullScreenQuad.h"
 
 #include <vector>

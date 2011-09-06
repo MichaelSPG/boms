@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsFileSystem.h"
 
 #include <boost/filesystem.hpp>

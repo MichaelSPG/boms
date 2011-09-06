@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsShaderManager.h"
 
 #include <string>

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "bsConfig.h"
 
 #include <map>
 #include <unordered_map>

@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsText2D.h"
 
 #include "bsDx11Renderer.h"

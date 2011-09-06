@@ -1,4 +1,6 @@
-#include "bsConfig.h"
+#include "StdAfx.h"
+
+#include <vld.h>
 
 #include <windows.h>
 
@@ -9,6 +11,8 @@
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int showCmd)
 {
+	VLDDisable();
+
 	const int windowWidth = 1280;
 	const int windowHeight = 720;
 	

@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #if 0
 
 #include "bsPrimitive.h"

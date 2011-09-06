@@ -1,7 +1,5 @@
 #pragma once
 
-#include "bsConfig.h"
-
 
 /*	Base class for all render systems.
 	

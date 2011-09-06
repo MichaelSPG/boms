@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsMeshSerializer.h"
 
 /*	File info:

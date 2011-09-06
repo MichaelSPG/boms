@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsHavokManager.h"
 
 #include <Common/Base/keycode.cxx>

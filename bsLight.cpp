@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsLight.h"
 
 #include "bsMeshCache.h"

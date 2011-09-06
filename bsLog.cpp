@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsLog.h"
 
 extern "C" const char PANTHEIOS_FE_PROCESS_IDENTITY[] = "TestApp";

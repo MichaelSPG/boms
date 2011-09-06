@@ -1,6 +1,5 @@
 #pragma once
 
-#include "bsConfig.h"
 
 #include "bsShaderManager.h"
 #include "bsMeshCache.h"

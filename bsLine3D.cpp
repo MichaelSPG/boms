@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsLine3D.h"
 
 #include <string>

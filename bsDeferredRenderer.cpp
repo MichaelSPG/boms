@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsDeferredRenderer.h"
 
 #include <vector>

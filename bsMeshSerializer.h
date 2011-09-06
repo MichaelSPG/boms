@@ -6,7 +6,6 @@
 	other mesh formats. Note that this requires assimp to work.
 */
 
-#include "bsConfig.h"
 
 #include <string>
 

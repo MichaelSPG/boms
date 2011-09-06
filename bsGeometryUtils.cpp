@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsGeometryUtils.h"
 
 #include <Physics/Collide/Shape/Convex/hkpConvexShape.h>

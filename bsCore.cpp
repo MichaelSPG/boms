@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsCore.h"
 
 #include "bsWindow.h"

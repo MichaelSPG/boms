@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsCamera.h"
 
 #include <memory>

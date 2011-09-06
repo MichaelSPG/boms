@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsRenderStats.h"
 
 #include <sstream>

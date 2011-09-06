@@ -1,5 +1,10 @@
 #pragma once
 
+#include <string>
+#include <unordered_map>
+
+#include <windows.h>
+
 #include <OIS.h>
 #include <string>
 #include <windows.h>

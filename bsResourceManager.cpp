@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsResourceManager.h"
 
 #include "bsLog.h"

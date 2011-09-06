@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsIniParser.h"
 
 #include <sstream>

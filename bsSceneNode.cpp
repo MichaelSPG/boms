@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "bsSceneNode.h"
 
 #include <Physics/Dynamics/hkpDynamics.h>

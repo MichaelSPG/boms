@@ -14,6 +14,7 @@
 class bsMesh;
 class bsMeshCache;
 class bsDx11Renderer;
+class bsFileSystem;
 struct ID3D11Device;
 
 
