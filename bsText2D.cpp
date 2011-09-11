@@ -33,7 +33,6 @@ void bsText2D::draw()
 	{
 		return;
 	}
-	mText;
 	
 	//Draw the text with the currently set values
 	mFontWrapper->DrawString(mDeviceContext, mText.c_str(), mFontSize,
