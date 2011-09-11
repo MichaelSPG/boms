@@ -43,8 +43,7 @@ inline bool approximatelyEqual(float number1, float number2, float epsilon = 0.0
 	return (fabsf(number1 - number2) < epsilon);
 }
 
-/*	
-	Compare two vectors to see if each x, y and z element is within an epsilon of the
+/*	Compare two vectors to see if each x, y and z element is within an epsilon of the
 	other vector's x, y and z elements.
 	Returns true only if all three elements are within the epsilon of eachother.
 */
@@ -56,67 +55,19 @@ inline bool approximatelyEqual(const XMFLOAT3& vec1, const XMFLOAT3& vec2,
 		&& approximatelyEqual(vec1.z, vec2.z, epsilon);
 }
 
-
-//Translation
-//Get
-inline XMFLOAT3 XMMatrixGetTranslation(const XMMATRIX& matrix)
+/*	Linearly interpolates between min and max given a ratio in range [0, 1].
+	A ratio of 0 will return the min input, while a ratio of 1 will return the max input.
+*/
+inline float lerp(float min, float max, float ratio)
 {
-	return XMFLOAT3(matrix._41, matrix._42, matrix._43);
-}
-	
-//Set
-inline void XMMatrixSetTranslation(XMMATRIX& matrix, const XMVECTOR& translation)
-{
-	matrix._41 = -XMVectorGetX(translation);
-	matrix._42 = -XMVectorGetY(translation);
-	matrix._43 = -XMVectorGetZ(translation);
+	float delta = max - min;
+	return min + (ratio * delta);
 }
 
-inline void XMMatrixSetTranslation(XMMATRIX& matrix, const XMFLOAT3& translation)
+/*	Returns value clamped to be less than or equal to max and greater than or equal to min.	
+*/
+inline float clamp(float min, float max, float value)
 {
-	matrix._41 = -translation.x;
-	matrix._42 = -translation.y;
-	matrix._43 = -translation.z;
-}
-	
-inline void XMFloat4x4SetTranslation(XMFLOAT4X4& matrix, const XMVECTOR& translation)
-{
-	matrix._41 = -XMVectorGetX(translation);
-	matrix._42 = -XMVectorGetY(translation);
-	matrix._43 = -XMVectorGetZ(translation);
-}
-
-inline void XMFloat4x4SetTranslation(XMFLOAT4X4& matrix, const XMFLOAT3& translation)
-{
-	matrix._41 = -translation.x;
-	matrix._42 = -translation.y;
-	matrix._43 = -translation.z;
-}
-
-//Transpose
-//The parameter will be modified.
-inline void XMFloat4x4Transpose(XMFLOAT4X4& inOut)
-{
-	XMStoreFloat4x4(&inOut, XMMatrixTranspose(XMLoadFloat4x4(&inOut)));
-}
-
-//The result will be put into the out parameter.
-inline void XMFloat4x4Multiply(const XMFLOAT4X4& M1, const XMFLOAT4X4& M2, XMFLOAT4X4& out)
-{
-	XMStoreFloat4x4(&out, XMMatrixMultiply(XMLoadFloat4x4(&M1), XMLoadFloat4x4(&M2)));
-}
-	
-//The result will be put into the out parameter.
-inline void XMFloat4x4PerspectiveFovLH(float fovAngleY, float aspectRatio,
-	float nearZ, float farZ, XMFLOAT4X4& out)
-{
-	XMStoreFloat4x4(&out, XMMatrixPerspectiveFovLH(fovAngleY, aspectRatio, nearZ, farZ));
-}
-
-inline XMFLOAT4X4 XMFloat4x4Identity()
-{
-	XMFLOAT4X4 identity;
-	XMStoreFloat4x4(&identity, XMMatrixIdentity());
-	return identity;
+	return XMMin(XMMax(min, value), max);
 }
 } // namespace bsMath
