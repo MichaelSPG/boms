@@ -9,28 +9,34 @@
 	on the GPU.
 */
 
-struct CBWireFrame
+__declspec(align(16)) struct CBWireFrame
 {
-	XMFLOAT4X4	world;
-	XMFLOAT4	color;
+	XMMATRIX	world;
+	XMFLOAT4A	color;
 };
 
-struct CBWorld
+__declspec(align(16)) struct CBWorld
 {
-	XMFLOAT4X4	world;
+	XMVECTOR	world;
 };
 
-struct CBCamera
+__declspec(align(16)) struct CBCamera
 {
-	XMFLOAT4X4	view;
-	XMFLOAT4X4	projection;
-	XMFLOAT4X4	viewProjection;
-	XMFLOAT4X4	inverseViewProjection;
-	XMFLOAT4	cameraPosition;
+	XMMATRIX	view;
+	XMMATRIX	projection;
+	XMMATRIX	viewProjection;
+	XMMATRIX	inverseViewProjection;
+	XMVECTOR	cameraPosition;
 };
 
-struct CBLight
+__declspec(align(16)) struct CBLight
 {
-	XMFLOAT4	lightPosition;
-	XMFLOAT4	lightColor;
+	XMFLOAT4A	lightPosition;
+	XMFLOAT4A	lightColor;
+};
+
+struct CBFxaa
+{
+	XMFLOAT2	oneOverScreenSize;
+	XMFLOAT2	padding;//Pad to multiple of 16 bytes.
 };
