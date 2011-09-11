@@ -8,14 +8,7 @@
 
 #include "bsLog.h"
 #include "bsAssert.h"
-
-
-namespace bs
-{
-//#include "bsWindowsUtils.h" gives a linker error for some reason.
-
-extern std::string winApiErrorCodeToString(DWORD errorCode);
-}
+#include "bsWindowsUtils.h"
 
 
 void bsFileIoManager::threadLoop()

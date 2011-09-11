@@ -14,7 +14,7 @@ namespace bs
 /*	Converts an error code to a readable string.
 	The error code this function takes is usually gotten from GetLastError().
 */
-std::string winApiErrorCodeToString(DWORD errorCode)
+inline std::string winApiErrorCodeToString(DWORD errorCode)
 {
 	char* buffer = nullptr;
 	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
