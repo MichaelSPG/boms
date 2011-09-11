@@ -59,6 +59,7 @@ bsWindow::bsWindow(int windowWidth, int windowHeight, const std::string& name,
 
 bsWindow::~bsWindow()
 {
+	DestroyWindow(mHwnd);
 	UnregisterClass(mName.c_str(), mHInstance);
 }
 
