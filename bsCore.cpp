@@ -3,7 +3,7 @@
 #include "bsCore.h"
 
 #include "bsWindow.h"
-#include "bsSceneGraph.h"
+#include "bsScene.h"
 #include "bsDx11Renderer.h"
 #include "bsResourceManager.h"
 #include "bsHavokManager.h"
@@ -33,10 +33,7 @@ bsCore::bsCore(const bsCoreCInfo& cInfo)
 
 	mHavokManager = new bsHavokManager(cInfo.worldSize);
 
-	mSceneGraph = new bsSceneGraph(mDx11Renderer, mResourceManager, mHavokManager, cInfo);
-
 	mRenderQueue = new bsRenderQueue(mDx11Renderer, mResourceManager->getShaderManager());
-	mRenderQueue->setCamera(mSceneGraph->getCamera());
 
 
 	mFileIoThread = tbb::tbb_thread(std::bind(&bsFileIoManager::threadLoop, &mFileIoManager));
@@ -52,8 +49,6 @@ bsCore::~bsCore()
 	mFileIoThread.join();
 
 	delete mRenderQueue;
-
-	delete mSceneGraph;
 
 	delete mHavokManager;
 	hkBaseSystem::quit();
@@ -77,9 +72,6 @@ bool bsCore::update(float deltaTimeMs)
 	{
 		return false;
 	}
-
-	mHavokManager->stepGraphicsWorld(deltaTimeMs);
-	//mHavokManager->stepPhysicsWorld(deltaTimeMs);
 
 	mRenderSystem->renderOneFrame();
 

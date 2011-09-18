@@ -7,7 +7,7 @@
 #include "bsCoreCInfo.h"
 #include "bsFileIoManager.h"
 
-class bsSceneGraph;
+class bsScene;
 class bsDx11Renderer;
 class bsResourceManager;
 class bsHavokManager;
@@ -37,11 +37,6 @@ public:
 	*/
 	bool update(float deltaTimeMs);
 	
-	inline bsSceneGraph* getSceneGraph() const
-	{
-		return mSceneGraph;
-	}
-
 	inline bsResourceManager* getResourceManager() const
 	{
 		return mResourceManager;
@@ -90,7 +85,6 @@ private:
 
 	bsWindow*			mWindow;
 	bsDx11Renderer*		mDx11Renderer;
-	bsSceneGraph*		mSceneGraph;
 	bsResourceManager*	mResourceManager;
 	bsHavokManager*		mHavokManager;
 	bsRenderQueue*		mRenderQueue;
