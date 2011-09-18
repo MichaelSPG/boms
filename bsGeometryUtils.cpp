@@ -41,10 +41,12 @@ void createLinesFromShape(const hkpShape* const shape, bsLine3D* line3D)
 	std::vector<XMFLOAT3> points(count);
 	for (int i = 0; i < count; ++i)
 	{
-		points[i] = bsMath::toXM3(lines[i]);
+		XMVECTOR point = bsMath::toXM(lines[i]);
+		XMStoreFloat3(&points[i], point);
+		//points[i] = bsMath::toXM3(lines[i]);
 	}
 
-	line3D->addPoints(points);
+	line3D->addPoints(&points[0], count);
 
 
 	/*
