@@ -23,8 +23,8 @@ bsRenderTarget::bsRenderTarget(unsigned int width, unsigned int height,
 	textureDesc.Height = height;
 	textureDesc.MipLevels = 1;
 	textureDesc.ArraySize = 1;
-	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	//textureDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	//textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	textureDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 	textureDesc.SampleDesc.Count = 1;
 	textureDesc.Usage = D3D11_USAGE_DEFAULT;
 	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
@@ -57,20 +57,6 @@ bsRenderTarget::bsRenderTarget(unsigned int width, unsigned int height,
 	hr = d3d11Device->CreateShaderResourceView(mRenderTargetTexture, &shaderResourceDesc,
 		&mShaderResourceView);
 	BS_ASSERT2(SUCCEEDED(hr), "Failed to create shader resource view");
-
-#ifdef BS_DEBUG
-	std::string debugString("ID3D11Texture2D render target");
-	mRenderTargetTexture->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
-		debugString.c_str());
-
-	debugString = "ID3D11RenderTargetView";
-	mRenderTargetView->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
-		debugString.c_str());
-
-	debugString = "ID3D11ShaderResourceView";
-	mShaderResourceView->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
-		debugString.c_str());
-#endif
 }
 
 bsRenderTarget::~bsRenderTarget()
