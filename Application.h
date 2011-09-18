@@ -6,12 +6,17 @@
 #include <windows.h>
 
 #include <OIS.h>
-#include <string>
-#include <windows.h>
+
+#include "bsRenderStats.h"
+#include "bsPrimitiveCreator.h"
 
 class bsLog;
 class bsCore;
 class bsDeferredRenderer;
+class bsMesh;
+class bsText2D;
+class bsSceneNode;
+class bsScene;
 
 
 class Application : public OIS::KeyListener, public OIS::MouseListener
@@ -39,9 +44,24 @@ public:
 		return mQuit;
 	}
 
-	void createSomeLights();
 
 private:
+	void createSomeLights();
+
+	void createMeshes();
+
+	void createTexts();
+
+	void createNodes();
+
+	void createSpheres(unsigned int count);
+
+	void createBoxes(bool staticBoxes, unsigned int count);
+
+	void createWalls(float offsetFromCenter, float length, float height);
+
+	void createKeyframedRb();
+
 	OIS::InputManager	*mInputManager;
 	OIS::Keyboard		*mKeyboard;
 	OIS::Mouse			*mMouse;
@@ -52,4 +72,12 @@ private:
 	bsCore*		mCore;
 
 	bsDeferredRenderer*	mDeferredRenderer;
+
+	std::unordered_map<std::string, std::shared_ptr<bsMesh>> mMeshes;
+	std::unordered_map<std::string, std::shared_ptr<bsText2D>> mTexts;
+	std::unordered_map<std::string, bsSceneNode*> nodes;
+
+	bsRenderStats mRenderStats;
+	bsScene* mScene;
+	bsPrimitiveCreator* mPrimCreator;
 };
