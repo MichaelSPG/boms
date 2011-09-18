@@ -62,6 +62,11 @@ public:
 	*/
 	void draw(bsDx11Renderer* dx11Renderer) const;
 
+	inline float getRadius() const
+	{
+		return mRadius;
+	}
+
 protected:
 	std::shared_ptr<bsMesh>	mMesh;
 private:
