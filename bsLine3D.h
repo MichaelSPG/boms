@@ -43,15 +43,15 @@ public:
 	*/
 	void addPoint(const XMFLOAT3& position);
 
-	/*	Adds a vector of points to the collection.
+	/*	Adds an array of points to the collection.
 	*/
-	void addPoints(const std::vector<XMFLOAT3>& points);
+	void addPoints(const XMFLOAT3* points, unsigned int pointCount);
 
 	/*	Creates the buffers used for drawing. Call this before trying to render this object.
 		Returns true on success.
 		There must be at least 2 points, and an even number of points.
 	*/
-	bool create(bsDx11Renderer* dx11Renderer);
+	bool build(bsDx11Renderer* dx11Renderer);
 
 	//Returns number of defined points.
 	inline unsigned int getPointCount() const
@@ -67,6 +67,24 @@ public:
 	inline void setColor(const XMFLOAT4& color)
 	{
 		mColor = color;
+	}
+
+	/*	Clears all previously entered points.
+	*/
+	inline void clear()
+	{
+		mPoints.clear();
+
+		if (mVertexBuffer)
+		{
+			mVertexBuffer->Release();
+			mVertexBuffer = nullptr;
+		}
+		if (mIndexBuffer)
+		{
+			mIndexBuffer->Release();
+			mIndexBuffer = nullptr;
+		}
 	}
 
 private:

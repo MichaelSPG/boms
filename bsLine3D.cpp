@@ -11,7 +11,7 @@
 
 
 bsLine3D::bsLine3D(const XMFLOAT4& colorRgba)
-	: mFinished(false)
+	: mFinished(true)
 	, mColor(colorRgba)
 	, mVertexBuffer(nullptr)
 	, mIndexBuffer(nullptr)
@@ -37,21 +37,34 @@ void bsLine3D::addPoint(const XMFLOAT3& position)
 	mPoints.push_back(position);
 }
 
-void bsLine3D::addPoints(const std::vector<XMFLOAT3>& points)
+void bsLine3D::addPoints(const XMFLOAT3* points, unsigned int pointCount)
 {
+	BS_ASSERT(points);
+	BS_ASSERT2(pointCount != 0, "Cannot add zero points");
 	mFinished = false;
 
-	mPoints.insert(mPoints.end(), points.begin(), points.end());
+	mPoints.resize(mPoints.size() + pointCount);
+	mPoints.insert(mPoints.end(), points, points + pointCount);
 }
 
-bool bsLine3D::create(bsDx11Renderer* dx11Renderer)
+bool bsLine3D::build(bsDx11Renderer* dx11Renderer)
 {
-	BS_ASSERT2(hasFinishedLoading(), "Tried to create line while the data was in a non-good state");
+	if (mVertexBuffer)
+	{
+		mVertexBuffer->Release();
+	}
+	if (mIndexBuffer)
+	{
+		mIndexBuffer->Release();
+	}
+
+
+	BS_ASSERT2(hasFinishedLoading(), "Tried to build line while the data was in a non-good state");
 
 	const unsigned int pointCount = mPoints.size();
 
 	BS_ASSERT2(pointCount, "No points defined");
-	BS_ASSERT2(pointCount & 1, "Attempted to create bsLine3D with an odd amount of points");
+	BS_ASSERT2((pointCount & 1) == 0, "Attempted to build bsLine3D with an odd amount of points");
 
 	//Vertex buffer
 	D3D11_BUFFER_DESC bufferDescription;
@@ -67,7 +80,7 @@ bool bsLine3D::create(bsDx11Renderer* dx11Renderer)
 	if (FAILED(dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
 		&mVertexBuffer)))
 	{
-		BS_ASSERT(!"Failed to create vertex buffer");
+		BS_ASSERT(!"Failed to build vertex buffer");
 
 		return false;
 	}
@@ -86,7 +99,7 @@ bool bsLine3D::create(bsDx11Renderer* dx11Renderer)
 	}
 	
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
-	bufferDescription.ByteWidth = pointCount * sizeof(indices[0]);
+	bufferDescription.ByteWidth = pointCount * sizeof(unsigned int);
 	bufferDescription.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	bufferDescription.CPUAccessFlags = 0;
 
@@ -95,7 +108,7 @@ bool bsLine3D::create(bsDx11Renderer* dx11Renderer)
 	if (FAILED(dx11Renderer->getDevice()->CreateBuffer(&bufferDescription, &initData,
 		&mIndexBuffer)))
 	{
-		BS_ASSERT(!"Failed to create index buffer");
+		BS_ASSERT(!"Failed to build index buffer");
 
 		return false;
 	}
@@ -111,18 +124,34 @@ bool bsLine3D::create(bsDx11Renderer* dx11Renderer)
 
 	return true;
 }
-
+#include <Common/Visualize/hkDebugDisplay.h>
 void bsLine3D::draw(bsDx11Renderer* dx11Renderer)
 {
+	//TODO: Don't allow this function to be run when the following is true.
+	if (mPoints.empty())
+	{
+		return;
+	}
+
 	BS_ASSERT(dx11Renderer);
 	BS_ASSERT2(mFinished, "Trying to draw a bsLine3D which has not had its buffers created");
 
 	ID3D11DeviceContext* context = dx11Renderer->getDeviceContext();
 
-	UINT offsets =  0;
-	UINT stride = sizeof(XMFLOAT3);
+	const unsigned int offsets =  0;
+	const unsigned int stride = sizeof(XMFLOAT3);
 	context->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offsets);
 	context->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
 	context->DrawIndexed(mPoints.size(), 0, 0);
+
+	hkVector4 start, end;
+
+	for (size_t i = 0; i < mPoints.size(); i += 2)
+	{
+		start = bsMath::toHK(XMLoadFloat3(&mPoints[i]));
+		end = bsMath::toHK(XMLoadFloat3(&mPoints[i + 1]));
+
+		HK_DISPLAY_LINE(start, end, 0xffffffff);
+	}
 }
