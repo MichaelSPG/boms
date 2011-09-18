@@ -22,8 +22,9 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 	: mDx11Renderer(dx11Renderer)
 	, mCamera(camera)
 	, mShaderManager(shaderManager)
+	, mFxaaPass(shaderManager, dx11Renderer, (float)window->getWindowWidth(),
+		(float)window->getWindowHeight())
 	, mGeometryRasterizerState(nullptr)
-	, mLightRasterizerState(nullptr)
 {
 	BS_ASSERT(dx11Renderer);
 	BS_ASSERT(camera);
@@ -41,6 +42,7 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 	mGBuffer.normal		= new bsRenderTarget(windowWidth, windowHeight, device);
 	mGBuffer.diffuse	= new bsRenderTarget(windowWidth, windowHeight, device);
 	mLightRenderTarget	= new bsRenderTarget(windowWidth, windowHeight, device);
+	mFinalRenderTarget	= new bsRenderTarget(windowWidth, windowHeight, device);
 
 	D3D11_RASTERIZER_DESC rasterizerDesc;
 	memset(&rasterizerDesc, 0, sizeof(rasterizerDesc));
@@ -50,10 +52,16 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 
 	device->CreateRasterizerState(&rasterizerDesc, &mGeometryRasterizerState);
 
-	rasterizerDesc.CullMode = D3D11_CULL_BACK;
-	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
 	rasterizerDesc.DepthClipEnable = false;
-	device->CreateRasterizerState(&rasterizerDesc, &mLightRasterizerState);
+	rasterizerDesc.CullMode = D3D11_CULL_BACK;
+	device->CreateRasterizerState(&rasterizerDesc, &mCullBackFacingNoDepthClip);
+
+	rasterizerDesc.CullMode = D3D11_CULL_FRONT;
+	device->CreateRasterizerState(&rasterizerDesc, &mCullFrontFacingNoDepthClip);
+
+	rasterizerDesc.CullMode = D3D11_CULL_NONE;
+	device->CreateRasterizerState(&rasterizerDesc, &mCullNoneNoDepthClip);
+
 
 	deviceContext->RSSetState(mGeometryRasterizerState);
 
@@ -115,7 +123,8 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 	depthStencilDescription.DepthFunc = D3D11_COMPARISON_LESS;
 	
 	device->CreateDepthStencilState(&depthStencilDescription, &mDepthEnabledStencilState);
-	depthStencilDescription.DepthEnable = true;
+
+	depthStencilDescription.DepthEnable = false;
 	depthStencilDescription.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 	depthStencilDescription.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	//depthStencilDescription.DepthFunc = D3D11_COMPARISON_LESS;
@@ -180,13 +189,22 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 	mLightRenderTarget->getRenderTargetTexture()->SetPrivateData(WKPDID_D3DDebugObjectName,
 		debugData.size(), debugData.c_str());
 
+	//Final target
+	debugData = "SRV Final";
+	mFinalRenderTarget->getShaderResourceView()->SetPrivateData(WKPDID_D3DDebugObjectName,
+		debugData.size(), debugData.c_str());
+
+	debugData = "RTV Final";
+	mFinalRenderTarget->getRenderTargetView()->SetPrivateData(WKPDID_D3DDebugObjectName,
+		debugData.size(), debugData.c_str());
+
+	debugData = "RTT Final";
+	mFinalRenderTarget->getRenderTargetTexture()->SetPrivateData(WKPDID_D3DDebugObjectName,
+		debugData.size(), debugData.c_str());
+
 	//Rasterizer states
 	debugData = "RasterizerState Geometry";
 	mGeometryRasterizerState->SetPrivateData(WKPDID_D3DDebugObjectName, debugData.size(),
-		debugData.c_str());
-
-	debugData = "RasterizerState Light";
-	mLightRasterizerState->SetPrivateData(WKPDID_D3DDebugObjectName, debugData.size(),
 		debugData.c_str());
 
 	//Blend states
@@ -204,7 +222,9 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 bsDeferredRenderer::~bsDeferredRenderer()
 {
 	mGeometryRasterizerState->Release();
-	mLightRasterizerState->Release();
+	mCullBackFacingNoDepthClip->Release();
+	mCullFrontFacingNoDepthClip->Release();
+	mCullNoneNoDepthClip->Release();
 
 	mGeometryBlendState->Release();
 	mLightBlendState->Release();
@@ -214,6 +234,7 @@ bsDeferredRenderer::~bsDeferredRenderer()
 
 	delete mFullScreenQuad;
 
+	delete mFinalRenderTarget;
 	delete mLightRenderTarget;
 	delete mGBuffer.diffuse;
 	delete mGBuffer.normal;
@@ -251,6 +272,9 @@ void bsDeferredRenderer::renderOneFrame()
 	//Set and clear G buffer
 	mDx11Renderer->setRenderTargets(&mGBuffer.position, 3);
 
+	//Enable depth testing.
+	deviceContext->OMSetDepthStencilState(mDepthEnabledStencilState, 0);
+
 	//Draw the geometry into the G buffers.
 	mRenderQueue->drawGeometry();
 
@@ -271,7 +295,8 @@ void bsDeferredRenderer::renderOneFrame()
 	mDx11Renderer->setRenderTargets(&mLightRenderTarget, 1);
 
 	//Enable light rasterization, ie no cull backfacing
-	deviceContext->RSSetState(mLightRasterizerState);
+	//TODO: Make this work with individual lights' distance from camera near plane.
+	deviceContext->RSSetState(mCullFrontFacingNoDepthClip);
 	//Enable blending
 	deviceContext->OMSetBlendState(mLightBlendState, nullptr, 0xFFFFFFFF);
 	//Disable depth
@@ -279,10 +304,13 @@ void bsDeferredRenderer::renderOneFrame()
 	
 	mRenderQueue->drawLights();
 
+	//Draw lines here since we don't want them to be affected by lights.
+	mRenderQueue->drawLines();
+
 	//////////////////////////////////////////////////////////////////////////
 	//
 
-	mDx11Renderer->setRenderTargets(nullptr, 1);
+	mDx11Renderer->setRenderTargets(&mFinalRenderTarget, 1);
 
 	shaderResourceViews[3] = mLightRenderTarget->getShaderResourceView();
 
@@ -293,15 +321,32 @@ void bsDeferredRenderer::renderOneFrame()
 	mShaderManager->setPixelShader(mMergerPixelShader);
 	mShaderManager->setVertexShader(mMergerVertexShader);
 
-	mDx11Renderer->setBackBufferAsRenderTarget();
-
 	//Enable geometry rasterization for fullscreen quad and next geometry pass
 	deviceContext->RSSetState(mGeometryRasterizerState);
 	deviceContext->OMSetBlendState(mGeometryBlendState, nullptr, 0xFFFFFFFF);
-	deviceContext->OMSetDepthStencilState(mDepthEnabledStencilState, 0);
 
+	//mDx11Renderer->setBackBufferAsRenderTarget();
 	//Draw a fullscreen quad with the merger shader to produce final output.
 	mFullScreenQuad->draw(mDx11Renderer->getDeviceContext());
+
+
+	//////////////////////////////////////////////////////////////////////////
+	//FXAA
+
+	//Unbind previous render target.
+	mDx11Renderer->setRenderTargets(nullptr, 1);
+
+	mDx11Renderer->setBackBufferAsRenderTarget();
+
+	shaderResourceViews[0] = mFinalRenderTarget->getShaderResourceView();
+	deviceContext->PSSetShaderResources(0, 1, shaderResourceViews);
+
+	mFxaaPass.draw();
+
+
+	//deviceContext->OMSetDepthStencilState(mDepthEnabledStencilState, 0);
+	//deviceContext->RSSetState(mGeometryRasterizerState);
+	//mRenderQueue->drawLines();
 
 	//Unbind shader resource views.
 	memset(shaderResourceViews, 0, sizeof(ID3D11ShaderResourceView*)
@@ -319,4 +364,5 @@ void bsDeferredRenderer::renderOneFrame()
 	mDx11Renderer->clearBackBuffer();
 	mDx11Renderer->clearRenderTargets(&mGBuffer.position, 3);
 	mDx11Renderer->clearRenderTargets(&mLightRenderTarget, 1);
+	mDx11Renderer->clearRenderTargets(&mFinalRenderTarget, 1);
 }

@@ -8,6 +8,7 @@
 #include <d3d11.h>
 
 #include "bsRenderSystem.h"
+#include "bsFxaaPass.h"
 
 class bsDx11Renderer;
 class bsCamera;
@@ -59,10 +60,15 @@ public:
 		return mRenderQueue;
 	}
 
+	inline bsFxaaPass& getFxaaPass()
+	{
+		return mFxaaPass;
+	}
 
 private:
 	//Creates shaders used for merging the GBuffer into the final render output.
 	void createShaders();
+
 
 	bsDx11Renderer*		mDx11Renderer;
 	bsCamera*			mCamera;
@@ -71,6 +77,9 @@ private:
 
 	GBuffer				mGBuffer;
 	bsRenderTarget*		mLightRenderTarget;
+	bsRenderTarget*		mFinalRenderTarget;
+
+	bsFxaaPass			mFxaaPass;
 
 	bsFullScreenQuad*	mFullScreenQuad;
 	std::shared_ptr<bsVertexShader>	mMergerVertexShader;
@@ -79,7 +88,10 @@ private:
 	std::vector<std::function<void(void)>>	mEndOfRenderCallbacks;
 
 	ID3D11RasterizerState*	mGeometryRasterizerState;
-	ID3D11RasterizerState*	mLightRasterizerState;
+	ID3D11RasterizerState*	mCullBackFacingNoDepthClip;
+	ID3D11RasterizerState*	mCullFrontFacingNoDepthClip;
+	ID3D11RasterizerState*	mCullNoneNoDepthClip;
+
 
 	ID3D11BlendState*		mGeometryBlendState;
 	ID3D11BlendState*		mLightBlendState;
