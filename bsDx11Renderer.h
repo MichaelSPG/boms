@@ -16,6 +16,10 @@ public:
 
 	~bsDx11Renderer();
 
+	bool createRenderWindow(HWND hWnd, int renderWindowWidth, int renderWindowHeight);
+
+	void destroyCurrentRenderWindow();
+
 	//Presents drawn primitives, waits for v-sync if enabled.
 	void present() const;
 

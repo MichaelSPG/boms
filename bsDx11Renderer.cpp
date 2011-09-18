@@ -20,136 +20,11 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 	, mVsyncEnabled(true)
 {
 	bsLog::logMessage("Starting initialization of Direct3D 11");
-	/*
-	RECT rect;
-	GetWindowRect(hWnd, &rect);
-	renderWindowWidth = rect.right - rect.left;
-	renderWindowHeight = rect.bottom - rect.top;
-	*/
-
-	//Swap chain & device
-	DXGI_SWAP_CHAIN_DESC swapChainDesc;
-	memset(&swapChainDesc, 0, sizeof(swapChainDesc));
-	swapChainDesc.BufferCount = 1;
-	swapChainDesc.BufferDesc.Width = renderWindowWidth;
-	swapChainDesc.BufferDesc.Height = renderWindowHeight;
-	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	swapChainDesc.BufferDesc.RefreshRate.Numerator = 60;
-	swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	swapChainDesc.OutputWindow = hWnd;
-	swapChainDesc.SampleDesc.Count = 1;
-	swapChainDesc.SampleDesc.Quality = 0;
-	swapChainDesc.Windowed = true;
-
-	unsigned int deviceFlags = 0;
-#ifdef BS_DEBUG
-	deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
-
-	D3D_FEATURE_LEVEL featureLevels[] = 
-	{
-		D3D_FEATURE_LEVEL_11_0,
-		D3D_FEATURE_LEVEL_10_1,
-		D3D_FEATURE_LEVEL_10_0,
-	};
-	D3D_FEATURE_LEVEL fl = D3D_FEATURE_LEVEL_10_0;
-
-	bsLog::logMessage("Creating D3D11 device and swap chain");
-	if (FAILED(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, deviceFlags,
-		featureLevels, ARRAYSIZE(featureLevels), D3D11_SDK_VERSION, &swapChainDesc, &mSwapChain,
-		&mDevice, &fl, &mDeviceContext)))
-	{
-		BS_ASSERT(!"Failed to create D3D11 device");
-	}
-
-	//Back buffer
-	ID3D11Texture2D* backBuffer = nullptr;
-	bsLog::logMessage("Creating back buffer");
-	if (FAILED(mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer)))
-	{
-		BS_ASSERT(!"Failed to create back buffer");
-	}
-
-	
-	//D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
-	bsLog::logMessage("Creating back buffer render target view");
-	if (FAILED(mDevice->CreateRenderTargetView(backBuffer, nullptr, &mBackBufferRenderTargetView)))
-	{
-		BS_ASSERT(!"Failed to create back buffer render target view");
-	}
-	
-	backBuffer->Release();
-
-	//Depth stencil
-	D3D11_TEXTURE2D_DESC depthDesc;
-	memset(&depthDesc, 0, sizeof(depthDesc));
-	depthDesc.Width = renderWindowWidth;
-	depthDesc.Height = renderWindowHeight;
-	depthDesc.MipLevels = 1;
-	depthDesc.ArraySize = 1;
-	depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthDesc.SampleDesc.Count = 1;
-	depthDesc.SampleDesc.Quality = 0;
-	depthDesc.Usage = D3D11_USAGE_DEFAULT;
-	depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-	depthDesc.CPUAccessFlags = 0;
-	depthDesc.MiscFlags = 0;
-
-	bsLog::logMessage("Creating depth stencil texture");
-	if (FAILED(mDevice->CreateTexture2D(&depthDesc, nullptr, &mDepthStencil)))
-	{
-		BS_ASSERT(!"Failed to create depth stencil texture");
-	}
-
-
-	/*
-	//Defaults
-	D3D11_DEPTH_STENCIL_DESC dsd;
-	memset(&dsd, 0, sizeof(dsd));
-	dsd.DepthEnable = true;
-	dsd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	dsd.StencilEnable = false;
-	dsd.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
-	dsd.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
-	dsd.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
-	dsd.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
-	dsd.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-	dsd.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-	dsd.DepthFunc = D3D11_COMPARISON_LESS;//D3D11_COMPARISON_LESS_EQUAL
-	ID3D11DepthStencilState* dss;
-	mDevice->CreateDepthStencilState(&dsd, &dss);
-	mDeviceContext->OMSetDepthStencilState(dss, 0);
-	*/
-	
-	//Depth stencil view
-	D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDesc;
-	memset(&depthViewDesc, 0, sizeof(depthViewDesc));
-	depthViewDesc.Format = depthDesc.Format;
-	depthViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-	depthViewDesc.Texture2D.MipSlice = 0;
-
-	bsLog::logMessage("Creating depth stencil view");
-	if (FAILED(mDevice->CreateDepthStencilView(mDepthStencil, &depthViewDesc,
-		&mDepthStencilView)))
-	{
-		BS_ASSERT(!"Failed to create depth stencil view");
-	}
-
-	//Viewport
-	D3D11_VIEWPORT viewport;
-	viewport.Width = (float)renderWindowWidth;
-	viewport.Height = (float)renderWindowHeight;
-	viewport.MinDepth = 0.0f;
-	viewport.MaxDepth = 1.0f;
-	viewport.TopLeftX = 0;
-	viewport.TopLeftY = 0;
-
-	mDeviceContext->RSSetViewports(1, &viewport);
 
 	mRenderTargetClearColor[0] = mRenderTargetClearColor[1] = mRenderTargetClearColor[2] = 0.3f;
 	mRenderTargetClearColor[3] = 0.0f;
 
+	createRenderWindow(hWnd, renderWindowWidth, renderWindowHeight);
 
 #ifdef BS_DEBUG
 	//Set debug info in D3D objects to help debugging their lifetimes if necessary.
@@ -185,6 +60,146 @@ bsDx11Renderer::~bsDx11Renderer()
 {
 	bsLog::logMessage("Uninitializing DirectX", pantheios::SEV_NOTICE);
 
+	destroyCurrentRenderWindow();
+
+	bsLog::logMessage("DirectX successfully uninitialized");
+}
+
+bool bsDx11Renderer::createRenderWindow(HWND hWnd, int renderWindowWidth,
+	int renderWindowHeight)
+{
+	//Swap chain & device
+	DXGI_SWAP_CHAIN_DESC swapChainDesc = { 0 };
+	swapChainDesc.BufferCount = 1;
+	swapChainDesc.BufferDesc.Width = renderWindowWidth;
+	swapChainDesc.BufferDesc.Height = renderWindowHeight;
+	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.BufferDesc.RefreshRate.Numerator = 60;
+	swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.OutputWindow = hWnd;
+	swapChainDesc.SampleDesc.Count = 1;
+	swapChainDesc.SampleDesc.Quality = 0;
+	swapChainDesc.Windowed = true;
+
+	unsigned int deviceFlags = 0;
+#ifdef BS_DEBUG
+	deviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
+	D3D_FEATURE_LEVEL featureLevels[] = 
+	{
+		D3D_FEATURE_LEVEL_11_0,
+		D3D_FEATURE_LEVEL_10_1,
+		D3D_FEATURE_LEVEL_10_0,
+	};
+	D3D_FEATURE_LEVEL fl = D3D_FEATURE_LEVEL_10_0;
+
+	bsLog::logMessage("Creating D3D11 device and swap chain");
+	if (FAILED(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, deviceFlags,
+		featureLevels, ARRAYSIZE(featureLevels), D3D11_SDK_VERSION, &swapChainDesc, &mSwapChain,
+		&mDevice, &fl, &mDeviceContext)))
+	{
+		BS_ASSERT2(false, "Failed to create D3D11 device");
+
+		return false;
+	}
+
+	//Back buffer
+	ID3D11Texture2D* backBuffer = nullptr;
+	bsLog::logMessage("Creating back buffer");
+	if (FAILED(mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer)))
+	{
+		BS_ASSERT2(false, "Failed to create back buffer");
+
+		return false;
+	}
+
+	
+	bsLog::logMessage("Creating back buffer render target view");
+	if (FAILED(mDevice->CreateRenderTargetView(backBuffer, nullptr, &mBackBufferRenderTargetView)))
+	{
+		BS_ASSERT2(false, "Failed to create back buffer render target view");
+
+		return false;
+	}
+	
+	backBuffer->Release();
+
+	//Depth stencil
+	D3D11_TEXTURE2D_DESC depthDesc = { 0 };
+	depthDesc.Width = renderWindowWidth;
+	depthDesc.Height = renderWindowHeight;
+	depthDesc.MipLevels = 1;
+	depthDesc.ArraySize = 1;
+	depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthDesc.SampleDesc.Count = 1;
+	depthDesc.SampleDesc.Quality = 0;
+	depthDesc.Usage = D3D11_USAGE_DEFAULT;
+	depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	depthDesc.CPUAccessFlags = 0;
+	depthDesc.MiscFlags = 0;
+
+	bsLog::logMessage("Creating depth stencil texture");
+	if (FAILED(mDevice->CreateTexture2D(&depthDesc, nullptr, &mDepthStencil)))
+	{
+		BS_ASSERT2(false, "Failed to create depth stencil texture");
+
+		return false;
+	}
+
+
+	/*
+	//Defaults
+	D3D11_DEPTH_STENCIL_DESC dsd;
+	memset(&dsd, 0, sizeof(dsd));
+	dsd.DepthEnable = true;
+	dsd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	dsd.StencilEnable = false;
+	dsd.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
+	dsd.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
+	dsd.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+	dsd.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	dsd.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	dsd.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dsd.DepthFunc = D3D11_COMPARISON_LESS;//D3D11_COMPARISON_LESS_EQUAL
+	ID3D11DepthStencilState* dss;
+	mDevice->CreateDepthStencilState(&dsd, &dss);
+	mDeviceContext->OMSetDepthStencilState(dss, 0);
+	*/
+	
+	//Depth stencil view
+	D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDesc;
+	memset(&depthViewDesc, 0, sizeof(depthViewDesc));
+	depthViewDesc.Format = depthDesc.Format;
+	depthViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	depthViewDesc.Texture2D.MipSlice = 0;
+
+	bsLog::logMessage("Creating depth stencil view");
+	if (FAILED(mDevice->CreateDepthStencilView(mDepthStencil, &depthViewDesc,
+		&mDepthStencilView)))
+	{
+		BS_ASSERT2(false, "Failed to create depth stencil view");
+
+		return false;
+	}
+
+	//Viewport
+	D3D11_VIEWPORT viewport;
+	viewport.Width = (float)renderWindowWidth;
+	viewport.Height = (float)renderWindowHeight;
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+	viewport.TopLeftX = 0;
+	viewport.TopLeftY = 0;
+
+	mDeviceContext->RSSetViewports(1, &viewport);
+
+	return true;
+}
+
+void bsDx11Renderer::destroyCurrentRenderWindow()
+{
 	if (mDepthStencil)
 	{
 		mDepthStencil->Release();
@@ -193,7 +208,7 @@ bsDx11Renderer::~bsDx11Renderer()
 	{
 		mDepthStencilView->Release();
 	}
-	
+
 	if (mBackBufferRenderTargetView)
 	{
 		mBackBufferRenderTargetView->Release();
@@ -214,8 +229,6 @@ bsDx11Renderer::~bsDx11Renderer()
 	{
 		mDevice->Release();
 	}
-
-	bsLog::logMessage("DirectX successfully uninitialized");
 }
 
 void bsDx11Renderer::present() const
@@ -232,7 +245,7 @@ HRESULT bsDx11Renderer::compileShader(const char* fileName, const char* entryPoi
 	HRESULT hResult;
 
 	DWORD shaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
-#if defined(DEBUG) || defined(_DEBUG)
+#ifdef BS_DEBUG
 	shaderFlags |= D3DCOMPILE_DEBUG;
 #endif
 
@@ -253,7 +266,7 @@ HRESULT bsDx11Renderer::compileShader(const char* fileName, const char* entryPoi
 
 			OutputDebugStringA((char*)errorBlob->GetBufferPointer());
 
-			BS_ASSERT(!"Failed to compile shader");
+			BS_ASSERT2(false, errorMessage.c_str());
 		}
 		else
 		{
