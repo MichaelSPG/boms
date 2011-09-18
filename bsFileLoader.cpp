@@ -209,10 +209,12 @@ void WINAPI bsFileLoader::loadingFinishedCallback(DWORD errorCode, DWORD numByte
 		//Something went wrong while loading.
 
 #ifdef BS_DEBUG
-		std::stringstream ss("An error occured while reading file \'");
-		ss << loader.mFileName << "\': " << bs::winApiErrorCodeToString(GetLastError());
+		std::string errorMessage("An error occured while reading file \'");
+		errorMessage.append(loader.mFileName);
+		errorMessage.append("\': ");
+		errorMessage.append(bs::winApiErrorCodeToString(GetLastError()));
 
-		bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);
+		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
 #endif
 
 		loader.mLoadState = FAILED;
@@ -230,10 +232,12 @@ void WINAPI bsFileLoader::loadingFinishedCallback(DWORD errorCode, DWORD numByte
 		//Overlapped operation failed.
 
 #ifdef BS_DEBUG
-		std::stringstream ss("An error occured getting overlapped result \'");
-		ss << loader.mFileName << "\': " << bs::winApiErrorCodeToString(GetLastError());
+		std::string errorMessage("An error occured getting overlapped result \'");
+		errorMessage.append(loader.mFileName);
+		errorMessage.append("\': ");
+		errorMessage.append(bs::winApiErrorCodeToString(GetLastError()));
 
-		bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);
+		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
 #endif
 
 		loader.mLoadState = FAILED;
@@ -247,8 +251,9 @@ void WINAPI bsFileLoader::loadingFinishedCallback(DWORD errorCode, DWORD numByte
 	loader.mCompletionCallback(loader);
 
 #ifdef BS_DEBUG
-	std::stringstream ss("Successfully loaded \'");
-	ss << loader.mFileName << '\'';
-	bsLog::logMessage(ss.str().c_str(), pantheios::SEV_DEBUG);
+	std::string message("Successfully loaded \'");
+	message.append(loader.mFileName);
+	message.append("\'");
+	bsLog::logMessage(message.c_str(), pantheios::SEV_DEBUG);
 #endif
 }
