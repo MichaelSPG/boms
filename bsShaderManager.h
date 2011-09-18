@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <map>
+#include <unordered_map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -61,8 +61,8 @@ private:
 	}
 
 
-	std::map<std::string, std::shared_ptr<bsVertexShader>>	mVertexShaders;
-	std::map<std::string, std::shared_ptr<bsPixelShader>>	mPixelShaders;
+	std::unordered_map<std::string, std::shared_ptr<bsVertexShader>>	mVertexShaders;
+	std::unordered_map<std::string, std::shared_ptr<bsPixelShader>>		mPixelShaders;
 
 	bsResourceManager*	mResourceManager;
 	bsDx11Renderer*		mDx11Renderer;
