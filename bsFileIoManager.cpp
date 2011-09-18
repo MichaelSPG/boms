@@ -20,10 +20,7 @@ void bsFileIoManager::threadLoop()
 			removeCompletedRequests();
 		}
 
-		if (!mAsynchronousLoadRequests.empty())
-		{
-			processRequest();
-		}
+		processRequest();
 
 		SleepEx(1, true);
 	}
@@ -41,7 +38,6 @@ void bsFileIoManager::processRequest()
 		mAsynchronousLoaders.push_back(new bsFileLoader(asyncFileLoader.first,
 			bsFileLoader::ASYNCHRONOUS, asyncFileLoader.second));
 	};
-
 }
 
 void bsFileIoManager::removeCompletedRequests()
@@ -68,15 +64,12 @@ void bsFileIoManager::shutdown()
 {
 	removeCompletedRequests();
 
-	HANDLE currentHandle;
-	BOOL success;
-
 	//Cancel any remaining async IO requests and close file handles for all loaders.
 	for (size_t i = 0; i < mAsynchronousLoaders.size(); ++i)
 	{
-		currentHandle = mAsynchronousLoaders[i]->getFileHandle();
+		const HANDLE currentHandle = mAsynchronousLoaders[i]->getFileHandle();
 
-		success = CancelIo(currentHandle);
+		BOOL success = CancelIo(currentHandle);
 		if (success == 0)
 		{
 			bsLog::logMessage(bs::winApiErrorCodeToString(GetLastError()).c_str());
