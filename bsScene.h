@@ -89,7 +89,6 @@ private:
 	bsDx11Renderer*		mDx11Renderer;
 	bsResourceManager*	mResourceManager;
 
-	hkpWorld*	mGraphicsWorld;
 	hkpWorld*	mPhysicsWorld;
 
 	bsHavokManager* mHavokManager;

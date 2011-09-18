@@ -21,7 +21,6 @@ bsScene::bsScene(bsDx11Renderer* renderer, bsResourceManager* resourceManager,
 	: mNumCreatedNodes(0)
 	, mDx11Renderer(renderer)
 	, mResourceManager(resourceManager)
-	, mGraphicsWorld(nullptr)
 	, mPhysicsWorld(nullptr)
 	, mHavokManager(havokManager)
 {
@@ -29,14 +28,19 @@ bsScene::bsScene(bsDx11Renderer* renderer, bsResourceManager* resourceManager,
 	BS_ASSERT(resourceManager);
 	BS_ASSERT(havokManager);
 
-	havokManager->createGraphicsWorld(false);
-	havokManager->createPhysicsWorld(true);
+	havokManager->createWorld(true);
 
-	mGraphicsWorld = havokManager->getGraphicsWorld();
 	mPhysicsWorld = havokManager->getPhysicsWorld();
 
-	mCamera = new bsCamera(bsProjectionInfo(45.0f, 1000.0f, 0.1f,
-		(float)cInfo.windowWidth / (float)cInfo.windowHeight), this, havokManager);
+	bsProjectionInfo projectionInfo(45.0f, 1000.0f, 0.1f,
+		(float)cInfo.windowWidth / (float)cInfo.windowHeight, (float)cInfo.windowWidth,
+		(float)cInfo.windowHeight);
+	mCamera = new bsCamera(projectionInfo, mDx11Renderer);
+	mCamera->setScene(this);
+
+	bsSceneNode* cameraNode = new bsSceneNode();
+	cameraNode->getEntity().attach(mCamera);
+	addSceneNode(cameraNode);
 
 	bsLog::logMessage("Scene graph initialized successfully");
 }
@@ -53,27 +57,15 @@ bsScene::~bsScene()
 	}
 }
 
-//bsSceneNode* bsScene::createSceneNode(const hkVector4& position
-//	/*= hkVector4(0.0f, 0.0f, 0.0f, 0.0f)*/)
-/*
-{
-	bsSceneNode* node = new bsSceneNode(position, getNewId(), this);
-
-	mSceneNodes.push_back(node);
-
-	return node;
-}
-*/
 void bsScene::addSceneNode(bsSceneNode* sceneNode)
 {
 	BS_ASSERT(sceneNode);
 
+	sceneNode->addedToScene(this, getNewId());
+
 	mSceneNodes.push_back(sceneNode);
 
-	sceneNode->mID = getNewId();
-	sceneNode->mScene = this;
-
-	const bsEntity& entity = sceneNode->getEntity();
+	bsEntity& entity = sceneNode->getEntity();
 	hkpRigidBody* rigidBody = entity.getComponent<hkpRigidBody*>();
 	if (rigidBody != nullptr)
 	{
@@ -85,9 +77,9 @@ void bsScene::addSceneNode(bsSceneNode* sceneNode)
 
 void bsScene::update(float deltaTime)
 {
-	mHavokManager->stepGraphicsWorld(deltaTime);
-	mHavokManager->stepPhysicsWorld(deltaTime);
+	mHavokManager->stepWorld(deltaTime);
 
+	mCamera->update();
 
 	synchronizeActiveEntities();
 }
@@ -120,7 +112,7 @@ void bsScene::synchronizeActiveEntities()
 
 	for (size_t i = 0; i < activeSceneNodes.size(); ++i)
 	{
-		activeSceneNodes[i]->syncWithRigidBody();
+		activeSceneNodes[i]->setTransformFromRigidBody();
 	}
 
 	mPhysicsWorld->unmarkForRead();
