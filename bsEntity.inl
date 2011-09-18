@@ -7,6 +7,7 @@
 #include "bsAssert.h"
 #include "bsLight.h"
 #include "bsLine3D.h"
+#include "bsCamera.h"
 
 
 /*	This file contains template specializations for attach and detach functions.
@@ -64,6 +65,16 @@ inline void bsEntity::attach(bsLine3D* lineRenderer)
 	BS_ASSERT2(mLineRenderer == nullptr, "Trying to attach a light, but a light is already attached");
 
 	mLineRenderer = lineRenderer;
+}
+
+//Camera
+template <>
+inline void bsEntity::attach(bsCamera* camera)
+{
+	BS_ASSERT2(mCamera == nullptr, "Trying to attach a camera, but a camera is already attached");
+
+	mCamera = camera;
+	mCamera->setEntity(this);
 }
 
 
@@ -147,6 +158,7 @@ inline void bsEntity::detach<bsLine3D*>()
 		" but no line renderer is attached");
 
 	delete mLineRenderer;
+	mLineRenderer = nullptr;
 }
 
 template <>
@@ -155,6 +167,21 @@ inline void bsEntity::detach<bsLine3D>()
 	detach<bsLine3D*>();
 }
 
+//Camera
+template <>
+inline void bsEntity::detach<bsCamera*>()
+{
+	BS_ASSERT2(mCamera != nullptr, "Trying to detach a camera, but no camera is attached");
+
+	delete mCamera;
+	mCamera = nullptr;
+}
+
+template <>
+inline void bsEntity::detach<bsCamera>()
+{
+	detach<bsCamera*>();
+}
 
 
 template <typename T>
@@ -172,35 +199,42 @@ void bsEntity::detach()
 
 //Rigid body
 template <>
-inline hkpRigidBody* bsEntity::getComponent() const
+inline hkpRigidBody* bsEntity::getComponent()
 {
 	return mRigidBody;
 }
 
 //Mesh
 template <>
-inline const std::shared_ptr<bsMesh>& bsEntity::getComponent() const
+inline std::shared_ptr<bsMesh>& bsEntity::getComponent()
 {
 	return mMesh;
 }
 
 //Light
 template <>
-inline bsLight* bsEntity::getComponent() const
+inline bsLight* bsEntity::getComponent()
 {
 	return mLight;
 }
 
 //Line
 template <>
-inline bsLine3D* bsEntity::getComponent() const
+inline bsLine3D* bsEntity::getComponent()
 {
 	return mLineRenderer;
 }
 
+//Camera
+template <>
+inline bsCamera* bsEntity::getComponent()
+{
+	return mCamera;
+}
+
 
 template <typename T>
-inline T bsEntity::getComponent() const
+inline T bsEntity::getComponent()
 {
 	static_assert(false, "Invalid component type");
 }

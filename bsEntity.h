@@ -4,13 +4,13 @@
 
 #include "bsScene.h"
 
+class hkpRigidBody;
 
 class bsMesh;
 class bsLine3D;
 class bsLight;
 class bsSceneNode;
-
-class hkpRigidBody;
+class bsCamera;
 
 
 class bsEntity
@@ -27,14 +27,15 @@ public:
 	inline void attach(T component);
 
 	/*	Detaches a component from this entity.
-		If an entity of the specified type does not exist, the function call will fail.
+		This will delete the component. If you want to keep the component around, set it
+		to null instead.
 	*/
 	template <typename T>
 	inline void detach();
 
 
 	template <typename T>
-	inline T getComponent() const;
+	inline T getComponent();
 
 
 	inline bsSceneNode* getOwner() const
@@ -42,15 +43,18 @@ public:
 		return mOwner;
 	}
 
-private:
+
+
+//private:
 	void syncRigidBodyWithOwner();
 
 
 	bsSceneNode*	mOwner;
 
-	std::shared_ptr<bsMesh>		mMesh;
-	bsLine3D*					mLineRenderer;
-	bsLight*					mLight;
+	std::shared_ptr<bsMesh>	mMesh;
+	bsLine3D*				mLineRenderer;
+	bsLight*				mLight;
+	bsCamera*				mCamera;
 
 	hkpRigidBody*				mRigidBody;
 };
