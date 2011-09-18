@@ -99,7 +99,7 @@ bool bsLoadSerializedMesh(const std::string& fileName, bsSerializedMesh& meshOut
 	assert(file != nullptr);
 
 	char header[16];
-	size_t read = fread(header, sizeof(header), 1, file);
+	size_t read = fread(header, 16, 1, file);
 	assert(read == 1);
 
 	//Verify that the header is correct.
@@ -207,6 +207,99 @@ bool bsLoadSerializedMesh(const std::string& fileName, bsSerializedMesh& meshOut
 	//Not freeing dataBuffer, the mesh now owns it.
 
 	fclose(file);
+
+	return true;
+}
+
+bool bsLoadSerializedMeshFromMemory(const char* data, unsigned int dataSize,
+	bsSerializedMesh& meshOut)
+{
+	char header[16];
+	memcpy(header, data, 16);
+
+	//Verify that the header is correct.
+	if (memcmp(header, "bsm", 3) != 0)
+	{
+		bsLog::logMessage("Encountered a bad file header when loading mesh from memory",
+			pantheios::SEV_ERROR);
+
+		return false;
+	}
+	if (header[3] != kSerializerVersion)
+	{
+		bsLog::logMessage("Tried to load a mesh which was created with an old "
+			"version of the mesh serializer.", pantheios::SEV_ERROR);
+
+		return false;
+	}
+
+	unsigned int bufferCount;
+	memcpy(&bufferCount, header + 4, sizeof(unsigned int));
+
+	unsigned int totalDynamicMemorySize;
+	memcpy(&totalDynamicMemorySize, header + 8, sizeof(unsigned int));
+
+	//Size of dynamic memory + file header + AABB extents must be same as file size.
+	assert(totalDynamicMemorySize + 16 + 24 == dataSize);
+	if (totalDynamicMemorySize + 16 + 24 != dataSize)
+	{
+		bsLog::logMessage("Memory size mismatch when trying to load a mesh from memory",
+			pantheios::SEV_ERROR);
+
+		return false;
+	}
+
+	//Allocate enough memory to hold all the dynamic data used by the mesh.
+	//Does not include the min/max extents to not waste 24 bytes of memory.
+	char* const dataBuffer = static_cast<char*>(malloc(totalDynamicMemorySize));
+	memcpy(dataBuffer, data + 16, totalDynamicMemorySize);
+	char* head = dataBuffer;
+
+
+	//Assign the vertex/index buffer pointers. This is all that is required to load the
+	//dynamic memory because of the data layout used in the file.
+	bsSerializedMesh meshToLoad;
+	meshToLoad.bufferCount = bufferCount;
+	meshToLoad.vertexBuffers = reinterpret_cast<bsVertexBuffer*>(head);
+	head += sizeof(bsVertexBuffer) * bufferCount;
+	assert(head < dataBuffer + totalDynamicMemorySize);
+
+	meshToLoad.indexBuffers = reinterpret_cast<bsIndexBuffer*>(head);
+	head += sizeof(bsIndexBuffer) * bufferCount;
+	assert(head < dataBuffer + totalDynamicMemorySize);
+
+	for (size_t i = 0; i < meshToLoad.bufferCount; ++i)
+	{
+		//Assign vertices.
+		bsVertexBuffer& currentVertexBuffer = meshToLoad.vertexBuffers[i];
+
+		currentVertexBuffer.vertices = reinterpret_cast<bsVertexNormalTex*>(head);
+		head += sizeof(bsVertexNormalTex) * currentVertexBuffer.vertexCount;
+		assert(head < dataBuffer + totalDynamicMemorySize);
+
+		//Assign indices.
+		bsIndexBuffer& currentIndexBuffer = meshToLoad.indexBuffers[i];
+
+		currentIndexBuffer.indices = reinterpret_cast<unsigned int*>(head);
+		head += sizeof(unsigned int) * currentIndexBuffer.indexCount;
+	}
+	assert(head == dataBuffer + totalDynamicMemorySize);
+
+	//Read min/max extents into a buffer.
+	char minMaxExtents[sizeof(XMFLOAT3) * 2];
+	//Offset for start of extents is header + dynamic memory size.
+	memcpy(minMaxExtents, data + totalDynamicMemorySize + 16, sizeof(XMFLOAT3) * 2);
+
+	//Copy min/max extents.
+	memcpy(&meshToLoad.minExtents, minMaxExtents, sizeof(XMFLOAT3));
+	memcpy(&meshToLoad.maxExtents, minMaxExtents + sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+
+	meshOut = std::move(meshToLoad);
+
+	meshOut.dynamicData = dataBuffer;
+	meshOut.dynamicDataSize = totalDynamicMemorySize;
+
+	//Not freeing dataBuffer, the mesh now owns it.
 
 	return true;
 }

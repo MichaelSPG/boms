@@ -1,7 +1,6 @@
 #include "StdAfx.h"
 
 #include "bsMeshCreator.h"
-
 #include "bsLog.h"
 #include "bsDx11Renderer.h"
 #include "bsMeshSerializer.h"
@@ -10,21 +9,70 @@
 #include "bsMeshCache.h"
 #include "bsDx11Renderer.h"
 #include "bsMath.h"
+#include "bsFileSystem.h"
+#include "bsFileIoManager.h"
 
 
-bsMeshCreator::bsMeshCreator(bsMeshCache& meshCache, const bsDx11Renderer& dx11Renderer)
+/*	Function object passed to file loader when loading meshes asynchronously.
+	Converts the loaded data into a mesh.
+*/
+class bsMeshCreatorFileLoadFinished
+{
+public:
+	bsMeshCreatorFileLoadFinished(const std::shared_ptr<bsMesh> mesh,
+		const std::string& meshName, const bsMeshCreator& meshCreator)
+		: mMesh(mesh)
+		, mMeshName(meshName)
+		, mMeshCreator(meshCreator)
+	{
+	}
+
+	void operator()(const bsFileLoader& fileLoader)
+	{
+		BS_ASSERT(fileLoader.getCurrentLoadState() == bsFileLoader::SUCCEEDED);
+
+		const unsigned long dataSize = fileLoader.getLoadedDataSize();
+		const char* loadedData = fileLoader.getLoadedData();
+
+		bsSerializedMesh serializedMesh;
+		bsLoadSerializedMeshFromMemory(loadedData, dataSize, serializedMesh);
+		
+		*mMesh = std::move(*mMeshCreator.constructMeshFromSerializedMesh(serializedMesh, mMeshName));
+	}
+
+private:
+	std::shared_ptr<bsMesh>	mMesh;
+	std::string				mMeshName;
+	const bsMeshCreator&	mMeshCreator;
+};
+
+
+bsMeshCreator::bsMeshCreator(bsMeshCache& meshCache, const bsDx11Renderer& dx11Renderer,
+	const bsFileSystem& fileSystem, bsFileIoManager& fileManager)
 	: mMeshCache(meshCache)
 	, mD3dDevice(dx11Renderer.getDevice())
+	, mFileSystem(fileSystem)
+	, mFileManager(fileManager)
 {
-	
+	mD3dDevice->AddRef();
 }
 
 bsMeshCreator::~bsMeshCreator()
 {
-	
+	mD3dDevice->Release();
 }
 
-std::shared_ptr<bsMesh> bsMeshCreator::loadMesh(const std::string& meshName)
+std::shared_ptr<bsMesh> bsMeshCreator::loadMeshAsync(const std::string& meshName)
+{
+	std::shared_ptr<bsMesh> mesh(std::make_shared<bsMesh>(mMeshCache.getNewMeshId()));
+
+	mFileManager.addAsynchronousLoadRequest(meshName,
+		bsMeshCreatorFileLoadFinished(mesh, meshName, *this));
+
+	return mesh;
+}
+
+std::shared_ptr<bsMesh> bsMeshCreator::loadMeshSynchronous(const std::string& meshName)
 {
 	bsSerializedMesh serializedMesh;
 
@@ -37,19 +85,33 @@ std::shared_ptr<bsMesh> bsMeshCreator::loadMesh(const std::string& meshName)
 		return nullptr;
 	}
 
+	std::string message("Loaded mesh \'");
+	message.append(meshName);
+	message.append("\'");
+	bsLog::logMessage(message.c_str(), pantheios::SEV_NOTICE);
+
+	std::shared_ptr<bsMesh> mesh(constructMeshFromSerializedMesh(serializedMesh, meshName));
+
+	return mesh;
+}
+
+std::shared_ptr<bsMesh> bsMeshCreator::constructMeshFromSerializedMesh(
+	const bsSerializedMesh& serializedMesh, const std::string& meshName) const
+{
 	const unsigned int meshCount = serializedMesh.bufferCount;
 	std::vector<ID3D11Buffer*> vertexBuffers(meshCount);
 	std::vector<ID3D11Buffer*> indexBuffers(meshCount);
 	std::vector<unsigned int>  indexCounts(meshCount);
 
 	//Create buffers and check for failure for each mesh
-	for (size_t i = 0; i < meshCount; ++i)
+	for (unsigned int i = 0; i < meshCount; ++i)
 	{
 		if (!createBuffers(vertexBuffers[i], indexBuffers[i], meshName, i, serializedMesh))
 		{
-			std::stringstream message;
-			message << "Failed to create buffers from '" << meshName << '\'';
-			bsLog::logMessage(message.str().c_str(), pantheios::SEV_ERROR);
+			std::string errorMessage("Failed to create buffers when loading \'");
+			errorMessage.append(meshName);
+			errorMessage.append("\'");
+			bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
 
 			return nullptr;
 		}
@@ -57,23 +119,19 @@ std::shared_ptr<bsMesh> bsMeshCreator::loadMesh(const std::string& meshName)
 		indexCounts[i] = serializedMesh.indexBuffers[i].indexCount;
 	}
 
-	std::stringstream message;
-	message << "Loaded mesh '" << meshName << "'";
-	bsLog::logMessage(message.str().c_str(), pantheios::SEV_NOTICE);
+	const XMVECTOR minExtents = XMLoadFloat3(&serializedMesh.minExtents);
+	const XMVECTOR maxExtents = XMLoadFloat3(&serializedMesh.maxExtents);
 
-	const hkAabb meshAabb(bsMath::toHK(serializedMesh.minExtents),
-		bsMath::toHK(serializedMesh.maxExtents));
+	const hkAabb meshAabb(bsMath::toHK(minExtents), bsMath::toHK(maxExtents));
 
-	std::shared_ptr<bsMesh> mesh(std::make_shared<bsMesh>(mMeshCache.getNewMeshId(),
+	return std::shared_ptr<bsMesh>(std::make_shared<bsMesh>(mMeshCache.getNewMeshId(),
 		std::move(vertexBuffers), std::move(indexBuffers), std::move(indexCounts),
 		meshAabb));
-	
-
-	return mesh;
 }
 
 bool bsMeshCreator::createBuffers(ID3D11Buffer*& vertexBuffer, ID3D11Buffer*& indexBuffer,
-	const std::string& meshName, unsigned int meshIndex, bsSerializedMesh& serializedMesh)
+	const std::string& meshName, unsigned int meshIndex,
+	const bsSerializedMesh& serializedMesh) const
 {
 	BS_ASSERT(meshIndex <= serializedMesh.bufferCount);
 	//This assert avoids unused formal parameter warning in non-debug builds.

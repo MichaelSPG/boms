@@ -132,6 +132,12 @@ struct bsSerializedMesh
 */
 bool bsLoadSerializedMesh(const std::string& fileName, bsSerializedMesh& meshOut);
 
+/*	Loads a serialized mesh from memory into the output parameter.
+	Returns true on successful load.
+*/
+bool bsLoadSerializedMeshFromMemory(const char* data, unsigned int dataSize,
+	bsSerializedMesh& meshOut);
+
 /*	Save the serialized mesh to disk with the given filename.
 	Returns true on successful save.
 */

@@ -1,7 +1,6 @@
 #pragma once
 
 
-#include <map>
 #include <unordered_map>
 #include <memory>
 #include <string>
@@ -30,7 +29,7 @@ public:
 
 	/*	Get a shared pointer to a mesh.
 		This will look for the mesh name in the known resource locations and load it if it
-		has not already bene loaded.
+		has not already been loaded.
 	*/
 	std::shared_ptr<bsMesh> getMesh(const std::string& meshName) const;
 
@@ -41,10 +40,9 @@ public:
 		Attempting to load an already load a mesh may result in memory leaks and internal
 		corruption.
 	*/
-	std::shared_ptr<bsMesh> loadMesh(const std::string& meshName);
+	std::shared_ptr<bsMesh> loadMeshAsync(const std::string& meshName);
 
-	/*	Loads a mesh from disk, but unlike loadMesh, this function blocks until the mesh
-		has completed loading.
+	/*	Loads a mesh from disk and blocks until the mesh has finished loading.
 
 		This function can be used to ensure that a mesh exists before rendering starts or
 		similar, but calling it during rendering may cause stuttering.
@@ -52,9 +50,13 @@ public:
 		Attempting to load an already load a mesh may result in memory leaks and internal
 		corruption.
 	*/
-	std::shared_ptr<bsMesh> loadMeshBlocking(const std::string& meshName);
+	std::shared_ptr<bsMesh> loadMeshSynchronously(const std::string& meshName);
 
 
+	bsMeshCreator& getMeshCreator()
+	{
+		return mMeshCreator;
+	}
 
 	
 	/*	Used for giving new meshes unique IDs.

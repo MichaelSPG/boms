@@ -24,7 +24,7 @@ bsMeshCache::bsMeshCache(bsDx11Renderer* dx11Renderer, const bsFileSystem& fileS
 	: mNumLoadedMeshes(0)
 	, mFileSystem(fileSystem)
 	, mFileIoManager(fileIoManager)
-	, mMeshCreator(*this, *dx11Renderer)
+	, mMeshCreator(*this, *dx11Renderer, fileSystem, mFileIoManager)
 {
 	BS_ASSERT(dx11Renderer);
 }
@@ -59,13 +59,13 @@ std::shared_ptr<bsMesh> bsMeshCache::getMesh(const std::string& meshName) const
 
 	//Not found, need to create it now.
 	//Cast const away since the load function is not const
-	std::shared_ptr<bsMesh> mesh(const_cast<bsMeshCache*>(this)->loadMesh(meshName));
+	std::shared_ptr<bsMesh> mesh(const_cast<bsMeshCache*>(this)->loadMeshAsync(meshName));
 	BS_ASSERT2(mesh != nullptr, std::string("Something went wrong while creating \'") + meshName + '\'');
 
 	return mesh;
 }
 
-std::shared_ptr<bsMesh> bsMeshCache::loadMesh(const std::string& meshName)
+std::shared_ptr<bsMesh> bsMeshCache::loadMeshAsync(const std::string& meshName)
 {
 #ifdef BS_DEBUG
 	if (!verifyMeshIsNotAlreadyInCache(meshName))
@@ -76,13 +76,12 @@ std::shared_ptr<bsMesh> bsMeshCache::loadMesh(const std::string& meshName)
 
 	//Get relative path of the mesh file.
 	const std::string meshPath(mFileSystem.getPathFromFilename(meshName));
-
 	if (!verifyMeshPathIsValid(meshPath, meshName))
 	{
 		return nullptr;
 	}
 
-	std::shared_ptr<bsMesh> mesh(mMeshCreator.loadMesh(meshPath));
+	std::shared_ptr<bsMesh> mesh(mMeshCreator.loadMeshAsync(meshPath));
 
 	//Add the mesh to the cache, allowing it to not be reloaded the next time it's requested.
 	mMeshes[meshName] = mesh;
@@ -90,13 +89,26 @@ std::shared_ptr<bsMesh> bsMeshCache::loadMesh(const std::string& meshName)
 	return mesh;
 }
 
-std::shared_ptr<bsMesh> bsMeshCache::loadMeshBlocking(const std::string& meshName)
+std::shared_ptr<bsMesh> bsMeshCache::loadMeshSynchronously(const std::string& meshName)
 {
+#ifdef BS_DEBUG
+	if (!verifyMeshIsNotAlreadyInCache(meshName))
+	{
+		return nullptr;
+	}
+#endif
+
 	const std::string meshPath(mFileSystem.getPathFromFilename(meshName));
+	if (!verifyMeshPathIsValid(meshPath, meshName))
+	{
+		return nullptr;
+	}
 
-	BS_ASSERT2(false, "incomplete");
+	std::shared_ptr<bsMesh> mesh(mMeshCreator.loadMeshSynchronous(meshPath));
+	
+	mMeshes[meshName] = mesh;
 
-	return nullptr;
+	return mesh;
 }
 
 inline bool bsMeshCache::verifyMeshIsNotAlreadyInCache(const std::string& meshName)
@@ -105,14 +117,14 @@ inline bool bsMeshCache::verifyMeshIsNotAlreadyInCache(const std::string& meshNa
 	//incorrect usage of this class.
 	if (mMeshes.find(meshName) != mMeshes.end())
 	{
-		std::string errorMessage("bsMeshCache::loadMesh was called, but the requested"
+		std::string errorMessage("bsMeshCache::loadMeshAsync was called, but the requested"
 			"mesh has already been loaded! Mesh name: \'");
 		errorMessage.append(meshName);
 		errorMessage.append("\'");
 
 		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_CRITICAL);
 
-		BS_ASSERT2(mMeshes.find(meshName) == mMeshes.end(), "bsMeshCache::loadMesh was "
+		BS_ASSERT2(mMeshes.find(meshName) == mMeshes.end(), "bsMeshCache::loadMeshAsync was "
 			"called, but the requested mesh has already been loaded!");
 
 		return false;
