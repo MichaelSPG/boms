@@ -1,22 +1,20 @@
 #pragma once
 
-
-#include <Common/Base/hkBase.h>
-#include <Physics/Dynamics/Phantom/hkpCachingShapePhantom.h>
-#include <Physics/Collide/Shape/Convex/ConvexVertices/hkpConvexVerticesShape.h>
-#include <Common/Base/Types/Geometry/hkStridedVertices.h>
-#include <Physics/Dynamics/Entity/hkpRigidBody.h>
-
 #include <D3DX11.h>
 #include <Windows.h>
 #include <xnamath.h>
 
-#include "bsSceneGraph.h"
-#include "bsNodeCollectorPhantom.h"
+#include <Physics/Collide/Query/CastUtil/hkpWorldRayCastOutput.h>
 
-class bsSceneGraph;
-class bsHavokManager;
-class hkpTreeBroadPhase;
+#include "bsScene.h"
+
+class bsScene;
+class bsEntity;
+class bsCamera;
+class bsDx11Renderer;
+
+void* allocateCamera();
+void deallocateCamera(void* p);
 
 
 /*	Projection information used to construct the camera.
@@ -24,11 +22,12 @@ class hkpTreeBroadPhase;
 struct bsProjectionInfo
 {
 	bsProjectionInfo(float fieldOfViewDegrees, float farClip, float nearClip,
-		float aspectRatio)
+		float aspectRatio, float screenWidth, float screenHeight)
 		: mFieldOfView(fieldOfViewDegrees)
 		, mFarClip(farClip)
 		, mNearClip(nearClip)
 		, mAspectRatio(aspectRatio)
+		, mScreenSize(screenWidth, screenHeight)
 	{}
 
 	//Field of view in degrees
@@ -39,53 +38,34 @@ struct bsProjectionInfo
 	float	mNearClip;
 	//Aspect ratio of view space x:y
 	float	mAspectRatio;
+
+	//Size of screen in pixels, x=width, y=height.
+	XMFLOAT2	mScreenSize;
 };
 
 /*	A camera describing a position in 3D space from which a scene will be rendered.
 	
 	The camera will automatically upload its transformation to the GPU when it changes.
 */
-class bsCamera
+__declspec(align(16)) class bsCamera
 {
 public:
-	bsCamera(const bsProjectionInfo& projectionInfo, bsSceneGraph* sceneGraph,
-		bsHavokManager* havokManager);
+	void* operator new(size_t)
+	{
+		return allocateCamera();
+	}
+
+	void operator delete(void* p)
+	{
+		deallocateCamera(p);
+	}
+
+
+	bsCamera(const bsProjectionInfo& projectionInfo, bsDx11Renderer* dx11Renderer);
 
 	~bsCamera();
 
-	/*	Rotates the camera so that it looks at the target position.
-	*/
-	void lookAt(const hkVector4& targetPosition);
-
-	/*	Rotates the camera around a specified axis.
-	*/
-	void rotateAboutAxis(const hkVector4& axis, float degrees);
-
-	/*	Translates the camera.
-	*/
-	void translate(const hkVector4& translation);
-
-	/*	Sets the camera's position in world space.
-	*/
-	void setPosition(const hkVector4& position);
-
-	/*	Returns the camera's position in world space.
-	*/
-	inline const hkVector4& getPosition() const
-	{
-		return mTransform.getTranslation();
-	}
-
-	inline const hkTransform& getTransform() const
-	{
-		return mTransform;
-	}
-
-	inline const hkTransform& getTransform2() const
-	{
-		return mPhantom->getTransform();
-	}
-
+	
 	/*	Returns a reference to the currently active projection info.
 		This may not be identical to the projection info the camera was created with.
 	*/
@@ -102,34 +82,62 @@ public:
 	{
 		mProjectionInfo = projectionInfo;
 
-		mProjectionNeedsUpdate = true;
+		updateProjection();
+	}
+
+	/*	Returns the camera's view matrix.
+		This matrix is generated every time this function is called, so storing it if it
+		is being used multiple times per frame may save some CPU.
+	*/
+	const XMMATRIX getView() const;
+
+	inline const XMMATRIX getProjection() const
+	{
+		return mProjection;
 	}
 
 	/*	Returns a vector of all scene nodes that overlap with the frustum.
 	*/
 	std::vector<bsSceneNode*> getVisibleSceneNodes() const;
 
-	/*	Updates and uploads transformation matrix to the GPU if it has changed.
+	/*	Updates and uploads view/projection matrices to the GPU.
+		This should be called at least every time the camera's transform/projection has
+		changed.
 	*/
 	void update();
 
-	/*	Rotates the camera around the X axis.
-	*/
-	void rotateX(float angleRadians);
+	inline bsEntity* getEntity() const
+	{
+		return mEntity;
+	}
 
-	/*	Rotates the camera around the Y axis.
+	/*	Internal function, called when the camera is attached to a node.
+		Calling this function under any other circumstance results in undefined behavior.
 	*/
-	void rotateY(float angleRadians);
+	inline void setEntity(bsEntity* entity)
+	{
+		mEntity = entity;
+	}
+
+	inline bsScene* getScene() const
+	{
+		return mScene;
+	}
+
+	/*	Internal function, called when the camera is added to a scene.
+		Calling this function under any other circumstance results in undefined behavior.
+	*/
+	inline void setScene(bsScene* scene)
+	{
+		mScene = scene;
+	}
+
+	hkpWorldRayCastOutput screenPointToWorldRay(const XMVECTOR& screenPoint,
+		float rayLength, XMVECTOR& destinationOut, XMVECTOR& originOut) const;
 
 private:
-	void constructFrustum();
-
-	/*	Updates the view matrix and then updates the view projection matrix.
-	*/
-	void updateView();
-
-	/*	Updates projection matrix with current projection info, and then updates
-		the view projection matrix.
+	/*	Updates projection matrix with current projection info. Called whenever projection
+		info has been modified.
 	*/
 	void updateProjection();
 
@@ -138,36 +146,28 @@ private:
 	*/
 	void updateViewProjection();
 
-	/*	Syncronizes the phantom used for visibility detection's transform with the camera
-		so that visibility detection will be as accurate as possible.
-	*/
-	void updatePhantomTransform();
 
-
-
-	
-	XMFLOAT4X4	mView;
-	XMFLOAT4X4	mProjection;
-	XMFLOAT4X4	mViewProjection;
-
-	bool		mProjectionNeedsUpdate;
-	bool		mViewNeedsUpdate;
-	bool		mViewProjectionNeedsUpdate;
+	XMMATRIX	mProjection;
 
 	bsProjectionInfo	mProjectionInfo;
 
-	ID3D11Buffer*	mViewProjectionBuffer;
+	ID3D11Buffer*	mCameraConstantBuffer;
 
+	/*	The entiy this camera is attached to, or null if not attached to anything.
+	*/
+	bsEntity*	mEntity;
+	bsScene*	mScene;
 
-	bsSceneGraph*				mSceneGraph;
-	const hkpTreeBroadPhase*	mHybridBroadphase;
-	ID3D11DeviceContext*		mDeviceContext;
-
-	bsNodeCollectorPhantom*		mPhantom;
-	hkpRigidBody*				mRigidBody;
-
-	hkTransform		mTransform;
-
-	float	mRotationX;
-	float	mRotationY;
+	ID3D11DeviceContext*	mDeviceContext;
 };
+
+
+inline void* allocateCamera()
+{
+	return _aligned_malloc(sizeof(bsCamera), 16);
+}
+
+inline void deallocateCamera(void* ptr)
+{
+	_aligned_free(ptr);
+}
