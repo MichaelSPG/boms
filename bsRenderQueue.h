@@ -104,6 +104,8 @@ public:
 	//Draws the geometry
 	void drawGeometry();
 
+	void drawLines();
+
 	void drawLights();
 
 	/*	Sets the active camera.
@@ -130,14 +132,14 @@ private:
 	*/
 	void sortRenderables();
 
+	void sortLights();
+
 	//Functions to draw individual renderable types.
 	void drawMeshes();
-	void drawLines();
-	void drawPrimitives();
 
-	void setWorldConstantBuffer(const XMFLOAT4X4& world);
+	void setWorldConstantBuffer(const XMMATRIX& world);
 
-	void setWireframeConstantBuffer(const XMFLOAT4X4& world, const XMFLOAT4& color);
+	void setWireframeConstantBuffer(const XMMATRIX& world, const XMFLOAT4& color);
 
 	void setLightConstantBuffer(const CBLight& cbLight);
 
@@ -164,6 +166,5 @@ private:
 
 	std::unordered_map<bsMesh*, std::vector<bsSceneNode*>>		mMeshesToDraw;
 	std::unordered_map<bsLine3D*, std::vector<bsSceneNode*>>	mLinesToDraw;
-	std::unordered_map<bsPrimitive*, std::vector<bsSceneNode*>>	mPrimitivesToDraw;
-	std::unordered_map<bsLight*, std::vector<bsSceneNode*>>		mLightsToDraw;
+	std::vector<std::pair<bsLight*, XMFLOAT3>>	mLightPositionPairs;
 };

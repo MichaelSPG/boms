@@ -37,7 +37,7 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	D3D11_BUFFER_DESC bufferDescription;
 	memset(&bufferDescription, 0, sizeof(bufferDescription));
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
-	bufferDescription.ByteWidth = sizeof(CBWorld);
+	bufferDescription.ByteWidth = sizeof(XMMATRIX);
 	bufferDescription.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bufferDescription.CPUAccessFlags = 0;
 	bufferDescription.MiscFlags = 0;
@@ -126,8 +126,7 @@ void bsRenderQueue::reset()
 
 	mMeshesToDraw.clear();
 	mLinesToDraw.clear();
-	mPrimitivesToDraw.clear();
-	mLightsToDraw.clear();
+	mLightPositionPairs.clear();
 }
 
 void bsRenderQueue::drawGeometry()
@@ -139,17 +138,17 @@ void bsRenderQueue::drawGeometry()
 	unbindGeometryShader();
 
 	sortRenderables();
+	sortLights();
 
 	//Render all the geometric renderable types
 	drawMeshes();
-	drawLines();
-	drawPrimitives();
+	//drawLines();
 
 	end = timer.getTimeMilliSeconds() - start;
 	mFrameStats.timeTakenMs = end;
 }
 
-void bsRenderQueue::setWorldConstantBuffer(const XMFLOAT4X4& world)
+void bsRenderQueue::setWorldConstantBuffer(const XMMATRIX& world)
 {
 	ID3D11DeviceContext* context = mDx11Renderer->getDeviceContext();
 
@@ -159,7 +158,7 @@ void bsRenderQueue::setWorldConstantBuffer(const XMFLOAT4X4& world)
 	context->UpdateSubresource(mWorldBuffer, 0, nullptr, &world, 0, 0);
 }
 
-void bsRenderQueue::setWireframeConstantBuffer(const XMFLOAT4X4& world, const XMFLOAT4& color)
+void bsRenderQueue::setWireframeConstantBuffer(const XMMATRIX& world, const XMFLOAT4& color)
 {
 	ID3D11DeviceContext* context = mDx11Renderer->getDeviceContext();
 
@@ -167,8 +166,11 @@ void bsRenderQueue::setWireframeConstantBuffer(const XMFLOAT4X4& world, const XM
 	context->PSSetConstantBuffers(1, 1, &mWireframeWorldBuffer);
 
 	CBWireFrame cbWireFrame;
+	//XMStoreFloat4x4(&cbWireFrame.world, world);
 	cbWireFrame.world = world;
-	cbWireFrame.color = color;
+	XMFLOAT4A colorAligned;
+	memcpy(&colorAligned, &color, sizeof(XMFLOAT4));
+	cbWireFrame.color = colorAligned;
 
 	context->UpdateSubresource(mWireframeWorldBuffer, 0, nullptr, &cbWireFrame, 0, 0);
 }
@@ -177,8 +179,8 @@ void bsRenderQueue::setLightConstantBuffer(const CBLight& cbLight)
 {
 	ID3D11DeviceContext* context = mDx11Renderer->getDeviceContext();
 
-	context->VSSetConstantBuffers(2, 1, &mLightBuffer);
-	context->PSSetConstantBuffers(2, 1, &mLightBuffer);
+	context->VSSetConstantBuffers(3, 1, &mLightBuffer);
+	context->PSSetConstantBuffers(3, 1, &mLightBuffer);
 
 	context->UpdateSubresource(mLightBuffer, 0, nullptr, &cbLight, 0, 0);
 }
@@ -197,98 +199,74 @@ void bsRenderQueue::sortRenderables()
 	}), sceneNodes.end());
 
 	mFrameStats.visibleSceneNodeCount = sceneNodes.size();
-	if (sceneNodes.empty())
-	{
-		//Nothing to render
-		return;
-	}
+	
 
-	//Iterate through all the scene nodes and get the renderables, then sort them into
-	//collections depending on their renderable subclass and group up identical renderables
-	//that are owned by multiple nodes
+	//Gather all the renderables from the visible nodes.
 	for (unsigned int i = 0, count = sceneNodes.size(); i < count; ++i)
 	{
-		const auto& renderables = sceneNodes[i]->getRenderables();
+		bsEntity& entity = sceneNodes[i]->getEntity();
 
-		//Iterate through all of this node's renderables and group them
-		for (unsigned int j = 0; j < renderables.size(); ++j)
+		const std::shared_ptr<bsMesh>& mesh = entity.getComponent<std::shared_ptr<bsMesh>&>();
+		if (mesh)
 		{
-			const bsRenderable::RenderableType identifier = renderables[j]
-				->getRenderableType();
+			auto finder = mMeshesToDraw.find(mesh.get());
 
-			if (identifier == bsRenderable::MESH)
+			if (finder == mMeshesToDraw.end())
 			{
-				bsMesh* mesh = static_cast<bsMesh*>(renderables[j].get());
-				//See if this mesh already exists in the collection
-				auto finder = mMeshesToDraw.find(mesh);
-
-				if (finder == mMeshesToDraw.end())
-				{
-					//Not found, create it
-					std::vector<bsSceneNode*> nodes(1);
-					nodes[0] = sceneNodes[i];
-					mMeshesToDraw.insert(std::make_pair(mesh, nodes));
-				}
-				else
-				{
-					//Found, add the scene node to the mesh' list of scene nodes
-					finder->second.push_back(sceneNodes[i]);
-				}
+				//Not found, create it
+				std::vector<bsSceneNode*> nodes(1);
+				nodes[0] = sceneNodes[i];
+				mMeshesToDraw.insert(std::make_pair(mesh.get(), nodes));
 			}
-			/*else if (identifier == bsRenderable::WIREFRAME_PRIMITIVE)
+			else
 			{
-				bsPrimitive* primitive = static_cast<bsPrimitive*>(renderables[j].get());
-				auto finder = mPrimitivesToDraw.find(primitive);
-
-				if (finder == mPrimitivesToDraw.end())
-				{
-					//Not found, create it
-					std::vector<bsSceneNode*> nodes(1);
-					nodes[0] = sceneNodes[i];
-					mPrimitivesToDraw.insert(std::make_pair(primitive, nodes));
-				}
-				else
-				{
-					//Found
-					finder->second.push_back(sceneNodes[i]);
-				}
-			}*/
-			else if (identifier == bsRenderable::LINE)
-			{
-				bsLine3D* line = static_cast<bsLine3D*>(renderables[j].get());
-				auto finder = mLinesToDraw.find(line);
-
-				if (finder == mLinesToDraw.end())
-				{
-					//Not found, create it
-					std::vector<bsSceneNode*> nodes(1);
-					nodes[0] = sceneNodes[i];
-					mLinesToDraw.insert(std::make_pair(line, nodes));
-				}
-				else
-				{
-					//Found
-					finder->second.push_back(sceneNodes[i]);
-				}
+				//Found, add the scene node to the mesh' list of scene nodes
+				finder->second.push_back(sceneNodes[i]);
 			}
-			else if (identifier == bsRenderable::LIGHT)
-			{
-				bsLight* light = static_cast<bsLight*>(renderables[j].get());
-				auto finder = mLightsToDraw.find(light);
+		}
 
-				if (finder == mLightsToDraw.end())
-				{
-					//Not found, create it
-					std::vector<bsSceneNode*> nodes(1);
-					nodes[0] = sceneNodes[i];
-					mLightsToDraw.insert(std::make_pair(light, nodes));
-				}
-				else
-				{
-					//Found
-					finder->second.push_back(sceneNodes[i]);
-				}
+		bsLine3D* line = entity.getComponent<bsLine3D*>();
+		if (line != nullptr)
+		{
+			auto finder = mLinesToDraw.find(line);
+
+			if (finder == mLinesToDraw.end())
+			{
+				//Not found, create it
+				std::vector<bsSceneNode*> nodes(1);
+				nodes[0] = sceneNodes[i];
+				mLinesToDraw.insert(std::make_pair(line, nodes));
 			}
+			else
+			{
+				//Found
+				finder->second.push_back(sceneNodes[i]);
+			}
+		}
+
+		bsLight* light = entity.getComponent<bsLight*>();
+		if (light != nullptr)
+		{
+			XMFLOAT3 position;
+			XMStoreFloat3(&position, sceneNodes[i]->getPosition());
+			mLightPositionPairs.push_back(std::make_pair(light, position));
+
+#if 0
+			auto finder = mLightsToDraw.find(light);
+
+			if (finder == mLightsToDraw.end())
+			{
+				//Not found, create it
+				std::vector<bsSceneNode*> nodes(1);
+				nodes[0] = sceneNodes[i];
+				mLightsToDraw.insert(std::make_pair(light, nodes));
+			}
+			else
+			{
+				//Found
+				finder->second.push_back(sceneNodes[i]);
+			}
+#endif
 		}
 	}
 }
@@ -323,12 +301,35 @@ void bsRenderQueue::drawMeshes()
 		//transforms.
 		for (unsigned int i = 0, count = sceneNodes.size(); i < count; ++i)
 		{
+			/*
 			const hkTransform& transform = sceneNodes[i]->getDerivedTransformation();
 			float f4x4[16];
 			transform.get4x4ColumnMajor(f4x4);
 			XMFLOAT4X4 xmf4x4(f4x4);
 			bsMath::XMFloat4x4Transpose(xmf4x4);
 			setWorldConstantBuffer(xmf4x4);
+
+			mesh->draw(mDx11Renderer);
+			*/
+
+
+			/*
+			const XMVECTOR& pos = sceneNodes[i]->getPosition();
+			const XMVECTOR& rot = sceneNodes[i]->getDerivedRotation2();
+			const XMVECTOR& scale = sceneNodes[i]->getDerivedScale2();
+
+			const XMMATRIX positionMat = XMMatrixTranslationFromVector(pos);
+			const XMMATRIX rotationMat = XMMatrixRotationQuaternion(rot);
+			const XMMATRIX scaleMat = XMMatrixScalingFromVector(scale);
+
+			XMMATRIX transformMat = XMMatrixMultiply(scaleMat, rotationMat);
+			transformMat = XMMatrixMultiply(transformMat, positionMat);
+			transformMat = XMMatrixTranspose(transformMat);
+			*/
+			XMFLOAT4X4 xmf4x4;
+			//XMStoreFloat4x4(&xmf4x4, transformMat);
+			//XMStoreFloat4x4(&xmf4x4, );
+			setWorldConstantBuffer(sceneNodes[i]->getTransposedTransform());
 
 			mesh->draw(mDx11Renderer);
 		}
@@ -342,6 +343,7 @@ void bsRenderQueue::drawLines()
 
 	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(
 		D3D_PRIMITIVE_TOPOLOGY_LINELIST);
+		//D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	for (auto itr = mLinesToDraw.begin(), end = mLinesToDraw.end(); itr != end; ++itr)
 	{
@@ -352,22 +354,18 @@ void bsRenderQueue::drawLines()
 
 		for (unsigned int i = 0, count = sceneNodes.size(); i < count; ++i)
 		{
+			/*
 			const hkTransform& transform = sceneNodes[i]->getDerivedTransformation();
 			float f4x4[16];
 			transform.get4x4ColumnMajor(f4x4);
 			XMFLOAT4X4 world(f4x4);
 			bsMath::XMFloat4x4Transpose(world);
-
-			setWireframeConstantBuffer(world, currentLine->mColor);
+			*/
+			setWireframeConstantBuffer(sceneNodes[i]->getTransposedTransform(), currentLine->mColor);
 
 			currentLine->draw(mDx11Renderer);
 		}
 	}
-}
-
-void bsRenderQueue::drawPrimitives()
-{
-	//TODO: Make this actually do something
 }
 
 void bsRenderQueue::drawLights()
@@ -378,62 +376,100 @@ void bsRenderQueue::drawLights()
 	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(
 		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	for (auto itr = mLightsToDraw.begin(), end = mLightsToDraw.end(); itr != end; ++itr)
+	XMMATRIX scalingMatrix;
+	XMMATRIX fullTransform;
+	XMFLOAT4X4 lightWorldTransform;
+	CBLight cbLight;
+
+	for (size_t i = 0; i < mLightPositionPairs.size(); ++i)
 	{
-		const bsLight* currentLight = itr->first;
-		const std::vector<bsSceneNode*>& sceneNodes = itr->second;
+		const bsLight* light = mLightPositionPairs[i].first;
+		const XMFLOAT3& position = mLightPositionPairs[i].second;
 
-		mFrameStats.visibleLights += sceneNodes.size();
+		//Create the light's transform, which includes the light's radius as scaling factor
+		//and the node's position.
+		//Multiply with 2 to get diameter rather than radius.
+		const float scale = light->getRadius() * 2.0f;
+		scalingMatrix = XMMatrixScaling(scale, scale, scale);
+		fullTransform = XMMatrixMultiply(scalingMatrix,
+			XMMatrixTranslation(position.x, position.y, position.z));
+		fullTransform = XMMatrixTranspose(fullTransform);
 
-		for (unsigned int i = 0, count = sceneNodes.size(); i < count; ++i)
+		//XMStoreFloat4x4(&lightWorldTransform, fullTransform);
+
+		setWorldConstantBuffer(fullTransform);
+
+
+		memcpy(&cbLight.lightColor.x, &light->mColor.x, sizeof(XMFLOAT3));
+		cbLight.lightColor.w = light->mIntensity;
+
+		memcpy(&cbLight.lightPosition.x, &position.x, sizeof(XMFLOAT3));
+		cbLight.lightPosition.w = light->mRadius;
+		
+		setLightConstantBuffer(cbLight);
+
+		light->draw(mDx11Renderer);
+	}
+}
+
+void bsRenderQueue::sortLights()
+{
+	//Lights that are not clipping with the camera near plane.
+	std::vector<std::pair<const bsLight*, XMFLOAT4X4>> notClippingWithCamera;
+	//Lights that are clipping with the camera near plane.
+	std::vector<std::pair<const bsLight*, XMFLOAT4X4>> clippingWithCamera;
+	//Lights that completely contain the camera near plane.
+	std::vector<std::pair<const bsLight*, XMFLOAT4X4>> containingCamera;
+
+	
+	const XMVECTOR& cameraPosition = mCamera->getEntity()->getOwner()->getPosition();
+	const float nearClip = mCamera->getProjectionInfo().mNearClip;
+	const float nearClipSquared = nearClip * nearClip;
+
+	XMVECTOR lightPosition;
+	XMMATRIX scalingMatrix;
+	XMMATRIX fullTransform;
+	XMFLOAT4X4 lightWorldTransform;
+	//Light position - camera position.
+	XMVECTOR deltaPosition;
+
+	for (size_t i = 0; i < mLightPositionPairs.size(); ++i)
+	{
+		const bsLight* light = mLightPositionPairs[i].first;
+		const XMFLOAT3& position = mLightPositionPairs[i].second;
+
+		//Create the light's transform, which includes the light's radius as scaling factor
+		//and the node's position.
+		const float scale = light->getRadius();
+		scalingMatrix = XMMatrixScaling(scale, scale, scale);
+		fullTransform = XMMatrixMultiply(scalingMatrix,
+			XMMatrixTranslation(position.x, position.y, position.z));
+		fullTransform = XMMatrixTranspose(fullTransform);
+
+		XMStoreFloat4x4(&lightWorldTransform, fullTransform);
+
+		lightPosition = XMLoadFloat3(&position);
+		deltaPosition = XMVectorSubtract(lightPosition, cameraPosition); 
+		
+		const float distanceSquared = XMVectorGetX(XMVector3LengthSq(deltaPosition));
+
+		if (distanceSquared > nearClipSquared + (light->getRadius() * 2.0f))
 		{
-			const hkTransform& transform = sceneNodes[i]->getDerivedTransformation();
-			float f4x4[16];
-			transform.get4x4ColumnMajor(f4x4);
-			XMFLOAT4X4 world(f4x4);
-			//bsMath::XMFloat4x4Transpose(world);
-			//Set scale to equal radius
-			//world._44 = 1.0f / currentLight->mRadius;
-			//world._44 = 0.3f;
-			
-			//float scale = 15.0f;
-			float scale = currentLight->mRadius;
-			/*
-			world._11 *= scale;
-			world._22 *= scale;
-			world._33 *= scale;
-			*/
-			XMMATRIX m = XMMatrixScaling(scale, scale, scale);
-			XMMATRIX origTranslation = XMMatrixIdentity();
-			/*
-			origTranslation._41 = world._14;
-			origTranslation._42 = world._24;
-			origTranslation._43 = world._34;
-			*/
-			
-			origTranslation._41 = world._41;
-			origTranslation._42 = world._42;
-			origTranslation._43 = world._43;
-			
-			m = XMMatrixMultiply(m, origTranslation);
-			XMStoreFloat4x4(&world, m);
-			bsMath::XMFloat4x4Transpose(world);
+			//Light completely outside camera near plane.
 
-			setWorldConstantBuffer(world);
+			notClippingWithCamera.push_back(std::make_pair(light, lightWorldTransform));
+		}
+		else if (distanceSquared + nearClipSquared < (light->getRadius() * 2.0f))
+		{
+			//Light completely contains camera near plane.
 
-			CBLight cbLight;
-			memcpy(&cbLight.lightColor.x, &currentLight->mColor.x, sizeof(XMFLOAT3));
-			cbLight.lightColor.w = currentLight->mIntensity;
+			containingCamera.push_back(std::make_pair(light, lightWorldTransform));
+		}
+		else
+		{
+			//Light clipping with near plane.
 
-			//TODO: Verify that this actually works and doesn't break anything.
-			sceneNodes[i]->getDerivedPosition().storeNotAligned<3>(&cbLight.lightPosition.x);
-			
-			//memcpy(&cbLight.lightPosition.x, &position.v[0], sizeof(XMFLOAT3));
-			cbLight.lightPosition.w = currentLight->mRadius;
-
-			setLightConstantBuffer(cbLight);
-
-			currentLight->draw(mDx11Renderer);
+			clippingWithCamera.push_back(std::make_pair(light, lightWorldTransform));
 		}
 	}
 }
