@@ -39,12 +39,6 @@ void bsFileSystem::buildFileSystem()
 			{
 				//Add the file and path to the map.
 				mFilePaths[fileName] = pathName;
-#ifdef BS_DEBUG
-				std::string message("Adding file '");
-				message += fileName + "' to resource locations (path: '"
-					+ pathName + "'";
-				bsLog::logMessage(message.c_str(), pantheios::SEV_DEBUG);
-#endif
 			}
 			else
 			{
