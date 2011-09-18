@@ -23,8 +23,9 @@ class bsMesh : public bsRenderable
 {
 public:
 	//For container purposes only, do not use this constructor.
-	inline bsMesh()
-		: mLoadingFinished(false)
+	inline bsMesh(unsigned int id)
+		: mID(id)
+		, mLoadingFinished(false)
 	{}
 
 	/*	Creates a mesh given a unique ID, vertex and index buffer(s), index count for each

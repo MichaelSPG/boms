@@ -58,7 +58,7 @@ bsMesh& bsMesh::operator=(bsMesh&& other)
 	mVertexBuffers = std::move(other.mVertexBuffers);
 	mIndexBuffers = std::move(other.mIndexBuffers);
 	mIndexCounts = std::move(other.mIndexCounts);
-	mID = other.mID;
+	//mID = other.mID;
 
 	other.mVertexBuffers.clear();
 	other.mIndexBuffers.clear();
@@ -73,7 +73,10 @@ bsMesh& bsMesh::operator=(bsMesh&& other)
 
 void bsMesh::draw(bsDx11Renderer* dx11Renderer) const
 {
-	BS_ASSERT2(mLoadingFinished, "Trying to draw a mesh that has not finished loading yet!");
+	if (!mLoadingFinished)
+	{
+		return;
+	}
 
 	ID3D11DeviceContext* context = dx11Renderer->getDeviceContext();
 
