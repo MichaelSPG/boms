@@ -34,7 +34,6 @@
 
 /*	This class manages the core Havok objects, like the worlds, memory system, thread pool
 	etc.
-	Contains two hkpWorlds, one for visibility detection and one for normal physics.
 */
 class bsHavokManager
 {
@@ -42,27 +41,15 @@ public:
 	bsHavokManager(const float worldSize);
 	~bsHavokManager();
 
-	/*	Creates the hkpWorld used for visibility detection etc.
-	*/
-	void createGraphicsWorld(bool createVisualDebugger = false);
+	void createWorld(bool createVisualDebugger = true);
 
-	void createPhysicsWorld(bool createVisualDebugger = true);
-
-
-	//Steps the Havok world for graphics with the provided time step.
-	void stepGraphicsWorld(float deltaTimeMs);
 
 	//Steps the Havok world for physics with the provided time step.
-	void stepPhysicsWorld(float deltaTimeMs);
-
-	inline hkpWorld* getGraphicsWorld() const
-	{
-		return mGraphicsWorld;
-	}
+	void stepWorld(float deltaTimeMs);
 
 	inline hkpWorld* getPhysicsWorld() const
 	{
-		return mPhysicsWorld;
+		return mWorld;
 	}
 	
 
@@ -78,10 +65,8 @@ private:
 	hkJobThreadPool*	mThreadPool;
 	hkJobQueue*			mJobQueue;
 
-	hkpWorld*			mPhysicsWorld;
-	hkpWorld*			mGraphicsWorld;
-	bool				mPhysicsVDBActive;
-	bool				mGraphicsVDBActive;
+	hkpWorld*			mWorld;
+	bool				mVDBActive;
 
 	hkArray<hkProcessContext*>	mContexts;
 	hkpPhysicsContext*			mContext;

@@ -20,8 +20,10 @@
 //#define HK_EXCLUDE_FEATURE_MemoryTracker
 //#define HK_EXCLUDE_FEATURE_hkpAccurateInertiaTensorComputer
 //#define HK_EXCLUDE_FEATURE_CompoundShape
-//#define HK_EXCLUDE_FEATURE_hkpAabbTreeWorldManager
-//#define HK_EXCLUDE_FEATURE_hkpKdTreeWorldManager
+#define HK_EXCLUDE_FEATURE_hkpAabbTreeWorldManager
+#define HK_EXCLUDE_FEATURE_hkpKdTreeWorldManager
+#define HK_EXCLUDE_FEATURE_hkpVehicle
+#define HK_EXCLUDE_FEATURE_hkpAccurateInertiaTensorComputer
 
 #define HK_CLASSES_FILE <Common/Serialize/Classlist/hkKeyCodeClasses.h>
 
@@ -62,10 +64,8 @@ bsHavokManager::bsHavokManager(const float worldSize)
 	: mNonWorldObjectsCreated(false)
 	, mThreadPool(nullptr)
 	, mJobQueue(nullptr)
-	, mPhysicsWorld(nullptr)
-	, mGraphicsWorld(nullptr)
-	, mPhysicsVDBActive(false)
-	, mGraphicsVDBActive(false)
+	, mWorld(nullptr)
+	, mVDBActive(false)
 	, mContext(nullptr)
 	, mVisualDebugger(nullptr)
 	, mWorldSize(worldSize)
@@ -74,13 +74,10 @@ bsHavokManager::bsHavokManager(const float worldSize)
 
 bsHavokManager::~bsHavokManager()
 {
-	if (mGraphicsWorld)
+	if (mWorld)
 	{
-		mGraphicsWorld->removeReference();
-	}
-	if (mPhysicsWorld)
-	{
-		mPhysicsWorld->removeReference();
+		mWorld->markForWrite();
+		mWorld->removeReference();
 	}
 	if (mVisualDebugger)
 	{
@@ -98,67 +95,41 @@ bsHavokManager::~bsHavokManager()
 	*/
 }
 
-void bsHavokManager::createGraphicsWorld(bool createVisualDebugger /*= false*/)
+void bsHavokManager::createWorld(bool createVisualDebugger /*= true*/)
 {
-	if (mGraphicsWorld)
-	{
-		bsLog::logMessage("Graphics world already exists", pantheios::SEV_CRITICAL);
-		BS_ASSERT2(!mGraphicsWorld, "Graphics world already exists");
-		return;
-	}
-
 	if (!mNonWorldObjectsCreated)
 	{
 		createNonWorldObjects();
 	}
 
 	hkpWorldCinfo worldCinfo;
-	//worldCinfo.m_simulationType = hkpWorldCinfo::SIMULATION_TYPE_DISCRETE;
-	//worldCinfo.m_broadPhaseBorderBehaviour = hkpWorldCinfo::BROADPHASE_BORDER_ASSERT;
-	worldCinfo.m_gravity.setZero();
-	//worldCinfo.m_solverIterations = 1;
-	//worldCinfo.m_solverDamp = 1.0f;
-	//worldCinfo.m_solverTau = 1.0f;
-	//worldCinfo.setBroadPhaseWorldSize(mWorldSize * 12.0f);
-	worldCinfo.m_broadPhaseWorldAabb.m_max.set(250.0f, 250.0f, 250.0f);
-	worldCinfo.m_broadPhaseWorldAabb.m_min.setNeg<4>(worldCinfo.m_broadPhaseWorldAabb.m_max);
+	worldCinfo.setBroadPhaseWorldSize(mWorldSize);
+	worldCinfo.m_solverIterations;
+	worldCinfo.m_enableDeactivation;
+	worldCinfo.m_simulationType = hkpWorldCinfo::SIMULATION_TYPE_MULTITHREADED;
+	worldCinfo.m_broadPhaseBorderBehaviour = hkpWorldCinfo::BROADPHASE_BORDER_REMOVE_ENTITY;
 
-	//Need tree broadphase for culling.
-	worldCinfo.m_broadPhaseType = hkpWorldCinfo::BROADPHASE_TYPE_TREE;
+	mWorld = new hkpWorld(worldCinfo);
+	mWorld->markForWrite();
 
-	mGraphicsWorld = new hkpWorld(worldCinfo);
+	hkpAgentRegisterUtil::registerAllAgents(mWorld->getCollisionDispatcher());
+	mWorld->registerWithJobQueue(mJobQueue);
 
-	hkpAgentRegisterUtil::registerAllAgents(mGraphicsWorld->getCollisionDispatcher());
+	mWorld->unmarkForWrite();
 
 	if (createVisualDebugger)
 	{
-		createVDB(mGraphicsWorld);
-		mGraphicsVDBActive = true;
-	}
-}
-
-void bsHavokManager::createPhysicsWorld(bool createVisualDebugger /*= true*/)
-{
-	if (!mNonWorldObjectsCreated)
-	{
-		createNonWorldObjects();
-	}
-
-	BS_ASSERT(!"Not implemented");
-
-
-	if (createVisualDebugger)
-	{
-		createVDB(mPhysicsWorld);
-		mPhysicsVDBActive = true;
+		BS_ASSERT(mVisualDebugger == nullptr);
+		createVDB(mWorld);
+		mVDBActive = true;
 	}
 }
 
 void bsHavokManager::createNonWorldObjects()
 {
-	//Allocate 0.5 MB for physics solver
+	//Allocate 2.5 MB for physics solver.
 	hkMemoryRouter* memoryRouter = hkMemoryInitUtil::initDefault(
-		hkMallocAllocator::m_defaultMallocAllocator, hkMemorySystem::FrameInfo(500000));
+		hkMallocAllocator::m_defaultMallocAllocator, hkMemorySystem::FrameInfo(2500000));
 	hkBaseSystem::init(memoryRouter, errorReport);
 
 	//Get number of available physical threads
@@ -201,31 +172,22 @@ void bsHavokManager::createVDB(hkpWorld* world)
 	
 	mVisualDebugger = new hkVisualDebugger(mContexts);
 	mVisualDebugger->serve();
+
+	mVDBActive = true;
 }
 
-void bsHavokManager::stepGraphicsWorld(float deltaTimeMs)
+void bsHavokManager::stepWorld(float deltaTimeMs)
 {
-	BS_ASSERT2(mGraphicsWorld, "Graphics world is being stepped before it has been created");
+	BS_ASSERT2(mWorld, "Physics world is being stepped before it has been created");
 
-	//Convert to seconds since Havok uses seconds.
-	mGraphicsWorld->stepDeltaTime(deltaTimeMs * 0.001f);
+	const hkpStepResult result
+		//= mWorld->stepMultithreaded(mJobQueue, mThreadPool, deltaTimeMs * 0.001f);
+		= mWorld->stepMultithreaded(mJobQueue, mThreadPool, 0.016666667f);
 
-	if (mGraphicsVDBActive)
-	{
-		//mContext->syncTimers();
-		mVisualDebugger->step(deltaTimeMs);
-	}
-}
-
-void bsHavokManager::stepPhysicsWorld(float deltaTimeMs)
-{
-	BS_ASSERT2(mPhysicsWorld, "Physics world is being stepped before it has been created");
-
-	BS_ASSERT(!"stepPhysicsWorld not implemented");
-
+	BS_ASSERT2(result == HK_STEP_RESULT_SUCCESS, "Failed to step world");
 	//step world
 
-	if (mPhysicsVDBActive)
+	if (mVDBActive)
 	{
 		mContext->syncTimers(mThreadPool);
 		mVisualDebugger->step(deltaTimeMs);
