@@ -63,7 +63,7 @@ void bsFxaaPass::draw()
 		CBFxaa constantBuffer;
 		constantBuffer.oneOverScreenSize = mOneOverScreenSize;
 
-		mDeviceContext->PSSetConstantBuffers(1, 1, &mOneOverScreenSizeBuffer);
+		mDeviceContext->PSSetConstantBuffers(4, 1, &mOneOverScreenSizeBuffer);
 		mDeviceContext->UpdateSubresource(mOneOverScreenSizeBuffer, 0, nullptr,
 			&constantBuffer, 0, 0);
 	}
