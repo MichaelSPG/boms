@@ -8,6 +8,7 @@ bsEntity::bsEntity(bsSceneNode* owner)
 	: mOwner(owner)
 	, mLineRenderer(nullptr)
 	, mLight(nullptr)
+	, mCamera(nullptr)
 	, mRigidBody(nullptr)
 {
 
@@ -20,5 +21,5 @@ bsEntity::~bsEntity()
 
 void bsEntity::syncRigidBodyWithOwner()
 {
-	mOwner->syncWithRigidBody();
+	mOwner->setTransformFromRigidBody();
 }
