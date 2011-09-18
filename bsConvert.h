@@ -15,51 +15,56 @@ namespace bsMath
 
 //Vectors
 
-inline XMFLOAT3 toXM3(const hkVector4& vec)
+inline XMVECTOR toXM(const hkVector4& vec)
 {
-	XMFLOAT3 temp;
-	vec.storeNotAligned<3>(&temp.x);
+	XMVECTOR temp;
+	vec.store<4>(temp.m128_f32);
 	return temp;
 }
 
-inline XMFLOAT4 toXM4(const hkVector4& vec)
-{
-	XMFLOAT4 temp;
-	vec.storeNotAligned<4>(&temp.x);
-	return temp;
-}
-
-inline hkVector4 toHK(const XMFLOAT3& vec)
+inline hkVector4 toHK(const XMVECTOR& vec)
 {
 	hkVector4 temp;
-	temp.loadNotAligned<3>(&vec.x);
-	return temp;
-}
-
-inline hkVector4 toHK(const XMFLOAT4& vec)
-{
-	hkVector4 temp;
-	temp.loadNotAligned<4>(&vec.x);
+	temp.load<4>(vec.m128_f32);
 	return temp;
 }
 
 //Matrices
 
-inline hkTransform toHK(const XMFLOAT4X4& transform)
+inline hkTransform toHK(const XMMATRIX& m)
 {
-	hkRotation rot;
+	XMFLOAT4X4A transform;
+	XMStoreFloat4x4A(&transform, m);
+
+	hkQuaternion q;
+	q.m_vec = toHK(XMQuaternionRotationMatrix(m));
+
+	/*hkRotation rot;
+	
 	rot.setCols(hkVector4(transform._11, transform._21, transform._31, transform._41),
 		hkVector4(transform._12, transform._22, transform._32, transform._42),
 		hkVector4(transform._13, transform._23, transform._33, transform._43));
-
-	return hkTransform(rot, hkVector4(transform._14, transform._24, transform._34));
+	*/
+	return hkTransform(q, hkVector4(transform._14, transform._24, transform._34));
 }
 
-inline XMFLOAT4X4 toXM(const hkTransform& transform)
+inline XMMATRIX toXM(const hkTransform& transform)
 {
-	XMFLOAT4X4 xmTransform;
+	XMFLOAT4X4A xmTransform;
 	transform.get4x4ColumnMajor(&xmTransform.m[0][0]);
-	return xmTransform;
+	
+	return XMLoadFloat4x4A(&xmTransform);
 }
+
+
+//Quaternion
+
+inline XMVECTOR toXM(const hkQuaternion& rotation)
+{
+	XMFLOAT4A xmQuat;
+	rotation.m_vec.store<4>(&xmQuat.x);
+	return XMLoadFloat4A(&xmQuat);
+}
+
 
 } // namespace bsMath
