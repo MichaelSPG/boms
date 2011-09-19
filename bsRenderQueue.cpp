@@ -2,8 +2,8 @@
 
 #include "bsRenderQueue.h"
 
-#include <map>
 #include <unordered_map>
+#include <algorithm>
 
 #include "bsCamera.h"
 #include "bsSceneNode.h"
@@ -20,6 +20,7 @@
 #include "bsLog.h"
 #include "bsTimer.h"
 #include "bsAssert.h"
+#include "bsText3D.h"
 
 #include "bsMath.h"
 #include "bsConstantBuffers.h"
@@ -127,6 +128,7 @@ void bsRenderQueue::reset()
 	mMeshesToDraw.clear();
 	mLinesToDraw.clear();
 	mLightPositionPairs.clear();
+	mText3dToDraw.clear();
 }
 
 void bsRenderQueue::drawGeometry()
@@ -267,6 +269,12 @@ void bsRenderQueue::sortRenderables()
 				finder->second.push_back(sceneNodes[i]);
 			}
 #endif
+		}
+
+		bsText3D* text = entity.getComponent<bsText3D*>();
+		if (text != nullptr)
+		{
+			mText3dToDraw.push_back(std::make_pair(sceneNodes[i], text));
 		}
 	}
 }
@@ -472,4 +480,24 @@ void bsRenderQueue::sortLights()
 			clippingWithCamera.push_back(std::make_pair(light, lightWorldTransform));
 		}
 	}
+}
+
+void bsRenderQueue::drawTexts()
+{
+	const XMMATRIX viewProjection = mCamera->getViewProjection();
+
+	std::for_each(std::begin(mText3dToDraw), std::end(mText3dToDraw),
+		[&](const std::pair<bsSceneNode*, bsText3D*>& text)
+	{
+		const XMMATRIX& nodeTransform = text.first->getTransform();
+		const XMMATRIX worldTransform = XMMatrixMultiply(
+			//180 degrees around X axis
+			XMMatrixRotationAxis(XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f), XMConvertToRadians(180.0f)),
+			nodeTransform);
+
+		XMMATRIX transform = XMMatrixMultiply(worldTransform, viewProjection);
+		transform = XMMatrixMultiply(XMMatrixScaling(0.03f, 0.03f, 0.03f), transform);
+
+		text.second->draw(transform);
+	});
 }

@@ -295,7 +295,6 @@ void bsDeferredRenderer::renderOneFrame()
 	mDx11Renderer->setRenderTargets(&mLightRenderTarget, 1);
 
 	//Enable light rasterization, ie no cull backfacing
-	//TODO: Make this work with individual lights' distance from camera near plane.
 	deviceContext->RSSetState(mCullFrontFacingNoDepthClip);
 	//Enable blending
 	deviceContext->OMSetBlendState(mLightBlendState, nullptr, 0xFFFFFFFF);
@@ -306,6 +305,8 @@ void bsDeferredRenderer::renderOneFrame()
 
 	//Draw lines here since we don't want them to be affected by lights.
 	mRenderQueue->drawLines();
+
+	mRenderQueue->drawTexts();
 
 	//////////////////////////////////////////////////////////////////////////
 	//

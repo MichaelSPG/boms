@@ -9,6 +9,7 @@ bsEntity::bsEntity(bsSceneNode* owner)
 	, mLineRenderer(nullptr)
 	, mLight(nullptr)
 	, mCamera(nullptr)
+	, mText3D(nullptr)
 	, mRigidBody(nullptr)
 {
 

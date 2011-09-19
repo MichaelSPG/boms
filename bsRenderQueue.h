@@ -22,10 +22,12 @@ class bsPixelShader;
 class bsCamera;
 class bsLine3D;
 class bsLight;
+class bsText3D;
 struct CBLight;
 
 struct ID3D11DeviceContext;
 struct ID3D11Buffer;
+
 
 /*	Contains stats about a frame.
 	Data can be taken out manually, or a string can be created following a
@@ -108,6 +110,8 @@ public:
 
 	void drawLights();
 
+	void drawTexts();
+
 	/*	Sets the active camera.
 		This camera is used to generate a list of scene nodes that are visible per frame,
 		i.e. ones that are inside the frustum.
@@ -167,4 +171,6 @@ private:
 	std::unordered_map<bsMesh*, std::vector<bsSceneNode*>>		mMeshesToDraw;
 	std::unordered_map<bsLine3D*, std::vector<bsSceneNode*>>	mLinesToDraw;
 	std::vector<std::pair<bsLight*, XMFLOAT3>>	mLightPositionPairs;
+
+	std::vector<std::pair<bsSceneNode*, bsText3D*>> mText3dToDraw;
 };

@@ -11,6 +11,7 @@ class bsLine3D;
 class bsLight;
 class bsSceneNode;
 class bsCamera;
+class bsText3D;
 
 
 class bsEntity
@@ -55,8 +56,9 @@ public:
 	bsLine3D*				mLineRenderer;
 	bsLight*				mLight;
 	bsCamera*				mCamera;
+	bsText3D*				mText3D;
 
-	hkpRigidBody*				mRigidBody;
+	hkpRigidBody*			mRigidBody;
 };
 
 #include "bsEntity.inl"

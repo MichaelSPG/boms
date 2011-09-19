@@ -77,6 +77,15 @@ inline void bsEntity::attach(bsCamera* camera)
 	mCamera->setEntity(this);
 }
 
+//3D Text
+template<>
+inline void bsEntity::attach(bsText3D* text3D)
+{
+	BS_ASSERT2(mText3D == nullptr, "Trying to attach a 3D text, but a 3D text is already attached");
+
+	mText3D = text3D;
+}
+
 
 //Unknown component types.
 template <typename T>
@@ -183,6 +192,12 @@ inline void bsEntity::detach<bsCamera>()
 	detach<bsCamera*>();
 }
 
+//3D text
+template<>
+inline void bsEntity::detach<bsText3D>()
+{
+	mText3D = nullptr;
+}
 
 template <typename T>
 void bsEntity::detach()
@@ -232,6 +247,12 @@ inline bsCamera* bsEntity::getComponent()
 	return mCamera;
 }
 
+//3D text
+template<>
+inline bsText3D* bsEntity::getComponent()
+{
+	return mText3D;
+}
 
 template <typename T>
 inline T bsEntity::getComponent()

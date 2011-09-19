@@ -52,7 +52,13 @@ public:
 	/*	Toggles the visibility of every text object.		
 	*/
 	void toggleVisibility();
+
+	inline IFW1Factory* getFw1Factory() const
+	{
+		return mFw1Factory;
+	}
 	
+
 private:
 	bsDx11Renderer*	mDx11Renderer;
 	IFW1Factory*	mFw1Factory;
