@@ -34,8 +34,8 @@ namespace bsRayCastUtil
 		the pixel width and height of the screen, and z is the depth.
 		screenSize: The size of the screen in pixels.
 		projection: The projection matrix used when rendering.
-		inverseView: The inverse of the camera's view matrix.
+		view: The camera's view matrix.
 	*/
 	XMVECTOR screenSpaceToObjectSpace(const XMVECTOR& screenPoint,
-		const XMFLOAT2& screenSize, const XMMATRIX& projection, const XMMATRIX& inverseView);
+		const XMFLOAT2& screenSize, const XMMATRIX& projection, const XMMATRIX& view);
 }

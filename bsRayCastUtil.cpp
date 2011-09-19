@@ -48,15 +48,13 @@ void bsRayCastUtil::castRay(const XMVECTOR& origin, const XMVECTOR& rotation,
 }
 
 XMVECTOR bsRayCastUtil::screenSpaceToObjectSpace(const XMVECTOR& screenPoint,
-	const XMFLOAT2& screenSize, const XMMATRIX& projection, const XMMATRIX& inverseView)
+	const XMFLOAT2& screenSize, const XMMATRIX& projection, const XMMATRIX& view)
 {
-	const XMVECTOR objectSpaceCursorPos = XMVector3Unproject(screenPoint,
+	return XMVector3Unproject(screenPoint,
 		0.0f, 0.0f,//Only for rendering subsets of viewport.
 		screenSize.x, screenSize.y,
 		0.0f, 1.0f,//Range of depth when rendering.
-		projection, inverseView, XMMatrixIdentity());
-
-	return objectSpaceCursorPos;
+		projection, view, XMMatrixIdentity());
 }
 
 hkVector4 bsRayCastUtil::getHitPosition(const hkpWorldRayCastInput& input,

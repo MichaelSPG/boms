@@ -89,11 +89,16 @@ public:
 		This matrix is generated every time this function is called, so storing it if it
 		is being used multiple times per frame may save some CPU.
 	*/
-	const XMMATRIX getView() const;
+	XMMATRIX getView() const;
 
-	inline const XMMATRIX getProjection() const
+	inline const XMMATRIX& getProjection() const
 	{
 		return mProjection;
+	}
+
+	inline const XMMATRIX& getViewProjection() const
+	{
+		return mViewProjection;
 	}
 
 	/*	Returns a vector of all scene nodes that overlap with the frustum.
@@ -132,7 +137,7 @@ public:
 		mScene = scene;
 	}
 
-	hkpWorldRayCastOutput screenPointToWorldRay(const XMVECTOR& screenPoint,
+	hkpWorldRayCastOutput screenPointToWorldRay(const XMFLOAT2& screenPoint,
 		float rayLength, XMVECTOR& destinationOut, XMVECTOR& originOut) const;
 
 private:
@@ -148,6 +153,7 @@ private:
 
 
 	XMMATRIX	mProjection;
+	XMMATRIX	mViewProjection;
 
 	bsProjectionInfo	mProjectionInfo;
 
