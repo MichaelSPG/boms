@@ -27,6 +27,7 @@ bsSceneNode::bsSceneNode()
 	, mWorldScale(XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f))
 
 	, mTransposedWorldTransform(XMMatrixIdentity())
+	, mWorldTransform(XMMatrixIdentity())
 
 #pragma warning(pop)
 {
@@ -289,6 +290,8 @@ void bsSceneNode::setPosition(const XMVECTOR& newPosition)
 	{
 		mLocalPosition = newPosition;
 	}
+
+	updateDerivedTransform();
 }
 
 void bsSceneNode::updateDerivedTransform()
