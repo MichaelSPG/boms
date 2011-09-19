@@ -3,12 +3,7 @@
 #include "bsSceneNode.h"
 
 #include "bsScene.h"
-#include "bsResourceManager.h"
-#include "bsHavokManager.h"
-#include "bsMesh.h"
-#include "bsLine3D.h"
 #include "bsAssert.h"
-#include "bsBroadphaseHandle.h"
 
 
 #pragma warning(push)
