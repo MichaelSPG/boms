@@ -23,25 +23,14 @@ void bsRayCastUtil::castRay(const XMVECTOR& origin, const XMVECTOR& destination,
 	world->unlock();
 }
 
-void bsRayCastUtil::castRay(const XMVECTOR& origin, const XMVECTOR& rotation,
-	float rayLength, hkpWorld* world, hkpWorldRayCastOutput& hitCollectorOut, XMVECTOR& destinationOut)
+void bsRayCastUtil::castRay(const XMVECTOR& origin, const XMVECTOR& forward, float rayLength,
+	hkpWorld* world, hkpWorldRayCastOutput& hitCollectorOut, XMVECTOR& destinationOut)
 {
-	//Translation of ray from origin.
-	XMVECTOR rayTranslation = XMVectorSet(0.0f, 0.0f, rayLength, 0.0f);
-	//Rotate the translation to match the input rotation.
-	rayTranslation = XMVector3InverseRotate(rayTranslation, rotation);
+	BS_ASSERT2(bsMath::approximatelyEqual(XMVectorGetX(XMVector3LengthSq(forward)), 1.0f),
+		"Forward vector is not normalized.");
 
-	//const XMVECTOR destination = XMVectorAdd(origin, rayTranslation);
-
-	//return castRay(origin, destination, hitCollector, world);
-
-
-	const XMVECTOR trans = XMVectorSet(0.0f, 0.0f, rayLength, 0.0f);
-
-	const XMVECTOR rotatedTrans = XMVector3InverseRotate(trans, rotation);
-
-	const XMVECTOR destination = XMVectorAdd(origin, rotatedTrans);
-
+	//Calculate destination point of ray.
+	const XMVECTOR destination = XMVectorAdd(origin, XMVectorScale(forward, rayLength));
 	destinationOut = destination;
 
 	return castRay(origin, destination, world, hitCollectorOut);

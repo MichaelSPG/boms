@@ -10,16 +10,16 @@ struct hkpWorldRayCastInput;
 
 namespace bsRayCastUtil
 {
-	/*	Casts a ray from the origin to the destination in the specified world.
-		
-		Reported hits depends on the type of hit collector used.
-		A hkpWorldRayCastOutput reports only a single hit, while other collectors can
-		report all hits, with filtering if desired.
+	/*	Casts a ray from the origin to the destination in the specified world and get
+		the closest hit.
 	*/
 	void castRay(const XMVECTOR& origin, const XMVECTOR& destination,
 		hkpWorld* world, hkpWorldRayCastOutput& hitCollectorOut);
 
-	void castRay(const XMVECTOR& origin, const XMVECTOR& rotation, float rayLength,
+	/*	Calculates the destination based on origin, forward direction and ray length
+		and calls the above overload of the function.
+	*/
+	void castRay(const XMVECTOR& origin, const XMVECTOR& forward, float rayLength,
 		hkpWorld* world, hkpWorldRayCastOutput& hitCollectorOut, XMVECTOR& destinationOut);
 
 

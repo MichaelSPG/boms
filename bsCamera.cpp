@@ -106,63 +106,30 @@ XMMATRIX bsCamera::getView() const
 hkpWorldRayCastOutput bsCamera::screenPointToWorldRay(const XMFLOAT2& screenPoint,
 	float rayLength, XMVECTOR& destinationOut, XMVECTOR& originOut) const
 {
-	//XMVECTOR determinant;
+	//Build view matrix with inverted rotation.
+	const XMVECTOR& cameraPosition = mEntity->getOwner()->getPosition();
+	const XMVECTOR cameraRotation = mEntity->getOwner()->getRotation();
+	const XMMATRIX positionMat = XMMatrixTranslationFromVector(
+		XMVectorSubtract(XMVectorZero(), cameraPosition));
+	const XMMATRIX rotationMat = XMMatrixRotationQuaternion(cameraRotation);
 
-	const XMVECTOR position = mEntity->getOwner()->getPosition();
-	const XMVECTOR rotation = mEntity->getOwner()->getRotation();
-	XMMATRIX positionMat = XMMatrixTranslationFromVector(position);
-	XMMATRIX rotationMat = XMMatrixRotationQuaternion(rotation);
+	const XMMATRIX view = XMMatrixMultiply(positionMat, rotationMat);
 
-	XMVECTOR deter;
-	positionMat = XMMatrixInverse(&deter, positionMat);
-	//rotationMat = XMMatrixInverse(&deter, rotationMat);
-
-
-	XMMATRIX view = XMMatrixMultiply(positionMat, rotationMat);
-	//view = XMMatrixTranspose(view);
-
-
+	//Convert 2D screen point to 3D object space point.
 	const XMVECTOR screenPointObjectSpace = bsRayCastUtil::screenSpaceToObjectSpace(
 		XMVectorSet(screenPoint.x, screenPoint.y, 0.0f, 1.0f),
-		mProjectionInfo.mScreenSize, mProjection, //XMMatrixInverse(&determinant, getView()));
-		//getView());
+		mProjectionInfo.mScreenSize, mProjection, 
 		view);
-		//mEntity->getOwner()->getTransform());
-	{
-		const XMVECTOR& camPos = mEntity->getOwner()->getPosition();
-		XMVECTOR rayDirection = XMVectorSubtract(screenPointObjectSpace, camPos);
-		rayDirection = XMVector3Normalize(rayDirection);
+	
+	XMVECTOR rayDirection = XMVectorSubtract(screenPointObjectSpace, cameraPosition);
+	rayDirection = XMVector3Normalize(rayDirection);
 		
-		XMVECTOR dest = XMVectorAdd(screenPointObjectSpace, XMVectorScale(rayDirection, rayLength));
-
-		//XMVECTOR q = XMQuaternionRotationMatrix(XMMatrixLookToLH(screenPointObjectSpace, rayDirection, g_XMIdentityR1));
-		
-
-		hkpWorldRayCastOutput output;
-		//XMVECTOR destination;
-		//bsRayCastUtil::castRay(camPos, q, rayLength, mScene->getPhysicsWorld(),
-		//	output, dest);
-		bsRayCastUtil::castRay(screenPointObjectSpace, dest, mScene->getPhysicsWorld(), output);
-
-		originOut = screenPointObjectSpace;
-		destinationOut = dest;
-		return output;
-	}
-
-	const XMVECTOR& cameraPosition = mEntity->getOwner()->getPosition();
-	XMVECTOR dir = XMVectorSubtract(screenPointObjectSpace, cameraPosition);
-	dir = XMVector3Normalize(dir);
-
-	const XMMATRIX lookTowardsPoint = XMMatrixLookToLH(cameraPosition,
-		XMVectorAdd(cameraPosition, dir), g_XMIdentityR1);
-
-	const XMVECTOR rotationToPoint = XMQuaternionRotationMatrix(lookTowardsPoint);
-
+	XMVECTOR rayDestination;
 	hkpWorldRayCastOutput output;
-	bsRayCastUtil::castRay(screenPointObjectSpace, rotationToPoint, rayLength,
-		mScene->getPhysicsWorld(), output, destinationOut);
+	bsRayCastUtil::castRay(screenPointObjectSpace, rayDirection, rayLength,
+		mScene->getPhysicsWorld(), output, rayDestination);
 
 	originOut = screenPointObjectSpace;
-
+	destinationOut = rayDestination;
 	return output;
 }
