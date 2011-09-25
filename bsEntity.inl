@@ -22,6 +22,12 @@
 template <>
 inline void bsEntity::attach(hkpRigidBody* rigidBody)
 {
+	hkpWorld* world = rigidBody->getWorld();
+	if (world)
+	{
+		world->markForWrite();
+	}
+
 	BS_ASSERT2(mRigidBody == nullptr, "Trying to attach a rigid body, but a rigid"
 		" body is already attached");
 	BS_ASSERT2(!rigidBody->hasProperty(BSPK_ENTITY_POINTER), "Trying to attach a"
@@ -30,6 +36,11 @@ inline void bsEntity::attach(hkpRigidBody* rigidBody)
 	mRigidBody = rigidBody;
 	mRigidBody->addReference();
 	mRigidBody->setProperty(BSPK_ENTITY_POINTER, hkpPropertyValue(this));
+
+	if (world)
+	{
+		rigidBody->getWorld()->unmarkForWrite();
+	}
 
 	syncRigidBodyWithOwner();
 }
