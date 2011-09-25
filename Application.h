@@ -10,6 +10,8 @@
 #include "bsRenderStats.h"
 #include "bsPrimitiveCreator.h"
 
+#include <Physics/Dynamics/Constraint/Bilateral/PointToPath/hkpLinearParametricCurve.h>
+
 class bsLog;
 class bsCore;
 class bsDeferredRenderer;
@@ -17,6 +19,7 @@ class bsMesh;
 class bsText2D;
 class bsSceneNode;
 class bsScene;
+class bsCharacterController;
 
 
 class Application : public OIS::KeyListener, public OIS::MouseListener
@@ -62,11 +65,15 @@ private:
 
 	void createKeyframedRb();
 
+	void createLines();
+
+	void toggleFreeCam();
+
 	OIS::InputManager	*mInputManager;
 	OIS::Keyboard		*mKeyboard;
 	OIS::Mouse			*mMouse;
 
-	bool w, a, s, d, space, c, shift, rightMouseDown, leftMouseDown, mQuit, pause;
+	bool w, a, s, d, space, c, shift, rightMouseDown, leftMouseDown, mQuit;
 	float mCameraSpeed;
 
 	bsCore*		mCore;
@@ -80,4 +87,10 @@ private:
 	bsRenderStats mRenderStats;
 	bsScene* mScene;
 	bsPrimitiveCreator* mPrimCreator;
+	
+	bsCharacterController* cc;
+	bsSceneNode* ccNode;
+	bool mFreeCamMode;
+
+	hkpLinearParametricCurve* mCurve;
 };
