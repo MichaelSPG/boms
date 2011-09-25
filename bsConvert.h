@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include <Common/Base/hkBase.h>
+#include <Common/Base/Math/hkMath.h>
 
 #include <Windows.h>
 #include <xnamath.h>
@@ -17,16 +17,19 @@ namespace bsMath
 
 inline XMVECTOR toXM(const hkVector4& vec)
 {
-	XMVECTOR temp;
-	vec.store<4>(temp.m128_f32);
-	return temp;
+	XMFLOAT4A temp;
+	vec.store<4, HK_IO_SIMD_ALIGNED>(&temp.x);
+	return XMLoadFloat4A(&temp);
 }
 
 inline hkVector4 toHK(const XMVECTOR& vec)
 {
-	hkVector4 temp;
-	temp.load<4>(vec.m128_f32);
-	return temp;
+	XMFLOAT4A temp;
+	XMStoreFloat4A(&temp, vec);
+
+	hkVector4 hkVec;
+	hkVec.load<4, HK_IO_SIMD_ALIGNED>(&temp.x);
+	return hkVec;
 }
 
 //Matrices
@@ -36,23 +39,29 @@ inline hkTransform toHK(const XMMATRIX& m)
 	XMFLOAT4X4A transform;
 	XMStoreFloat4x4A(&transform, m);
 
-	hkQuaternion q;
-	q.m_vec = toHK(XMQuaternionRotationMatrix(m));
+	hkVector4 col1, col2, col3, col4;
+	col1.load<4, HK_IO_SIMD_ALIGNED>(&transform.m[0][0]);
+	col2.load<4, HK_IO_SIMD_ALIGNED>(&transform.m[1][0]);
+	col3.load<4, HK_IO_SIMD_ALIGNED>(&transform.m[2][0]);
+	col4.load<4, HK_IO_SIMD_ALIGNED>(&transform.m[3][0]);
 
-	/*hkRotation rot;
-	
-	rot.setCols(hkVector4(transform._11, transform._21, transform._31, transform._41),
-		hkVector4(transform._12, transform._22, transform._32, transform._42),
-		hkVector4(transform._13, transform._23, transform._33, transform._43));
-	*/
-	return hkTransform(q, hkVector4(transform._14, transform._24, transform._34));
+	hkTransform t;
+	t.setColumn<0>(col1);
+	t.setColumn<1>(col2);
+	t.setColumn<2>(col3);
+	t.setColumn<3>(col4);
+
+	return t;
 }
 
 inline XMMATRIX toXM(const hkTransform& transform)
 {
 	XMFLOAT4X4A xmTransform;
-	transform.get4x4ColumnMajor(&xmTransform.m[0][0]);
-	
+	transform.getColumn<0>().store<4, HK_IO_SIMD_ALIGNED>(xmTransform.m[0]);
+	transform.getColumn<1>().store<4, HK_IO_SIMD_ALIGNED>(xmTransform.m[1]);
+	transform.getColumn<2>().store<4, HK_IO_SIMD_ALIGNED>(xmTransform.m[2]);
+	transform.getColumn<3>().store<4, HK_IO_SIMD_ALIGNED>(xmTransform.m[3]);
+
 	return XMLoadFloat4x4A(&xmTransform);
 }
 
@@ -62,7 +71,7 @@ inline XMMATRIX toXM(const hkTransform& transform)
 inline XMVECTOR toXM(const hkQuaternion& rotation)
 {
 	XMFLOAT4A xmQuat;
-	rotation.m_vec.store<4>(&xmQuat.x);
+	rotation.m_vec.store<4, HK_IO_SIMD_ALIGNED>(&xmQuat.x);
 	return XMLoadFloat4A(&xmQuat);
 }
 
