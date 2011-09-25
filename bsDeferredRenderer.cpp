@@ -303,10 +303,13 @@ void bsDeferredRenderer::renderOneFrame()
 	
 	mRenderQueue->drawLights();
 
+	deviceContext->OMSetDepthStencilState(mDepthEnabledStencilState, 0);
+
 	//Draw lines here since we don't want them to be affected by lights.
 	mRenderQueue->drawLines();
 
 	mRenderQueue->drawTexts();
+	deviceContext->OMSetDepthStencilState(mDepthDisabledStencilState, 0);
 
 	//////////////////////////////////////////////////////////////////////////
 	//
