@@ -23,6 +23,7 @@ bsScene::bsScene(bsDx11Renderer* renderer, bsResourceManager* resourceManager,
 	, mResourceManager(resourceManager)
 	, mPhysicsWorld(nullptr)
 	, mHavokManager(havokManager)
+	, mStepPhysics(true)
 {
 	BS_ASSERT(renderer);
 	BS_ASSERT(resourceManager);
@@ -77,7 +78,10 @@ void bsScene::addSceneNode(bsSceneNode* sceneNode)
 
 void bsScene::update(float deltaTime)
 {
-	mHavokManager->stepWorld(deltaTime);
+	if (mStepPhysics)
+	{
+		mHavokManager->stepWorld(deltaTime);
+	}
 
 	mCamera->update();
 

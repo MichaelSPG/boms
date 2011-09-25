@@ -67,6 +67,16 @@ public:
 
 	void update(float deltaTime);
 
+	inline void setStepPhysics(bool stepPhysics)
+	{
+		mStepPhysics = stepPhysics;
+	}
+
+	inline bool getStepPhysics() const
+	{
+		return mStepPhysics;
+	}
+
 private:
 	/*	Increments the amount of created nodes and returns it.
 		Used to assign unique IDs to nodes.
@@ -92,4 +102,7 @@ private:
 	hkpWorld*	mPhysicsWorld;
 
 	bsHavokManager* mHavokManager;
+
+	//Whether physics should be stepped.
+	bool mStepPhysics;
 };
