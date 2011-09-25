@@ -31,15 +31,11 @@ bsSceneNode::bsSceneNode()
 
 #pragma warning(pop)
 {
-	BS_ASSERT2((uintptr_t)this % 16 == 0, "bsSceneNode must be 16 byte aligned!");
+	BS_ASSERT2(((uintptr_t)this) % 16 == 0, "bsSceneNode must be 16 byte aligned!");
 }
 
 bsSceneNode::~bsSceneNode()
 {
-	//mPhantom->removeReference();
-
-	//delete mBroadphaseHandle;
-
 	//TODO: Figure out if these asserts are useful at all. Probably not unless future
 	//features depend on them.
 	/*
@@ -47,117 +43,23 @@ bsSceneNode::~bsSceneNode()
 	*/
 }
 
-void bsSceneNode::addChildSceneNode(bsSceneNode* node)
+void bsSceneNode::setParentSceneNode(bsSceneNode* newParent)
 {
-	//Check that if the node is already added to a scene, that it's the same scene as 'this'
-	//node is attached to.
-	BS_ASSERT2(node->mScene == nullptr || node->mScene == mScene,
-		"Tried to attach a node from an unrelated scene");
+	BS_ASSERT2(newParent != this, "Trying to attach a node to itself");
 
-	BS_ASSERT2(node != this, "Trying to attach a node to itself");
+	mParentSceneNode = newParent;
 
-
-	node->mParentSceneNode = this;
-	//Update it once to make sure it's synced properly with this node's transform.
-	//node->updateDerivedTransform();
-	node->updateDerivedTransform();
-
-	mChildren.push_back(node);
-
-	if (node->mScene == nullptr)
+	if (newParent)
 	{
-		mScene->addSceneNode(node);
-	}
-}
-/*
-const hkVector4& bsSceneNode::getDerivedPosition() const
-{
-	return mPhantom->getTransform().getTranslation();
-}
+		//Check that if the node is already added to a scene, that it's the same scene as 'this'
+		//node is attached to.
+		BS_ASSERT2(newParent->mScene == mScene, "Nodes attached to each other must b in the same scene");
 
-const hkTransform& bsSceneNode::getDerivedTransformation() const
-{
-	return mPhantom->getTransform();
-}
-*/
-/*
-void bsSceneNode::updateDerivedTransform()
-{
-	//Get derived transform from parent
-	if (mParentSceneNode)
-	{
-		//Multiply own transform with derived.
-		hkTransform derivedTransform;
-		derivedTransform.setMul(mParentSceneNode->getDerivedTransformation(), mLocalTransform);
+		//Update it once to make sure it's synced properly with this node's transform.
+		updateDerivedTransform();
 
-		mPhantom->setTransform(derivedTransform);
+		newParent->mChildren.push_back(this);
 	}
-	else
-	{
-		//No parents to derive transform from, meaning own (local) transform is
-		//already in world space.
-		mPhantom->setTransform(mLocalTransform);
-
-		
-		mLocalPosition = mWorldPosition;
-		mLocalRotation = mWorldRotation;
-		mLocalScale = mWorldScale;
-	}
-
-	//All children of this node need to have their positions updates too
-	for (unsigned int i = 0, count = mChildren.size(); i < count; ++i)
-	{
-		mChildren[i]->updateDerivedTransform();
-	}
-}
-*/
-void bsSceneNode::setLocalPosition(const XMVECTOR& newPosition)
-{
-	//mLocalTransform.setTranslation(newPosition);
-	
-	//updateDerivedTransform();
-	/*
-	hkpRigidBody* rigidBody = mEntity.getComponent<hkpRigidBody*>();
-	if (rigidBody != nullptr)
-	{
-		hkpWorld* world = rigidBody->getWorld();
-		if (world != nullptr)
-		{
-			world->markForWrite();
-		}
-		
-		rigidBody->setPosition(bsMath::toHK(getPosition()));
-
-		//rigidBody->setLocalPosition(getDerivedPosition());
-		if (world != nullptr)
-		{
-			world->unmarkForWrite();
-		}
-	}
-	*/
-	if (mParentSceneNode != nullptr)
-	{
-		
-		setPosition(XMVectorAdd(mParentSceneNode->getPosition(), newPosition));
-	}
-	else
-	{
-		setPosition(newPosition);
-	}
-	
-	//mLocalPosition = bsMath::toXM(newPosition);
-	updateDerivedTransform();
-}
-
-void bsSceneNode::translate(const XMVECTOR& translation)
-{
-	XMVECTOR newPosition = XMVectorAdd(mLocalPosition, translation);
-	setLocalPosition(newPosition);
-	/*
-	hkVector4 newPosition(mLocalTransform.getTranslation());
-	newPosition.add(translation);
-	setLocalPosition(newPosition);
-	*/
 }
 
 void bsSceneNode::setTransformFromRigidBody()
@@ -191,68 +93,7 @@ void bsSceneNode::setTransformFromRigidBody()
 		mWorldRotation = mLocalRotation = rbWorldRotation;
 	}
 
-	/*
-	mLocalTransform = mEntity.getComponent<hkpRigidBody*>()->getTransform();
-
 	updateDerivedTransform();
-
-	XMFLOAT4 v;
-	v = bsMath::toXM4(mLocalTransform.getTranslation());
-	mLocalPosition = XMLoadFloat4(&v);
-	
-	v = bsMath::toXM(hkQuaternion(mLocalTransform.getRotation()));
-	mLocalRotation = XMLoadFloat4(&v);
-	*/
-	updateDerivedTransform();
-}
-
-void bsSceneNode::setLocalRotation(const hkRotation& rotation)
-{
-	setLocalRotation(hkQuaternion(rotation));
-	/*
-	mLocalTransform.setLocalRotation(rotation);
-
-	updateDerivedTransform();
-
-	hkpRigidBody* rigidBody = mEntity.getComponent<hkpRigidBody*>();
-	if (rigidBody != nullptr)
-	{
-		rigidBody->setLocalRotation(hkQuaternion(getDerivedTransformation().getRotation()));
-	}
-	*/
-}
-
-void bsSceneNode::setLocalRotation(const hkQuaternion& rotation)
-{
-	mLocalRotation = bsMath::toXM(rotation);
-	//TODO: Figure out how to skip this inversion.
-	mLocalRotation = XMQuaternionInverse(mLocalRotation);
-
-	updateDerivedTransform();
-
-
-	//mLocalTransform.setRotation(rotation);
-
-	//updateDerivedTransform();
-
-	hkpRigidBody* rigidBody = mEntity.getComponent<hkpRigidBody*>();
-	if (rigidBody != nullptr)
-	{
-		hkpWorld* world = rigidBody->getWorld();
-		if (world != nullptr)
-		{
-			world->markForWrite();
-		}
-		hkQuaternion rot;
-		rot.m_vec = bsMath::toHK(mWorldRotation);
-		rigidBody->setRotation(rot);
-
-		//rigidBody->setLocalRotation(hkQuaternion(getDerivedTransformation().getRotation()));
-		if (world != nullptr)
-		{
-			world->unmarkForWrite();
-		}
-	}
 }
 
 void bsSceneNode::addedToScene(bsScene* scene, unsigned int id)
@@ -283,12 +124,58 @@ void bsSceneNode::setPosition(const XMVECTOR& newPosition)
 
 	if (mParentSceneNode != nullptr)
 	{
+		//Calculate offset from parent.
 		const XMVECTOR& parentPosition = mParentSceneNode->getPosition();
 		mLocalPosition = XMVectorSubtract(mWorldPosition, parentPosition);
 	}
 	else
 	{
+		//No parent, local space == world space.
 		mLocalPosition = newPosition;
+	}
+
+	updateDerivedTransform();
+
+	updateRigidBodyPosition();
+}
+
+void bsSceneNode::setRotation(const XMVECTOR& rotation)
+{
+	//mWorldRotation = XMQuaternionInverse(rotation);
+	mWorldRotation = rotation;
+
+	if (mParentSceneNode != nullptr)
+	{
+		//Calculate rotation offset from parent.
+		const XMVECTOR& parentRotation = mParentSceneNode->getRotation();
+
+		mLocalRotation = XMQuaternionMultiply(XMQuaternionInverse(parentRotation), mWorldRotation);
+	}
+	else
+	{
+		//No parent, local space == world space.
+		mLocalRotation = mWorldRotation;
+	}
+
+	updateDerivedTransform();
+
+	updateRigidBodyRotation();
+}
+
+void bsSceneNode::setScale(const XMVECTOR& newScale)
+{
+	mWorldScale = newScale;
+
+	if (mParentSceneNode != nullptr)
+	{
+		//Calculate scale offset from parent.
+		const XMVECTOR& parentScale = mParentSceneNode->getScale();
+		mLocalScale = XMVectorDivide(newScale, parentScale);
+	}
+	else
+	{
+		//No parent, local space == world space.
+		mLocalScale = newScale;
 	}
 
 	updateDerivedTransform();
@@ -324,4 +211,73 @@ void bsSceneNode::updateDerivedTransform()
 	mTransposedWorldTransform = XMMatrixTranspose(mat);
 
 	mWorldTransform = mat;
+
+	std::for_each(std::begin(mChildren), std::end(mChildren),
+		[](bsSceneNode* node)
+	{
+		node->updateDerivedTransform();
+	});
+}
+
+void bsSceneNode::updateRigidBodyPosition()
+{
+	hkpRigidBody* rigidBody = mEntity.getComponent<hkpRigidBody*>();
+	if (rigidBody != nullptr)
+	{
+		hkpWorld* world = rigidBody->getWorld();
+		if (world != nullptr)
+		{
+			world->markForWrite();
+		}
+
+		rigidBody->setPosition(bsMath::toHK(mWorldPosition));
+
+		if (world != nullptr)
+		{
+			world->unmarkForWrite();
+		}
+	}
+}
+
+void bsSceneNode::updateRigidBodyRotation()
+{
+	hkpRigidBody* rigidBody = mEntity.getComponent<hkpRigidBody*>();
+	if (rigidBody != nullptr)
+	{
+		hkpWorld* world = rigidBody->getWorld();
+		if (world != nullptr)
+		{
+			world->markForWrite();
+		}
+		hkQuaternion rotation;
+		rotation.m_vec = bsMath::toHK(mWorldRotation);
+		rigidBody->setRotation(rotation);
+
+		if (world != nullptr)
+		{
+			world->unmarkForWrite();
+		}
+	}
+}
+
+void bsSceneNode::updateRigidBodyTransform()
+{
+	hkpRigidBody* rigidBody = mEntity.getComponent<hkpRigidBody*>();
+	if (rigidBody != nullptr)
+	{
+		hkpWorld* world = rigidBody->getWorld();
+		if (world != nullptr)
+		{
+			world->markForWrite();
+		}
+		hkQuaternion rotation;
+		rotation.m_vec = bsMath::toHK(mWorldRotation);
+
+		rigidBody->setPositionAndRotation(bsMath::toHK(mWorldPosition), rotation);
+
+		if (world != nullptr)
+		{
+			world->unmarkForWrite();
+		}
+	}
 }
