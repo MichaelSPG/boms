@@ -72,12 +72,12 @@ void bsFileIoManager::shutdown()
 		BOOL success = CancelIo(currentHandle);
 		if (success == 0)
 		{
-			bsLog::logMessage(bs::winApiErrorCodeToString(GetLastError()).c_str());
+			bsLog::logMessage(bsWindowsUtils::winApiErrorCodeToString(GetLastError()).c_str());
 		}
 		success = CloseHandle(currentHandle);
 		if (success == 0)
 		{
-			bsLog::logMessage(bs::winApiErrorCodeToString(GetLastError()).c_str());
+			bsLog::logMessage(bsWindowsUtils::winApiErrorCodeToString(GetLastError()).c_str());
 		}
 
 		delete mAsynchronousLoaders[i];

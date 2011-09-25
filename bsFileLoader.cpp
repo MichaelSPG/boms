@@ -89,7 +89,7 @@ void bsFileLoader::createHandle()
 
 #ifdef BS_DEBUG
 		std::stringstream ss("Failed to create file handle for \'");
-		ss << mFileName << "\': " << bs::winApiErrorCodeToString(GetLastError());
+		ss << mFileName << "\': " << bsWindowsUtils::winApiErrorCodeToString(GetLastError());
 
 		bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);
 #endif
@@ -139,7 +139,7 @@ void bsFileLoader::loadFileAsync()
 		{
 #ifdef BS_DEBUG
 			std::stringstream ss("Failed to read file \'");
-			ss << mFileName << "\': " << bs::winApiErrorCodeToString(GetLastError());
+			ss << mFileName << "\': " << bsWindowsUtils::winApiErrorCodeToString(GetLastError());
 
 			bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);
 #endif
@@ -179,7 +179,7 @@ void bsFileLoader::loadFileBlocking()
 		{
 #ifdef BS_DEBUG
 			std::stringstream ss("Failed to read file \'");
-			ss << mFileName << "\': " << bs::winApiErrorCodeToString(GetLastError());
+			ss << mFileName << "\': " << bsWindowsUtils::winApiErrorCodeToString(GetLastError());
 
 			bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);
 #endif
@@ -212,7 +212,7 @@ void WINAPI bsFileLoader::loadingFinishedCallback(DWORD errorCode, DWORD numByte
 		std::string errorMessage("An error occured while reading file \'");
 		errorMessage.append(loader.mFileName);
 		errorMessage.append("\': ");
-		errorMessage.append(bs::winApiErrorCodeToString(GetLastError()));
+		errorMessage.append(bsWindowsUtils::winApiErrorCodeToString(GetLastError()));
 
 		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
 #endif
@@ -235,7 +235,7 @@ void WINAPI bsFileLoader::loadingFinishedCallback(DWORD errorCode, DWORD numByte
 		std::string errorMessage("An error occured getting overlapped result \'");
 		errorMessage.append(loader.mFileName);
 		errorMessage.append("\': ");
-		errorMessage.append(bs::winApiErrorCodeToString(GetLastError()));
+		errorMessage.append(bsWindowsUtils::winApiErrorCodeToString(GetLastError()));
 
 		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
 #endif

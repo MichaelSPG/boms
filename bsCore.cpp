@@ -3,6 +3,7 @@
 #include "bsCore.h"
 
 #include "bsWindow.h"
+#include "bsWindowsUtils.h"
 #include "bsScene.h"
 #include "bsDx11Renderer.h"
 #include "bsResourceManager.h"
@@ -37,6 +38,7 @@ bsCore::bsCore(const bsCoreCInfo& cInfo)
 
 
 	mFileIoThread = tbb::tbb_thread(std::bind(&bsFileIoManager::threadLoop, &mFileIoManager));
+	bsWindowsUtils::setThreadName(GetThreadId(mFileIoThread.native_handle()), "Background File Loader");
 
 	bsLog::logMessage("Initialization of core completed successfully", pantheios::SEV_NOTICE);
 }
