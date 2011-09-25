@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include <Common/Base/hkBase.h>
+#include <d3d11.h>
 
 #include "bsRenderable.h"
 #include "bsMath.h"

@@ -1,4 +1,5 @@
 #include "StdAfx.h"
+#include <Common/Base/Math/Vector/hkVector4.h>
 
 #include "bsSmoothCameraMovement.h"
 
