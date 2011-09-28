@@ -94,5 +94,5 @@ private:
 	bsCoreCInfo			mCInfo;
 
 	bsFileIoManager		mFileIoManager;
-	tbb::tbb_thread		mFileIoThread;
+	tbb::tbb_thread*	mFileIoThread;
 };

@@ -18,11 +18,11 @@ bsCore::bsCore(const bsCoreCInfo& cInfo)
 	: mCInfo(cInfo)
 	, mRenderSystem(nullptr)
 {
-	bsLog::init(pantheios::SEV_DEBUG);
+	bsLog::init(bsLog::SEV_DEBUG);
 
 	BS_ASSERT2(mCInfo.isOk(), "Invalid construction info was sent to bsCore");
 
-	bsLog::logMessage("Initializing core", pantheios::SEV_NOTICE);
+	bsLog::logMessage("Initializing core", bsLog::SEV_NOTICE);
 
 	mWindow = new bsWindow(cInfo.windowWidth, cInfo.windowHeight, cInfo.windowName,
 		cInfo.hInstance, cInfo.showCmd);
@@ -36,11 +36,10 @@ bsCore::bsCore(const bsCoreCInfo& cInfo)
 
 	mRenderQueue = new bsRenderQueue(mDx11Renderer, mResourceManager->getShaderManager());
 
+	mFileIoThread = new tbb::tbb_thread(std::bind(&bsFileIoManager::threadLoop, &mFileIoManager));
+	bsWindowsUtils::setThreadName(GetThreadId(mFileIoThread->native_handle()), "Background File Loader");
 
-	mFileIoThread = tbb::tbb_thread(std::bind(&bsFileIoManager::threadLoop, &mFileIoManager));
-	bsWindowsUtils::setThreadName(GetThreadId(mFileIoThread.native_handle()), "Background File Loader");
-
-	bsLog::logMessage("Initialization of core completed successfully", pantheios::SEV_NOTICE);
+	bsLog::logMessage("Initialization of core completed successfully", bsLog::SEV_NOTICE);
 }
 
 bsCore::~bsCore()
@@ -48,7 +47,8 @@ bsCore::~bsCore()
 	//Shutdown file IO manager and join the thread it was using to avoid it trying to
 	//access data that goes out of scope once this destructor returns.
 	mFileIoManager.quit();
-	mFileIoThread.join();
+	mFileIoThread->join();
+	delete mFileIoThread;
 
 	delete mRenderQueue;
 
@@ -62,7 +62,7 @@ bsCore::~bsCore()
 
 	delete mWindow;
 
-	bsLog::logMessage("Core shut down successfully", pantheios::SEV_NOTICE);
+	bsLog::logMessage("Core shut down successfully", bsLog::SEV_NOTICE);
 	bsLog::deinit();
 }
 
