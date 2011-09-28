@@ -134,8 +134,6 @@ void bsRenderQueue::reset()
 void bsRenderQueue::drawGeometry()
 {
 	mFrameStats.reset();
-	bsTimer timer;
-	float start = timer.getTimeMilliSeconds(), end;
 
 	unbindGeometryShader();
 
@@ -145,9 +143,6 @@ void bsRenderQueue::drawGeometry()
 	//Render all the geometric renderable types
 	drawMeshes();
 	//drawLines();
-
-	end = timer.getTimeMilliSeconds() - start;
-	mFrameStats.timeTakenMs = end;
 }
 
 void bsRenderQueue::setWorldConstantBuffer(const XMMATRIX& world)
@@ -270,6 +265,8 @@ void bsRenderQueue::sortRenderables()
 			mText3dToDraw.push_back(std::make_pair(sceneNodes[i], text));
 		}
 	}
+
+	mFrameStats.visibleLights = mLightPositionPairs.size();
 }
 
 void bsRenderQueue::unbindGeometryShader()

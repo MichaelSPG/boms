@@ -50,9 +50,6 @@ struct bsFrameStats
 	{
 		std::stringstream ss;
 		ss.setf(std::ios::floatfield, std::ios::fixed);
-		ss.precision(3);
-		ss << "Rendering time taken: " << timeTakenMs << " ms";
-		ss.precision(0);
 		ss  << "\nVisible scene nodes: " << visibleSceneNodeCount
 			<< "\nUnique meshes drawn: " << uniqueMeshesDrawn
 			<< "\nTotal meshes drawn: " << totalMeshesDrawn
@@ -66,9 +63,6 @@ struct bsFrameStats
 	{
 		std::wstringstream ss;
 		ss.setf(std::ios::floatfield, std::ios::fixed);
-		ss.precision(3);
-		ss << L"Rendering time taken: " << timeTakenMs << L" ms";
-		ss.precision(0);
 		ss  << L"\nVisible scene nodes: " << visibleSceneNodeCount
 			<< L"\nUnique meshes drawn: " << uniqueMeshesDrawn
 			<< L"\nTotal meshes drawn: " << totalMeshesDrawn
@@ -78,8 +72,6 @@ struct bsFrameStats
 		return ss.str();
 	}
 
-
-	float	timeTakenMs;
 
 	unsigned int	visibleSceneNodeCount;
 	unsigned int	uniqueMeshesDrawn;
