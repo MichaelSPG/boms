@@ -8,9 +8,6 @@
 #include "bsEntity.h"
 
 class bsScene;
-class bsBroadphaseHandle;
-
-class bsSceneNode;
 
 
 /*	Scene nodes are used to represent a node in 3D space which can have multiple objects
@@ -90,7 +87,7 @@ public:
 
 	/*	Sets this node's rotation in world space.
 	*/
-	void setRotation(const XMVECTOR& rotation);
+	void setRotation(const XMVECTOR& newRotation);
 
 	/*	Sets this node's local rotation.
 	*/

@@ -139,10 +139,10 @@ void bsSceneNode::setPosition(const XMVECTOR& newPosition)
 	updateRigidBodyPosition();
 }
 
-void bsSceneNode::setRotation(const XMVECTOR& rotation)
+void bsSceneNode::setRotation(const XMVECTOR& newRotation)
 {
-	//mWorldRotation = XMQuaternionInverse(rotation);
-	mWorldRotation = rotation;
+	//mWorldRotation = XMQuaternionInverse(newRotation);
+	mWorldRotation = newRotation;
 
 	if (mParentSceneNode != nullptr)
 	{
@@ -183,6 +183,22 @@ void bsSceneNode::setScale(const XMVECTOR& newScale)
 
 void bsSceneNode::updateDerivedTransform()
 {
+	BS_ASSERT(!XMVector3IsNaN(mLocalPosition));
+	BS_ASSERT(!XMVector3IsInfinite(mLocalPosition));
+	BS_ASSERT(!XMVector3IsNaN(mWorldPosition));
+	BS_ASSERT(!XMVector3IsInfinite(mWorldPosition));
+
+	BS_ASSERT(!XMQuaternionIsNaN(mLocalRotation));
+	BS_ASSERT(!XMQuaternionIsInfinite(mLocalRotation));
+	BS_ASSERT(!XMQuaternionIsNaN(mWorldRotation));
+	BS_ASSERT(!XMQuaternionIsInfinite(mWorldRotation));
+
+	BS_ASSERT(!XMVector3IsNaN(mLocalScale));
+	BS_ASSERT(!XMVector3IsInfinite(mLocalScale));
+	BS_ASSERT(!XMVector3IsNaN(mWorldScale));
+	BS_ASSERT(!XMVector3IsInfinite(mWorldScale));
+
+
 	if (mParentSceneNode != nullptr)
 	{
 		//In a node hierarchy, include parent transforms in own
