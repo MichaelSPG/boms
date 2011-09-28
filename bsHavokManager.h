@@ -32,6 +32,26 @@
 #include <Physics/Utilities/VisualDebugger/hkpPhysicsContext.h>
 
 
+
+/*	Simple class which forwards all messages sent by Havok to bsLog, with correct severity
+	levels.
+*/
+class bsHavokErrorMessageRouter : public hkDefaultError
+{
+public:
+	HK_DECLARE_CLASS_ALLOCATOR(HK_MEMORY_CLASS_BASE);
+
+	bsHavokErrorMessageRouter(hkErrorReportFunction errorReportFunction, void* errorReportObject = nullptr)
+		: hkDefaultError(errorReportFunction, errorReportObject)
+	{}
+
+
+	/*	Convert the message type to bsLog severity level type and pass on the message to bsLog.
+	*/
+	virtual int message(Message m, int id, const char* description, const char* file,
+		int line);
+};
+
 /*	This class manages the core Havok objects, like the worlds, memory system, thread pool
 	etc.
 */

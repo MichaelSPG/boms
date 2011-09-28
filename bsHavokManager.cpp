@@ -37,6 +37,39 @@
 #include "bsAssert.h"
 
 
+int bsHavokErrorMessageRouter::message( Message m, int id, const char* description, const char* file, int line )
+{
+	//Havok likes to end its messages with \n, so we remove that here before sending it
+	//to the logger.
+	std::string correctedMessage("Havok: ");
+	correctedMessage.append(description);
+
+	while (correctedMessage.back() == '\n')
+	{
+		correctedMessage.pop_back();
+	}
+
+
+	switch (m)
+	{
+	case MESSAGE_ERROR:
+	case MESSAGE_ASSERT:
+		bsLog::logMessage(correctedMessage.c_str(), bsLog::SEV_ERROR);
+		return 1;
+
+	case MESSAGE_WARNING:
+		bsLog::logMessage(correctedMessage.c_str(), bsLog::SEV_WARNING);
+		break;
+
+	case MESSAGE_REPORT:
+		bsLog::logMessage(correctedMessage.c_str(), bsLog::SEV_NOTICE);
+		break;
+	}
+
+	return 0;
+}
+
+
 static void HK_CALL errorReport(const char* message, void* userArgGivenToInit)
 {
 	//Havok likes to end its messages with \n, so we remove that here before sending it
@@ -48,7 +81,7 @@ static void HK_CALL errorReport(const char* message, void* userArgGivenToInit)
 	{
 		correctedMessage.pop_back();
 	}
-	bsLog::logMessage(correctedMessage.c_str(), pantheios::SEV_WARNING);
+	bsLog::logMessage(correctedMessage.c_str(), bsLog::SEV_WARNING);
 
 #ifdef BS_DEBUG
 	if (IsDebuggerPresent() != 0)
@@ -131,6 +164,10 @@ void bsHavokManager::createNonWorldObjects()
 	hkMemoryRouter* memoryRouter = hkMemoryInitUtil::initDefault(
 		hkMallocAllocator::m_defaultMallocAllocator, hkMemorySystem::FrameInfo(2500000));
 	hkBaseSystem::init(memoryRouter, errorReport);
+
+	//Replace default error instance to reroute messages to the log with correct severity
+	//levels.
+	hkError::replaceInstance(new bsHavokErrorMessageRouter(errorReport, nullptr));
 
 	//Get number of available physical threads
 	hkHardwareInfo hwInfo;
