@@ -31,9 +31,6 @@ bsMesh::bsMesh(unsigned int id, std::vector<ID3D11Buffer*>&& vertexBuffers,
 	BS_ASSERT2(!mVertexBuffers.empty(), "Encountered a mesh with no index or vertex buffers"
 		", which most likely means an error has occured with exporting");
 
-	BS_ASSERT2(mVertexBuffers.size() <= D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT,
-		"Vertex/index buffer count too large for a single mesh");
-
 	//TODO: Move this to initialization list once the class' inheritance from bsRenderable
 	//is removed.
 	mAabb = aabb;
