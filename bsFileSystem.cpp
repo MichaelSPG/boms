@@ -48,7 +48,7 @@ void bsFileSystem::buildFileSystem()
 					+ "'. Will use previously found path '" + findResult->second
 					+ "' instead";
 
-				bsLog::logMessage(message.c_str(), pantheios::SEV_WARNING);
+				bsLog::logMessage(message.c_str(), bsLog::SEV_WARNING);
 			}
 		}
 	}

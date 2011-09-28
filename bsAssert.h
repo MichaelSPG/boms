@@ -27,7 +27,7 @@ do																						 \
 		<< text << '\n'																	 \
 		<< "File: " << __FILE__ << '(' << __LINE__ << ")\n"								 \
 		<< "Function: " << __FUNCTION__;												 \
-		bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);						 \
+		bsLog::logMessage(ss.str().c_str(), bsLog::SEV_ERROR);						 \
 		ss << "\n";																		 \
 		OutputDebugStringA(ss.str().c_str());											 \
 																						 \
@@ -56,7 +56,7 @@ do																						 \
 		ss << "Assertion failed: " << #condition << '\n'								 \
 		<< "File: " << __FILE__ << '(' << __LINE__ << ")\n"								 \
 		<< "Function: " << __FUNCTION__;												 \
-		bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);						 \
+		bsLog::logMessage(ss.str().c_str(), bsLog::SEV_ERROR);						 \
 		ss << "\n";																		 \
 		OutputDebugStringA(ss.str().c_str());											 \
 																						 \

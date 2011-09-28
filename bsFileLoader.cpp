@@ -91,7 +91,7 @@ void bsFileLoader::createHandle()
 		std::stringstream ss("Failed to create file handle for \'");
 		ss << mFileName << "\': " << bsWindowsUtils::winApiErrorCodeToString(GetLastError());
 
-		bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);
+		bsLog::logMessage(ss.str().c_str(), bsLog::SEV_ERROR);
 #endif
 
 		mLoadState = FAILED;
@@ -138,10 +138,12 @@ void bsFileLoader::loadFileAsync()
 		if (readFileSuccess == 0)
 		{
 #ifdef BS_DEBUG
-			std::stringstream ss("Failed to read file \'");
-			ss << mFileName << "\': " << bsWindowsUtils::winApiErrorCodeToString(GetLastError());
+			std::string ss("Failed to read file \'");
+			ss.append(mFileName);
+			ss.append("\': ");
+			ss.append(bsWindowsUtils::winApiErrorCodeToString(GetLastError()));
 
-			bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);
+			bsLog::logMessage(ss.c_str(), bsLog::SEV_ERROR);
 #endif
 
 			mLoadState = FAILED;
@@ -178,10 +180,12 @@ void bsFileLoader::loadFileBlocking()
 		if (readFileSuccess == 0)
 		{
 #ifdef BS_DEBUG
-			std::stringstream ss("Failed to read file \'");
-			ss << mFileName << "\': " << bsWindowsUtils::winApiErrorCodeToString(GetLastError());
+			std::string ss("Failed to read file \'");
+			ss.append(mFileName);
+			ss.append("\': ");
+			ss.append(bsWindowsUtils::winApiErrorCodeToString(GetLastError()));
 
-			bsLog::logMessage(ss.str().c_str(), pantheios::SEV_ERROR);
+			bsLog::logMessage(ss.c_str(), bsLog::SEV_ERROR);
 #endif
 
 			mLoadState = FAILED;
@@ -214,7 +218,7 @@ void WINAPI bsFileLoader::loadingFinishedCallback(DWORD errorCode, DWORD numByte
 		errorMessage.append("\': ");
 		errorMessage.append(bsWindowsUtils::winApiErrorCodeToString(GetLastError()));
 
-		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
+		bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
 #endif
 
 		loader.mLoadState = FAILED;
@@ -237,7 +241,7 @@ void WINAPI bsFileLoader::loadingFinishedCallback(DWORD errorCode, DWORD numByte
 		errorMessage.append("\': ");
 		errorMessage.append(bsWindowsUtils::winApiErrorCodeToString(GetLastError()));
 
-		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
+		bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
 #endif
 
 		loader.mLoadState = FAILED;
@@ -254,6 +258,6 @@ void WINAPI bsFileLoader::loadingFinishedCallback(DWORD errorCode, DWORD numByte
 	std::string message("Successfully loaded \'");
 	message.append(loader.mFileName);
 	message.append("\'");
-	bsLog::logMessage(message.c_str(), pantheios::SEV_DEBUG);
+	bsLog::logMessage(message.c_str(), bsLog::SEV_INFORMATIONAL);
 #endif
 }

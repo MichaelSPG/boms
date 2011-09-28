@@ -2,6 +2,13 @@
 
 #include "bsLog.h"
 
+#ifndef BS_DISABLE_FEATURE_LOGGING
+
+#include <pantheios/pantheios.hpp>
+#include <pantheios/backends/bec.file.h>
+#include <pantheios/frontends/fe.simple.h>
+
+
 extern "C" const char PANTHEIOS_FE_PROCESS_IDENTITY[] = "TestApp";
 
 PANTHEIOS_CALL(void) pantheios_be_file_getAppInit(int /* backEndId */, pan_be_file_init_t* init) /* throw() */
@@ -27,11 +34,10 @@ PANTHEIOS_CALL(void) pantheios_be_file_getAppInit(int /* backEndId */, pan_be_fi
 	*/
 }
 
-#ifndef BS_DISABLE_LOGGING
 std::vector<std::function<void(const char*)>> bsLog::mCallbacks
 	= std::vector<std::function<void(const char*)>>();
 
-bool bsLog::init(pantheios::pan_severity_t severityCeiling /*= pantheios::SEV_DEBUG*/)
+bool bsLog::init(bsLog::LogSeverity severityCeiling /*= pantheios::SEV_DEBUG*/)
 {
 	if (pantheios::init())
 	{
@@ -51,8 +57,7 @@ void bsLog::deinit()
 	pantheios::pantheios_uninit();
 }
 
-void bsLog::logMessage(const char *message,
-	pantheios::pan_severity_t severity /*= pantheios::SEV_INFORMATIONAL*/)
+void bsLog::logMessage(const char *message, bsLog::LogSeverity severity /*= SEV_INFORMATIONAL*/)
 {
 	pantheios::log(severity, message);
 
@@ -66,4 +71,14 @@ void bsLog::logMessage(const char *message,
 #endif
 }
 
-#endif // BS_DISABLE_LOGGING
+void bsLog::setLogLevel(LogSeverity severity)
+{
+	pantheios_fe_simple_setSeverityCeiling(severity);
+}
+
+int bsLog::getSeverityLevel()
+{
+	return pantheios_fe_simple_getSeverityCeiling();
+}
+
+#endif // BS_DISABLE_FEATURE_LOGGING

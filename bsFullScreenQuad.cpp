@@ -45,7 +45,7 @@ bsFullScreenQuad::bsFullScreenQuad(ID3D11Device* const device)
 		&mVertexBuffer)))
 	{
 		bsLog::logMessage("Failed to create vertex buffer for fullscreen quad",
-			pantheios::SEV_ERROR);
+			bsLog::SEV_ERROR);
 	}
 
 	//Index buffer
@@ -57,7 +57,7 @@ bsFullScreenQuad::bsFullScreenQuad(ID3D11Device* const device)
 		&mIndexBuffer)))
 	{
 		bsLog::logMessage("Failed to create index buffer for fullscreen quad",
-			pantheios::SEV_ERROR);
+			bsLog::SEV_ERROR);
 	}
 
 	//Sampler state
@@ -74,7 +74,7 @@ bsFullScreenQuad::bsFullScreenQuad(ID3D11Device* const device)
 	if (FAILED(device->CreateSamplerState(&samplerDesc, &mSamplerState)))
 	{
 		bsLog::logMessage("Failed to create sampler state for fullscreen quad",
-			pantheios::SEV_ERROR);
+			bsLog::SEV_ERROR);
 	}
 
 

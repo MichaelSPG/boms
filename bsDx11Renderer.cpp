@@ -58,7 +58,7 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 
 bsDx11Renderer::~bsDx11Renderer()
 {
-	bsLog::logMessage("Uninitializing DirectX", pantheios::SEV_NOTICE);
+	bsLog::logMessage("Uninitializing DirectX", bsLog::SEV_NOTICE);
 
 	destroyCurrentRenderWindow();
 
@@ -262,7 +262,7 @@ HRESULT bsDx11Renderer::compileShader(const char* fileName, const char* entryPoi
 			errorMessage += ". Error message: ";
 			errorMessage += (char*)errorBlob->GetBufferPointer();
 			
-			bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
+			bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
 
 			OutputDebugStringA((char*)errorBlob->GetBufferPointer());
 
@@ -274,7 +274,7 @@ HRESULT bsDx11Renderer::compileShader(const char* fileName, const char* entryPoi
 			errorMessage += fileName;
 			errorMessage += ". Error message: ";
 
-			bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
+			bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
 		}
 	}
 

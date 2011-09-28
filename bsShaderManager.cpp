@@ -41,8 +41,8 @@ std::shared_ptr<bsVertexShader> bsShaderManager::getVertexShader(const std::stri
 
 		BS_ASSERT2(false, message.c_str());
 
-		//This is useful info even if asserts are disabled, so log it again just in case
-		bsLog::logMessage(message.c_str(), pantheios::SEV_ERROR);
+		//This is useful info even if asserts are disabled, so log it again just in case.
+		bsLog::logMessage(message.c_str(), bsLog::SEV_ERROR);
 
 		return nullptr;
 	}
@@ -74,8 +74,8 @@ std::shared_ptr<bsPixelShader> bsShaderManager::getPixelShader(const std::string
 
 		BS_ASSERT2(false, message.c_str());
 
-		//This is useful info even if asserts are disabled, so log it again just in case
-		bsLog::logMessage(message.c_str(), pantheios::SEV_ERROR);
+		//This is useful info even if asserts are disabled, so log it again just in case.
+		bsLog::logMessage(message.c_str(), bsLog::SEV_ERROR);
 
 		return nullptr;
 	}
@@ -125,7 +125,7 @@ std::shared_ptr<bsVertexShader> bsShaderManager::createVertexShader(const std::s
 
 		std::string errorMessage("Failed to create vertex shader '");
 		errorMessage + fileName + '\'';
-		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
+		bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
 
 		BS_ASSERT2(false, errorMessage.c_str());
 
@@ -172,7 +172,7 @@ std::shared_ptr<bsVertexShader> bsShaderManager::createVertexShader(const std::s
 	std::string logMessage("Created vertex shader '");
 	logMessage.append(fileName);
 	logMessage.append("\'");
-	bsLog::logMessage(logMessage.c_str(), pantheios::SEV_NOTICE);
+	bsLog::logMessage(logMessage.c_str(), bsLog::SEV_INFORMATIONAL);
 
 	return vs.second;
 }
@@ -231,7 +231,7 @@ std::shared_ptr<bsPixelShader> bsShaderManager::createPixelShader(const std::str
 	std::string logMessage("Created pixel shader \'");
 	logMessage.append(fileName);
 	logMessage.append("\'");
-	bsLog::logMessage(logMessage.c_str(), pantheios::SEV_NOTICE);
+	bsLog::logMessage(logMessage.c_str(), bsLog::SEV_INFORMATIONAL);
 
 	return ps.second;
 }

@@ -21,11 +21,6 @@
 #include <D3DX11.h>
 #include <xnamath.h>
 
-//Pantheios
-#include <pantheios/pantheios.hpp>
-#include <pantheios/backends/bec.file.h>
-#include <pantheios/frontends/fe.simple.h>
-
 //Havok
 #include <Common/Base/hkBase.h>
 #include <Common/Base/Math/hkMath.h>

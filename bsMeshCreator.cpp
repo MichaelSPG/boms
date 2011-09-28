@@ -88,7 +88,7 @@ std::shared_ptr<bsMesh> bsMeshCreator::loadMeshSynchronous(const std::string& me
 	std::string message("Loaded mesh \'");
 	message.append(meshName);
 	message.append("\'");
-	bsLog::logMessage(message.c_str(), pantheios::SEV_NOTICE);
+	bsLog::logMessage(message.c_str(), bsLog::SEV_NOTICE);
 
 	std::shared_ptr<bsMesh> mesh(constructMeshFromSerializedMesh(serializedMesh, meshName));
 
@@ -111,7 +111,7 @@ std::shared_ptr<bsMesh> bsMeshCreator::constructMeshFromSerializedMesh(
 			std::string errorMessage("Failed to create buffers when loading \'");
 			errorMessage.append(meshName);
 			errorMessage.append("\'");
-			bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
+			bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
 
 			return nullptr;
 		}

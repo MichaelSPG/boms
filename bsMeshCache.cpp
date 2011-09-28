@@ -41,7 +41,7 @@ bsMeshCache::~bsMeshCache()
 		if (!(itr->second.use_count() == 1))
 		{
 			bsLog::logMessage("There are external references to meshes when the mesh"
-				"manager is shutting down", pantheios::SEV_WARNING);
+				"manager is shutting down", bsLog::SEV_WARNING);
 		}
 	}
 }
@@ -122,7 +122,7 @@ inline bool bsMeshCache::verifyMeshIsNotAlreadyInCache(const std::string& meshNa
 		errorMessage.append(meshName);
 		errorMessage.append("\'");
 
-		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_CRITICAL);
+		bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
 
 		BS_ASSERT2(mMeshes.find(meshName) == mMeshes.end(), "bsMeshCache::loadMeshAsync was "
 			"called, but the requested mesh has already been loaded!");
@@ -143,7 +143,7 @@ inline bool bsMeshCache::verifyMeshPathIsValid(const std::string& meshPath,
 		message += "' does not exist in any known resource paths,"
 			" it will not be loaded";
 
-		bsLog::logMessage(message.c_str(), pantheios::SEV_CRITICAL);
+		bsLog::logMessage(message.c_str(), bsLog::SEV_ERROR);
 
 		BS_ASSERT2(!"Failed to load mesh", message.c_str());
 
