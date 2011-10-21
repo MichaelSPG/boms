@@ -40,3 +40,13 @@ struct CBFxaa
 	XMFLOAT2	oneOverScreenSize;
 	XMFLOAT2	padding;//Pad to multiple of 16 bytes.
 };
+
+__declspec(align(16)) struct LightInstanceData
+{
+	XMMATRIX world;
+
+	//xyz=position, w=lightRadius
+	//xyz=color, w=intensity
+	XMVECTOR positionRadius;
+	XMVECTOR colorIntensity;
+};
