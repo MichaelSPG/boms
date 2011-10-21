@@ -76,6 +76,13 @@ bsFrustum bsComputeFrustumFromProjection(const XMMATRIX& projection)
 	frustum.planes[4] = XMPlaneNormalize(frustum.planes[4]);
 	frustum.planes[5] = XMPlaneNormalize(frustum.planes[5]);
 
+	frustum.rightSlope = rightSlope;
+	frustum.leftSlope = leftSlope;
+	frustum.topSlope = topSlope;
+	frustum.bottomSlope = bottomSlope;
+	frustum.nearClip = nearClip;
+	frustum.farClip = farClip;
+
 	return frustum;
 }
 
