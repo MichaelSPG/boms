@@ -37,7 +37,7 @@ public:
 
 
 	bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* camera,
-		bsShaderManager* shaderManager, bsWindow* window);
+		bsShaderManager* shaderManager, bsWindow* window, bsRenderQueue* renderQueue);
 
 	virtual ~bsDeferredRenderer();
 

@@ -18,20 +18,18 @@
 
 
 bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* camera,
-	bsShaderManager* shaderManager, bsWindow* window)
+	bsShaderManager* shaderManager, bsWindow* window, bsRenderQueue* renderQueue)
 	: mDx11Renderer(dx11Renderer)
 	, mCamera(camera)
 	, mShaderManager(shaderManager)
 	, mFxaaPass(shaderManager, dx11Renderer, (float)window->getWindowWidth(),
 		(float)window->getWindowHeight())
 	, mGeometryRasterizerState(nullptr)
+	, mRenderQueue(renderQueue)
 {
 	BS_ASSERT(dx11Renderer);
 	BS_ASSERT(camera);
 	BS_ASSERT(shaderManager);
-
-	mRenderQueue = new bsRenderQueue(mDx11Renderer, mShaderManager);
-	mRenderQueue->setCamera(mCamera);
 
 	ID3D11Device* device = mDx11Renderer->getDevice();
 	ID3D11DeviceContext* deviceContext = mDx11Renderer->getDeviceContext();
@@ -239,8 +237,6 @@ bsDeferredRenderer::~bsDeferredRenderer()
 	delete mGBuffer.diffuse;
 	delete mGBuffer.normal;
 	delete mGBuffer.position;
-
-	delete mRenderQueue;
 }
 
 void bsDeferredRenderer::createShaders()
@@ -259,7 +255,7 @@ void bsDeferredRenderer::createShaders()
 	inputDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
 	inputLayout.push_back(inputDesc);
 
-	mMergerVertexShader = mShaderManager->getVertexShader("Merger.fx", inputLayout);
+	mMergerVertexShader = mShaderManager->getVertexShader("Merger.fx", inputLayout.data(), inputLayout.size());
 	mMergerPixelShader = mShaderManager->getPixelShader("Merger.fx");
 }
 
