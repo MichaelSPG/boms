@@ -1,17 +1,14 @@
 #pragma once
 
-
-#include <string>
 #include <vector>
 #include <memory>
+#include <numeric>
 
 #include <Windows.h>
 #include <d3d11.h>
 #include <D3DX11.h>
 
-#include <Common/Base/hkBase.h>
-
-#include "bsRenderable.h"
+#include "bsCollision.h"
 
 class bsDx11Renderer;
 
@@ -19,9 +16,20 @@ class bsDx11Renderer;
 /*	Class containing a single mesh.
 	Contains vertex and index buffers, and can render itself.
 */
-class bsMesh : public bsRenderable
+__declspec(align(16)) class bsMesh
 {
 public:
+	inline void* operator new(size_t)
+	{
+		return _aligned_malloc(sizeof(bsMesh), 16);
+	}
+
+	inline void operator delete(void* p)
+	{
+		_aligned_free(p);
+	}
+
+
 	//For container purposes only, do not use this constructor.
 	inline bsMesh(unsigned int id)
 		: mID(id)
@@ -34,7 +42,8 @@ public:
 	*/
 	bsMesh(unsigned int id, std::vector<ID3D11Buffer*>&& vertexBuffers,
 		std::vector<ID3D11Buffer*>&& indexBuffers,
-		std::vector<unsigned int>&& indices, const hkAabb& aabb);
+		std::vector<unsigned int>&& indexCounts, std::vector<unsigned int>&& vertexCounts,
+		const bsCollision::Sphere& boundingSphere);
 
 	~bsMesh();
 
@@ -46,10 +55,8 @@ public:
 	*/
 	void draw(bsDx11Renderer* dx11Renderer) const;
 
-	inline RenderableType getRenderableType() const
-	{
-		return MESH;
-	}
+	void drawInstanced(ID3D11DeviceContext& deviceContext, ID3D11Buffer* instanceBuffer,
+		unsigned int instanceCount) const;
 
 	/*	Returns true if this mesh has finished loading and is ready to be rendered.
 	*/
@@ -92,9 +99,12 @@ private:
 	bsMesh(const bsMesh&);
 	void operator=(const bsMesh&);
 
+	bsCollision::Sphere mBoundingSphere;
+
 	std::vector<ID3D11Buffer*>	mVertexBuffers;
 	std::vector<ID3D11Buffer*>	mIndexBuffers;
 	std::vector<unsigned int>	mIndexCounts;
+	std::vector<unsigned int>	mVertexCounts;
 
 	unsigned int	mID;
 

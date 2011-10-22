@@ -16,10 +16,13 @@
 
 bsMesh::bsMesh(unsigned int id, std::vector<ID3D11Buffer*>&& vertexBuffers,
 	std::vector<ID3D11Buffer*>&& indexBuffers,
-	std::vector<unsigned int>&& indices, const hkAabb& aabb)
-	: mVertexBuffers(std::move(vertexBuffers))
+	std::vector<unsigned int>&& indexCounts, std::vector<unsigned int>&& vertexCounts,
+	const bsCollision::Sphere& boundingSphere)
+	: mBoundingSphere(boundingSphere)
+	, mVertexBuffers(std::move(vertexBuffers))
 	, mIndexBuffers(std::move(indexBuffers))
-	, mIndexCounts(std::move(indices))
+	, mIndexCounts(std::move(indexCounts))
+	, mVertexCounts(std::move(vertexCounts))
 	, mID(id)
 	, mLoadingFinished(true)
 {
@@ -31,9 +34,7 @@ bsMesh::bsMesh(unsigned int id, std::vector<ID3D11Buffer*>&& vertexBuffers,
 	BS_ASSERT2(!mVertexBuffers.empty(), "Encountered a mesh with no index or vertex buffers"
 		", which most likely means an error has occured with exporting");
 
-	//TODO: Move this to initialization list once the class' inheritance from bsRenderable
-	//is removed.
-	mAabb = aabb;
+	BS_ASSERT2(mBoundingSphere.getRadius() > 0.0f, "Invalid bounding sphere");
 }
 
 bsMesh::~bsMesh()
@@ -52,9 +53,12 @@ bsMesh::~bsMesh()
 
 bsMesh& bsMesh::operator=(bsMesh&& other)
 {
+	mBoundingSphere = other.mBoundingSphere;
+
 	mVertexBuffers = std::move(other.mVertexBuffers);
 	mIndexBuffers = std::move(other.mIndexBuffers);
 	mIndexCounts = std::move(other.mIndexCounts);
+	mVertexCounts = std::move(other.mVertexCounts);
 	//mID = other.mID;
 
 	other.mVertexBuffers.clear();

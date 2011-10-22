@@ -64,7 +64,7 @@ bsMeshCreator::~bsMeshCreator()
 
 std::shared_ptr<bsMesh> bsMeshCreator::loadMeshAsync(const std::string& meshName)
 {
-	std::shared_ptr<bsMesh> mesh(std::make_shared<bsMesh>(mMeshCache.getNewMeshId()));
+	std::shared_ptr<bsMesh> mesh(new bsMesh(mMeshCache.getNewMeshId()));
 
 	mFileManager.addAsynchronousLoadRequest(meshName,
 		bsMeshCreatorFileLoadFinished(mesh, meshName, *this));
@@ -102,6 +102,7 @@ std::shared_ptr<bsMesh> bsMeshCreator::constructMeshFromSerializedMesh(
 	std::vector<ID3D11Buffer*> vertexBuffers(meshCount);
 	std::vector<ID3D11Buffer*> indexBuffers(meshCount);
 	std::vector<unsigned int>  indexCounts(meshCount);
+	std::vector<unsigned int>  vertexCounts(meshCount);
 
 	//Create buffers and check for failure for each mesh
 	for (unsigned int i = 0; i < meshCount; ++i)
@@ -117,16 +118,15 @@ std::shared_ptr<bsMesh> bsMeshCreator::constructMeshFromSerializedMesh(
 		}
 
 		indexCounts[i] = serializedMesh.indexBuffers[i].indexCount;
+		vertexCounts[i] = serializedMesh.vertexBuffers[i].vertexCount;
 	}
 
-	const XMVECTOR minExtents = XMLoadFloat3(&serializedMesh.minExtents);
-	const XMVECTOR maxExtents = XMLoadFloat3(&serializedMesh.maxExtents);
+	bsCollision::Sphere boundingSphere;
+	boundingSphere.positionAndRadius = XMLoadFloat4(&serializedMesh.boundingSphereCenterAndRadius);
 
-	const hkAabb meshAabb(bsMath::toHK(minExtents), bsMath::toHK(maxExtents));
-
-	return std::shared_ptr<bsMesh>(std::make_shared<bsMesh>(mMeshCache.getNewMeshId(),
+	return std::shared_ptr<bsMesh>(new bsMesh(mMeshCache.getNewMeshId(),
 		std::move(vertexBuffers), std::move(indexBuffers), std::move(indexCounts),
-		meshAabb));
+		std::move(vertexCounts), boundingSphere));
 }
 
 bool bsMeshCreator::createBuffers(ID3D11Buffer*& vertexBuffer, ID3D11Buffer*& indexBuffer,

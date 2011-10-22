@@ -1,4 +1,6 @@
+//#ifndef BS_MESH_SERIALIZER_EXTERNAL
 #include "StdAfx.h"
+//#endif
 
 #include "bsMeshSerializer.h"
 
@@ -14,7 +16,7 @@ Byte		Description
 17-...		bsVertexBuffers * buffer count (defined by bytes 5-8).
 ...-...		bsIndexBuffers * buffer count.
 
-Last 24		AABB, min extents and max extents (in that order) (2 * XMFLOAT3).
+Last 16		Bounding sphere, XMFLOAT4, xyz=sphere center, w=sphere radius.
 
 
 bsVertexBuffer
@@ -30,20 +32,30 @@ bsIndexBuffer
 }
 */
 
-//Version info is embedded into
-const char kSerializerVersion = 0;
+/*	Version info is embedded into the mesh, and must be equal to this value when loaded.
+	
+	Version history:
+	0: Initial version, used AABB.
+	1: Removed AABB and added sphere center+sphere radius.
+*/
+const char kSerializerVersion = 1;
 
-#include <fstream>
-#include <sstream>
+
 #include <float.h>
 #include <stdio.h>
+
+#include <xnamath.h>
 
 //TODO: Remove these
 #include <cassert>
 
+#ifndef BS_MESH_SERIALIZER_EXTERNAL
 #include "bsLog.h"
+#else
+extern void bsMeshSerializerLogErrorMessage(const char*);
+#endif
+
 #include "bsLinearHeapAllocator.h"
-#include "bsMath.h"
 
 #ifdef BS_SUPPORT_MESH_CREATION
 #include <assimp.hpp>
@@ -51,8 +63,7 @@ const char kSerializerVersion = 0;
 #include <aiPostProcess.h>
 
 bsCreateSerializedMeshFlags parseData(const aiMesh* mesh, bsVertexBuffer& verticesOut,
-	bsIndexBuffer& indicesOut, XMFLOAT3& minExtentsOut, XMFLOAT3& maxExtentsOut,
-	bsLinearHeapAllocator& allocator);
+	bsIndexBuffer& indicesOut, bsLinearHeapAllocator& allocator);
 
 //Copies contents of aiVec to xmF3
 inline XMFLOAT3 aiVector3ToXMFloat3(const aiVector3D& aiVec)
@@ -67,28 +78,6 @@ inline XMFLOAT2 aiVector3ToXMFloat2TexCoord(const aiVector3D& aiVec)
 }
 #endif // BS_SUPPORT_MESH_CREATION
 
-
-//Returns a vector3 with the smallest individual elements from v1 and v2.
-inline XMFLOAT3 getMinExtents(const XMFLOAT3& v1, const XMFLOAT3& v2)
-{
-	XMFLOAT3 smallest;
-	smallest.x = min(v1.x, v2.x);
-	smallest.y = min(v1.y, v2.y);
-	smallest.z = min(v1.z, v2.z);
-
-	return smallest;
-}
-
-//Returns a vector3 with the largest individual elements from v1 and v2.
-inline XMFLOAT3 getMaxExtents(const XMFLOAT3& v1, const XMFLOAT3& v2)
-{
-	XMFLOAT3 largest;
-	largest.x = max(v1.x, v2.x);
-	largest.y = max(v1.y, v2.y);
-	largest.z = max(v1.z, v2.z);
-
-	return largest;
-}
 
 bool bsLoadSerializedMesh(const std::string& fileName, bsSerializedMesh& meshOut)
 {
@@ -108,7 +97,11 @@ bool bsLoadSerializedMesh(const std::string& fileName, bsSerializedMesh& meshOut
 		std::string errorMessage("Bad file header in \'");
 		errorMessage.append(fileName);
 		errorMessage.append("\'");
-		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
+#ifndef BS_MESH_SERIALIZER_EXTERNAL
+		bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
+#else
+		bsMeshSerializerLogErrorMessage(errorMessage.c_str());
+#endif
 
 		fclose(file);
 
@@ -119,7 +112,11 @@ bool bsLoadSerializedMesh(const std::string& fileName, bsSerializedMesh& meshOut
 		std::string errorMessage("\'");
 		errorMessage.append(fileName);
 		errorMessage.append("\' was created with an old version of the serializer.");
-		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
+#ifndef BS_MESH_SERIALIZER_EXTERNAL
+		bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
+#else
+		bsMeshSerializerLogErrorMessage(errorMessage.c_str());
+#endif
 
 		fclose(file);
 
@@ -144,7 +141,11 @@ bool bsLoadSerializedMesh(const std::string& fileName, bsSerializedMesh& meshOut
 		std::string errorMessage("Failed to read \'");
 		errorMessage.append(fileName);
 		errorMessage.append("\'");
-		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
+#ifndef BS_MESH_SERIALIZER_EXTERNAL
+		bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
+#else
+		bsMeshSerializerLogErrorMessage(errorMessage.c_str());
+#endif
 
 		fclose(file);
 
@@ -180,24 +181,28 @@ bool bsLoadSerializedMesh(const std::string& fileName, bsSerializedMesh& meshOut
 	}
 	assert(head == dataBuffer + totalDynamicMemorySize);
 
-	//Read min/max extents into a buffer.
-	char minMaxExtents[sizeof(XMFLOAT3) * 2];
-	read = fread(minMaxExtents, sizeof(XMFLOAT3) * 2, 1, file);
+	//Read bounding data into a buffer.
+	char boundingData[sizeof(XMFLOAT4)];
+	read = fread(boundingData, sizeof(XMFLOAT4), 1, file);
 	if (read != 1)
 	{
 		std::string errorMessage("Failed to load min/max extents for \'");
 		errorMessage.append(fileName);
 		errorMessage.append("\'");
-		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
+#ifndef BS_MESH_SERIALIZER_EXTERNAL
+		bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
+#else
+		bsMeshSerializerLogErrorMessage(errorMessage.c_str());
+#endif
 
 		fclose(file);
 
 		return false;
 	}
 
-	//Copy min/max extents.
-	memcpy(&meshToLoad.minExtents, minMaxExtents, sizeof(XMFLOAT3));
-	memcpy(&meshToLoad.maxExtents, minMaxExtents + sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+	//Copy bounding data.
+	
+	memcpy(&meshToLoad.boundingSphereCenterAndRadius, boundingData, sizeof(XMFLOAT4));
 
 	meshOut = std::move(meshToLoad);
 
@@ -220,15 +225,26 @@ bool bsLoadSerializedMeshFromMemory(const char* data, unsigned int dataSize,
 	//Verify that the header is correct.
 	if (memcmp(header, "bsm", 3) != 0)
 	{
+#ifndef BS_MESH_SERIALIZER_EXTERNAL
 		bsLog::logMessage("Encountered a bad file header when loading mesh from memory",
-			pantheios::SEV_ERROR);
+			bsLog::SEV_ERROR);
+#else
+		bsMeshSerializerLogErrorMessage("Encountered a bad file header when loading mesh"
+			"from memory");
+#endif
 
 		return false;
 	}
 	if (header[3] != kSerializerVersion)
 	{
+#ifndef BS_MESH_SERIALIZER_EXTERNAL
 		bsLog::logMessage("Tried to load a mesh which was created with an old "
-			"version of the mesh serializer.", pantheios::SEV_ERROR);
+			"version of the mesh serializer.",
+			bsLog::SEV_ERROR);
+#else
+		bsMeshSerializerLogErrorMessage("Tried to load a mesh which was created with an old "
+			"version of the mesh serializer.");
+#endif
 
 		return false;
 	}
@@ -239,12 +255,17 @@ bool bsLoadSerializedMeshFromMemory(const char* data, unsigned int dataSize,
 	unsigned int totalDynamicMemorySize;
 	memcpy(&totalDynamicMemorySize, header + 8, sizeof(unsigned int));
 
-	//Size of dynamic memory + file header + AABB extents must be same as file size.
-	assert(totalDynamicMemorySize + 16 + 24 == dataSize);
-	if (totalDynamicMemorySize + 16 + 24 != dataSize)
+	//Size of dynamic memory + file header + bounding sphere must be same as file size.
+	assert(totalDynamicMemorySize + 16 + sizeof(XMFLOAT4) == dataSize);
+	if (totalDynamicMemorySize + 16 + sizeof(XMFLOAT4) != dataSize)
 	{
+#ifndef BS_MESH_SERIALIZER_EXTERNAL
 		bsLog::logMessage("Memory size mismatch when trying to load a mesh from memory",
-			pantheios::SEV_ERROR);
+			bsLog::SEV_ERROR);
+#else
+		bsMeshSerializerLogErrorMessage("Memory size mismatch when trying to load a mesh"
+			"from memory");
+#endif
 
 		return false;
 	}
@@ -286,13 +307,12 @@ bool bsLoadSerializedMeshFromMemory(const char* data, unsigned int dataSize,
 	assert(head == dataBuffer + totalDynamicMemorySize);
 
 	//Read min/max extents into a buffer.
-	char minMaxExtents[sizeof(XMFLOAT3) * 2];
+	char boundingData[sizeof(XMFLOAT4)];
 	//Offset for start of extents is header + dynamic memory size.
-	memcpy(minMaxExtents, data + totalDynamicMemorySize + 16, sizeof(XMFLOAT3) * 2);
+	memcpy(boundingData, data + totalDynamicMemorySize + 16, sizeof(XMFLOAT4));
 
 	//Copy min/max extents.
-	memcpy(&meshToLoad.minExtents, minMaxExtents, sizeof(XMFLOAT3));
-	memcpy(&meshToLoad.maxExtents, minMaxExtents + sizeof(XMFLOAT3), sizeof(XMFLOAT3));
+	memcpy(&meshToLoad.boundingSphereCenterAndRadius, boundingData, sizeof(XMFLOAT4));
 
 	meshOut = std::move(meshToLoad);
 
@@ -312,6 +332,7 @@ bool bsSaveSerializedMesh(const std::string& fileName, const bsSerializedMesh& m
 	assert(mesh.indexBuffers[0].indexCount > 0);
 	assert(mesh.dynamicDataSize > 0);
 	assert(mesh.dynamicData != nullptr);
+	assert(mesh.boundingSphereCenterAndRadius.w > 0.0f);
 
 	//Check if the mesh seems valid.
 	if (mesh.bufferCount == 0 || mesh.vertexBuffers[0].vertexCount == 0
@@ -337,8 +358,8 @@ bool bsSaveSerializedMesh(const std::string& fileName, const bsSerializedMesh& m
 	memset(header + 12, 0xFFFFFFFF, sizeof(unsigned int));
 
 	//Total amount of size needed for the whole file, includes non-dynamic data.
-	const unsigned int totalBufferSize = bufferMemorySize + sizeof(mesh.minExtents)
-		+ sizeof(mesh.maxExtents) + sizeof(header);
+	const unsigned int totalBufferSize = bufferMemorySize +
+		sizeof(mesh.boundingSphereCenterAndRadius) + sizeof(header);
 	
 	//This represents all the data to write to the file.
 	char* const dataBuffer = static_cast<char*>(malloc(totalBufferSize));
@@ -354,12 +375,8 @@ bool bsSaveSerializedMesh(const std::string& fileName, const bsSerializedMesh& m
 	head += bufferMemorySize;
 	assert(head < dataBuffer + totalBufferSize);
 
-	memcpy(head, &mesh.minExtents, sizeof(mesh.minExtents));
-	head += sizeof(mesh.minExtents);
-	assert(head < dataBuffer + totalBufferSize);
-
-	memcpy(head, &mesh.maxExtents, sizeof(mesh.maxExtents));
-	head += sizeof(mesh.maxExtents);
+	memcpy(head, &mesh.boundingSphereCenterAndRadius, sizeof(mesh.boundingSphereCenterAndRadius));
+	head += sizeof(mesh.boundingSphereCenterAndRadius);
 	assert(head == dataBuffer + totalBufferSize);
 
 	//Write the entire buffer to the file.
@@ -373,7 +390,13 @@ bool bsSaveSerializedMesh(const std::string& fileName, const bsSerializedMesh& m
 	return true;
 }
 
+
+
+
 #ifdef BS_SUPPORT_MESH_CREATION
+
+
+
 
 unsigned int getAiMeshIndexCount(const aiMesh& mesh)
 {
@@ -425,7 +448,7 @@ unsigned int getAiMeshBufferMemSize(const aiScene* scene)
 }
 
 bsCreateSerializedMeshFlags bsCreateSerializedMesh(const std::string& fileName,
-	bsSerializedMesh& meshOut)
+	const bsComputeBoundingSphereCallback& boundingSphereCallback, bsSerializedMesh& meshOut)
 {
 	Assimp::Importer importer;
 	const unsigned int flags = aiProcess_Triangulate
@@ -437,7 +460,11 @@ bsCreateSerializedMeshFlags bsCreateSerializedMesh(const std::string& fileName,
 	{
 		std::string errorMessage("Error loading scene: ");
 		errorMessage.append(importer.GetErrorString());
+#ifndef BS_MESH_SERIALIZER_EXTERNAL
 		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
+#else
+		bsMeshSerializerLogErrorMessage(errorMessage.c_str());
+#endif
 
 		return BS_MESH_GENERIC_ERROR;
 	}
@@ -448,7 +475,11 @@ bsCreateSerializedMeshFlags bsCreateSerializedMesh(const std::string& fileName,
 		std::string errorMessage("\'");
 		errorMessage.append(fileName);
 		errorMessage.append("\' contains no meshes");
+#ifndef BS_MESH_SERIALIZER_EXTERNAL
 		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
+#else
+		bsMeshSerializerLogErrorMessage(errorMessage.c_str());
+#endif
 
 		return BS_MESH_INVALID_INPUT_MESH;
 	}
@@ -469,31 +500,32 @@ bsCreateSerializedMeshFlags bsCreateSerializedMesh(const std::string& fileName,
 
 	mesh.bufferCount = meshCount;
 
-	//Combined min/max extents of all submeshes.
-	XMFLOAT3 minExtents(FLT_MAX, FLT_MAX, FLT_MAX);
-	XMFLOAT3 maxExtents(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-	
 	for (unsigned int i = 0u; i < meshCount; ++i)
 	{
-		//Min/max extents of this submesh.
-		XMFLOAT3 tempMinExtents(FLT_MAX, FLT_MAX, FLT_MAX);
-		XMFLOAT3 tempMaxExtents(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-
 		const bsCreateSerializedMeshFlags parseFlags = parseData(scene->mMeshes[i],
-			mesh.vertexBuffers[i], mesh.indexBuffers[i],
-			tempMinExtents, tempMaxExtents, allocator);
+			mesh.vertexBuffers[i], mesh.indexBuffers[i], allocator);
 		if (parseFlags != BS_MESH_SUCCESSS)
 		{
 			//Parsing failed, return now rather than generate an invalid mesh.
 			return parseFlags;
 		}
-
-		minExtents = getMinExtents(minExtents, tempMinExtents);
-		maxExtents = getMaxExtents(maxExtents, tempMaxExtents);
 	}
 
-	mesh.minExtents = minExtents;
-	mesh.maxExtents = maxExtents;
+	XMFLOAT3 boundingSphereCenter;
+	float boundingSphereRadius;
+	//Compute the bounding sphere.
+	const bool sphereComputationResult = boundingSphereCallback(mesh, boundingSphereCenter,
+		boundingSphereRadius);
+
+	if (!sphereComputationResult)
+	{
+		return BS_MESH_INVALID_INPUT_MESH;
+	}
+
+	mesh.boundingSphereCenterAndRadius.x = boundingSphereCenter.x;
+	mesh.boundingSphereCenterAndRadius.y = boundingSphereCenter.y;
+	mesh.boundingSphereCenterAndRadius.z = boundingSphereCenter.z;
+	mesh.boundingSphereCenterAndRadius.w = boundingSphereRadius;
 
 	meshOut = std::move(mesh);
 
@@ -552,7 +584,7 @@ bsCreateSerializedMeshFlags copyIndices(const aiMesh* mesh, bsIndexBuffer& index
 	Also calculates the min/max extents of the vertices.
 */
 bsCreateSerializedMeshFlags copyVertices(const aiMesh* mesh, bsVertexBuffer& vertexBufferOut,
-	bsLinearHeapAllocator& allocator, XMFLOAT3& minExtentsOut, XMFLOAT3& maxExtentsOut)
+	bsLinearHeapAllocator& allocator)
 {
 	const bool meshHasNormals = mesh->HasNormals();
 	const bool meshHasTexCoords = mesh->HasTextureCoords(0);
@@ -583,10 +615,6 @@ bsCreateSerializedMeshFlags copyVertices(const aiMesh* mesh, bsVertexBuffer& ver
 			(mesh->mTextureCoords[0][i]) : XMFLOAT2(0.0f, 0.0f);
 
 		vertexBufferOut.vertices[i] = vertex;
-
-		//Store min/max positions for AABB generation.
-		minExtentsOut = getMinExtents(minExtentsOut, vertex.position);
-		maxExtentsOut = getMaxExtents(maxExtentsOut, vertex.position);
 	}
 
 	return BS_MESH_SUCCESSS;
@@ -600,16 +628,9 @@ bsCreateSerializedMeshFlags copyVertices(const aiMesh* mesh, bsVertexBuffer& ver
 	XMFLOAT3& maxExtentsOut:		The maximum extents of the output vertex buffer.
 */
 bsCreateSerializedMeshFlags parseData(const aiMesh* mesh, bsVertexBuffer& verticesOut,
-	bsIndexBuffer& indicesOut, XMFLOAT3& minExtentsOut, XMFLOAT3& maxExtentsOut,
-	bsLinearHeapAllocator& allocator)
+	bsIndexBuffer& indicesOut, bsLinearHeapAllocator& allocator)
 {
-	//Min/max extents of the mesh. Initialize to inverse of maximum size,
-	//which is completely invalid. Makes it easier to check for errors.
-	XMFLOAT3 minExtents(FLT_MAX, FLT_MAX, FLT_MAX);
-	XMFLOAT3 maxExtents(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-
-	bsCreateSerializedMeshFlags flags =
-		copyVertices(mesh, verticesOut, allocator, minExtents, maxExtents);
+	bsCreateSerializedMeshFlags flags = copyVertices(mesh, verticesOut, allocator);
 
 	if (flags != BS_MESH_SUCCESSS)
 	{
@@ -621,30 +642,15 @@ bsCreateSerializedMeshFlags parseData(const aiMesh* mesh, bsVertexBuffer& vertic
 		return flags;
 	}
 
-	//Comparison is OK here since it's not checking the result of a calculation, but if
-	//an assignment has been made after the construction of the variable.
-	if ((minExtents.x == FLT_MAX) || (minExtents.y == FLT_MAX)
-		|| (minExtents.z == FLT_MAX))
-	{
-		bsLog::logMessage("Error: Min extents were never updated in a submesh");
-
-		return BS_MESH_INVALID_INPUT_MESH;
-	}
-
-	if ((maxExtents.x == -FLT_MAX) || (maxExtents.y == -FLT_MAX)
-		|| (maxExtents.z == -FLT_MAX))
-	{
-		bsLog::logMessage("Error: Max extents were never updated in a submesh");
-
-		return BS_MESH_INVALID_INPUT_MESH;
-	}
-
-	minExtentsOut = minExtents;
-	maxExtentsOut = maxExtents;
-
 	if (verticesOut.vertexCount == 0 || indicesOut.indexCount == 0)
 	{
-		bsLog::logMessage("A mesh contains no vertices or indices", pantheios::SEV_ERROR);
+#ifndef BS_MESH_SERIALIZER_EXTERNAL
+		bsLog::logMessage("A mesh contains no vertices or indices",
+			pantheios::SEV_ERROR);
+#else
+		bsMeshSerializerLogErrorMessage("A mesh contains no vertices or indices");
+#endif
+
 		return BS_MESH_INVALID_INPUT_MESH;
 	}
 

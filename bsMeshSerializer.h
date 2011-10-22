@@ -2,8 +2,14 @@
 
 
 /*	Contains functions for saving and loading of meshes from disk.
+
 	Define BS_SUPPORT_MESH_CREATION to enable creating bsSerializedMesh from
 	other mesh formats. Note that this requires assimp to work.
+
+	Define BS_MESH_SERIALIZER_EXTERNAL to enable using outside of the main engine.
+	This results in StdAfx.h not being included (since it includes several other libraries),
+	and log messages will be sent to an extern function matching the following signature:
+	void bsMeshSerializerLogErrorMessage(const char*);
 */
 
 
@@ -33,8 +39,7 @@ struct bsSerializedMesh
 		: vertexBuffers(nullptr)
 		, indexBuffers(nullptr)
 		, bufferCount(0)
-		, minExtents(FLT_MAX, FLT_MAX, FLT_MAX)
-		, maxExtents(FLT_MIN, FLT_MIN, FLT_MIN)
+		, boundingSphereCenterAndRadius(0.0f, 0.0f, 0.0f, -1.0f)//Invalid radius.
 		, dynamicData(nullptr)
 		, dynamicDataSize(0)
 	{}
@@ -63,12 +68,11 @@ struct bsSerializedMesh
 
 	bool operator==(const bsSerializedMesh& other)
 	{
-		const int memCmpMin = memcmp(&minExtents, &other.minExtents, sizeof(XMFLOAT3));
-		const int memCmpMax = memcmp(&maxExtents, &other.maxExtents, sizeof(XMFLOAT3));
+		const int memCmpBoundingSphere = memcmp(&boundingSphereCenterAndRadius,
+			&other.boundingSphereCenterAndRadius, sizeof(XMFLOAT3));
 
 		const bool bufferCountAndExtentsEqual = bufferCount == other.bufferCount
-			&& memCmpMin == 0
-			&& memCmpMax == 0;
+			&& memCmpBoundingSphere == 0;
 
 		if (!bufferCountAndExtentsEqual)
 		{
@@ -118,9 +122,8 @@ struct bsSerializedMesh
 	//Size of the two above buffers (not combined).
 	unsigned int	bufferCount;
 
-	//For AABB.
-	XMFLOAT3	minExtents;
-	XMFLOAT3	maxExtents;
+	//Center and radius of bounding sphere, radius in w.
+	XMFLOAT4	boundingSphereCenterAndRadius;
 
 	//Holds all the dynamically allocated memory in this mesh.
 	void*	dynamicData;
@@ -162,10 +165,21 @@ enum bsCreateSerializedMeshFlags
 	BS_MESH_INVALID_INPUT_MESH = 1 << 10,
 };
 
+#include <functional>
+
+/*	A function with these parameters must be provided when calling bsCreateSerializedMesh.
+	The function should calculate the minimal bounding sphere around all the points in the
+	mesh, and return the sphere's center and radius as the last two parameters.
+	The function should also return true if successful, or false if not successful.
+
+	One option is using XNACollision's ComputeBoundingSphereFromPoints, which can be found
+	in DXSDK\Samples\C++\Misc\Collision\xnacollision.h
+*/
+typedef std::function<bool(const bsSerializedMesh&, XMFLOAT3&, float&)> bsComputeBoundingSphereCallback;
 
 /*	Loads a mesh from disk and converts it to the bsSerializedMesh format.
 	Returns true on success.
 */
 bsCreateSerializedMeshFlags bsCreateSerializedMesh(const std::string& fileName,
-	bsSerializedMesh& meshOut);
+	const bsComputeBoundingSphereCallback& boundingSphereCallback, bsSerializedMesh& meshOut);
 #endif // BS_SUPPORT_MESH_CREATION
