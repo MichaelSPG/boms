@@ -31,7 +31,7 @@ class bsShaderManager
 public:
 	//Get a shader, or create it if it isn't already loaded.
 	std::shared_ptr<bsVertexShader> getVertexShader(const std::string& fileName,
-		const std::vector<D3D11_INPUT_ELEMENT_DESC>& inputDesc) const;
+		const D3D11_INPUT_ELEMENT_DESC* inputDescs, unsigned int inputDescCount) const;
 
 	//Get a shader, or create it if it isn't already loaded.
 	std::shared_ptr<bsPixelShader> getPixelShader(const std::string& fileName) const;
@@ -48,7 +48,7 @@ public:
 private:
 	//Create/compile vertex shader
 	std::shared_ptr<bsVertexShader> createVertexShader(const std::string& fileName,
-		const std::vector<D3D11_INPUT_ELEMENT_DESC>& inputDesc);
+		const D3D11_INPUT_ELEMENT_DESC* inputDescs, unsigned int inputDescCount);
 
 	//Create/compile pixel shader
 	std::shared_ptr<bsPixelShader> createPixelShader(const std::string& fileName);

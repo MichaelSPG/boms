@@ -34,7 +34,7 @@ bsFxaaPass::bsFxaaPass(bsShaderManager* shaderManager, bsDx11Renderer* dx11Rende
 	inputDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
 	inputLayout[1] = inputDesc;
 
-	mVertexShader = mShaderManager->getVertexShader("Fxaa.fx", inputLayout);
+	mVertexShader = mShaderManager->getVertexShader("Fxaa.fx", inputLayout.data(), inputLayout.size());
 
 
 	D3D11_BUFFER_DESC bufferDescription = { 0 };

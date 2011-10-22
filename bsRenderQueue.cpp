@@ -59,48 +59,47 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	//Shaders
 	//Wireframe
 	std::vector<D3D11_INPUT_ELEMENT_DESC> inputLayout;
-	D3D11_INPUT_ELEMENT_DESC d;
-	ZeroMemory(&d, sizeof(d));
-	d.SemanticName = "POSITION";
-	d.SemanticIndex = 0;
-	d.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	d.InputSlot = 0;
-	d.AlignedByteOffset = 0;
-	d.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-	d.InstanceDataStepRate = 0;
-	inputLayout.push_back(d);
-	/*d.SemanticName = "COLOR";
-	d.AlignedByteOffset = 12;
-	inputLayout.push_back(d);
+	D3D11_INPUT_ELEMENT_DESC inputElementDesc;
+	ZeroMemory(&inputElementDesc, sizeof(inputElementDesc));
+	inputElementDesc.SemanticName = "POSITION";
+	inputElementDesc.SemanticIndex = 0;
+	inputElementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	inputElementDesc.InputSlot = 0;
+	inputElementDesc.AlignedByteOffset = 0;
+	inputElementDesc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	inputElementDesc.InstanceDataStepRate = 0;
+	inputLayout.push_back(inputElementDesc);
+	/*inputElementDesc.SemanticName = "COLOR";
+	inputElementDesc.AlignedByteOffset = 12;
+	inputLayout.push_back(inputElementDesc);
 	*/
 
-	mWireframeVertexShader = mShaderManager->getVertexShader("Wireframe.fx", inputLayout);
+	mWireframeVertexShader = mShaderManager->getVertexShader("Wireframe.fx", inputLayout.data(), inputLayout.size());
 	mWireframePixelShader = mShaderManager->getPixelShader("Wireframe.fx");
 
-
+/*
 	//Mesh
 	inputLayout.clear();
-	d.SemanticName = "POSITION";
-	d.SemanticIndex = 0;
-	d.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	d.InputSlot = 0;
-	d.AlignedByteOffset = 0;
-	d.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-	d.InstanceDataStepRate = 0;
-	inputLayout.push_back(d);
 
-	d.SemanticName = "NORMAL";
-	d.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	d.AlignedByteOffset = 12u;
-	inputLayout.push_back(d);
+	//Vertex data.
+	inputElementDesc.SemanticName = "POSITION";
+	inputElementDesc.SemanticIndex = 0;
+	inputElementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	inputElementDesc.InputSlot = 0;
+	inputElementDesc.AlignedByteOffset = 0;
+	inputElementDesc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	inputElementDesc.InstanceDataStepRate = 0;
+	inputLayout.push_back(inputElementDesc);
 
-	d.SemanticName = "TEXCOORD";
-	d.AlignedByteOffset = 24u;
-	d.Format = DXGI_FORMAT_R32G32_FLOAT;
-	inputLayout.push_back(d);
+	inputElementDesc.SemanticName = "NORMAL";
+	inputElementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	inputElementDesc.AlignedByteOffset = 12u;
+	inputLayout.push_back(inputElementDesc);
 
-	mMeshVertexShader = mShaderManager->getVertexShader("Mesh.fx", inputLayout);
-	mMeshPixelShader = mShaderManager->getPixelShader("Mesh.fx");
+	inputElementDesc.SemanticName = "TEXCOORD";
+	inputElementDesc.AlignedByteOffset = 24u;
+	inputElementDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
+	inputLayout.push_back(inputElementDesc);
 
 
 	//Light
@@ -110,7 +109,7 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	d.AlignedByteOffset = 0;
 	inputLayout.push_back(d);
 
-	mLightVertexShader = mShaderManager->getVertexShader("Light.fx", inputLayout);
+	mLightVertexShader = mShaderManager->getVertexShader("Light.fx", inputLayout.data(), inputLayout.size());
 	mLightPixelShader = mShaderManager->getPixelShader("Light.fx");
 }
 

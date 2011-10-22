@@ -24,10 +24,10 @@ bsShaderManager::~bsShaderManager()
 }
 
 std::shared_ptr<bsVertexShader> bsShaderManager::getVertexShader(const std::string& fileName,
-	const std::vector<D3D11_INPUT_ELEMENT_DESC>& inputDesc) const
+	const D3D11_INPUT_ELEMENT_DESC* inputDescs, unsigned int inputDescCount) const
 {
 	BS_ASSERT(fileName.length());
-	BS_ASSERT2(inputDesc.size(), "Zero length input description");
+	BS_ASSERT2(inputDescCount, "Zero length input description");
 
 	//Get the path for the file
 	std::string filePath = mResourceManager->getFileSystem()->getPathFromFilename(fileName);
@@ -56,7 +56,7 @@ std::shared_ptr<bsVertexShader> bsShaderManager::getVertexShader(const std::stri
 
 	//Not found, create and return the shader
 	//createVertexShader is not const, so must cast const away
-	return const_cast<bsShaderManager*>(this)->createVertexShader(filePath, inputDesc);
+	return const_cast<bsShaderManager*>(this)->createVertexShader(filePath, inputDescs, inputDescCount);
 }
 
 std::shared_ptr<bsPixelShader> bsShaderManager::getPixelShader(const std::string& fileName) const
@@ -92,7 +92,7 @@ std::shared_ptr<bsPixelShader> bsShaderManager::getPixelShader(const std::string
 }
 
 std::shared_ptr<bsVertexShader> bsShaderManager::createVertexShader(const std::string& fileName,
-	const std::vector<D3D11_INPUT_ELEMENT_DESC>& inputDesc)
+	const D3D11_INPUT_ELEMENT_DESC* inputDescs, unsigned int inputDescCount)
 {
 	//TODO: Return a default fallback shader if this fails.
 
@@ -134,7 +134,7 @@ std::shared_ptr<bsVertexShader> bsShaderManager::createVertexShader(const std::s
 
 	//Create input layout
 	ID3D11InputLayout* vertexLayout = nullptr;
-	if (FAILED(mDx11Renderer->getDevice()->CreateInputLayout(&inputDesc[0], inputDesc.size(),
+	if (FAILED(mDx11Renderer->getDevice()->CreateInputLayout(inputDescs, inputDescCount,
 		vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &vertexLayout)))
 	{
 		if (vsBlob)
@@ -152,7 +152,12 @@ std::shared_ptr<bsVertexShader> bsShaderManager::createVertexShader(const std::s
 
 	auto vs = std::make_pair(fileName, std::make_shared<bsVertexShader>(vertexShader,
 		vertexLayout, getUniqueShaderID()));
-	vs.second->mInputLayoutDescriptions = inputDesc;
+	
+	vs.second->mInputLayoutDescriptions.reserve(inputDescCount);
+	for (unsigned int i = 0; i < inputDescCount; ++i)
+	{
+		vs.second->mInputLayoutDescriptions.push_back(inputDescs[i]);
+	}
 
 #ifdef BS_DEBUG
 	//Set debug data in the D3D objects.
