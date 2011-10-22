@@ -15,6 +15,8 @@ class bsDx11Renderer;
 
 /*	This class can be used for drawing line lists, meaning each line consists of 2 unique
 	points that will not be used for the next and previous lines.
+
+	Lines ignore scale.
 */
 class bsLine3D : public bsRenderable
 {

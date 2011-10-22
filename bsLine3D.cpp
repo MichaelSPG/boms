@@ -134,7 +134,8 @@ void bsLine3D::draw(bsDx11Renderer* dx11Renderer)
 	}
 
 	BS_ASSERT(dx11Renderer);
-	BS_ASSERT2(mFinished, "Trying to draw a bsLine3D which has not had its buffers created");
+	BS_ASSERT2(mFinished, "Trying to draw a bsLine3D which has not had its buffers created."
+		" Did you forget to call build()?");
 
 	ID3D11DeviceContext* context = dx11Renderer->getDeviceContext();
 

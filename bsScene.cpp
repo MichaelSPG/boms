@@ -90,6 +90,11 @@ void bsScene::update(float deltaTime)
 
 void bsScene::synchronizeActiveEntities()
 {
+	/*	This function synchronizes every rigid body which is in an active simulation
+		island with its scene node.  Inactive simulation islands are not simulated, and
+		are therefore not required to be synchronized.
+	*/
+
 	mPhysicsWorld->markForRead();
 	const hkArray<hkpSimulationIsland*>& activeIslands = mPhysicsWorld->getActiveSimulationIslands();
 
