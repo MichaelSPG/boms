@@ -17,7 +17,7 @@
 #include "bsConvert.h"
 #include "bsAssert.h"
 
-namespace bsGeometryUtils
+namespace bsGeometry
 {
 void createLinesFromShape(const hkpShape* const shape, bsLine3D* line3D)
 {
@@ -91,4 +91,85 @@ void createLinesFromShape(const hkpShape* const shape, bsLine3D* line3D)
 	*/
 }
 
-} // namespace bsGeometryUtils
+void createLinesFromSphere(const XMFLOAT3& sphereCenter, float radius,
+	unsigned int linesPerAxis, bsLine3D* lineRendererOut)
+{
+	std::vector<XMFLOAT3> points;
+	// 3=XYZ axes, 2=start and end points for each line.
+	points.reserve(linesPerAxis * 3 * 2);
+
+	//How much to step with per loop iteration so that currentDelta will interpolate
+	//between 0 and 2*pi.
+	const float delta = (XM_PI * 2) / linesPerAxis;
+
+	float currentDelta = 0.0f;
+
+
+	/// Generate circle around X axis.
+	//The first point needs to be stored so that the last line can connect to it.
+	XMFLOAT3 firstPoint(sphereCenter.x * radius, (sin(currentDelta) + sphereCenter.y) * radius,
+		(-cos(currentDelta) + sphereCenter.z) * radius);
+	//Point being used in the loop to generate interpolated points.
+	XMFLOAT3 point;
+
+	points.push_back(firstPoint);
+	currentDelta += delta;
+
+	for (unsigned int i = 1; i < linesPerAxis; ++i, currentDelta += delta)
+	{
+		point.x = sphereCenter.x * radius;
+		point.y = (sin(currentDelta) + sphereCenter.y) * radius;
+		point.z = (-cos(currentDelta) + sphereCenter.z) * radius;
+
+		points.push_back(point);
+		points.push_back(point);
+	}
+	points.push_back(firstPoint);
+
+
+	/// Generate circle around Y axis.
+	currentDelta = 0.0f;
+
+	firstPoint.x = (sin(currentDelta) + sphereCenter.x) * radius;
+	firstPoint.y = sphereCenter.y * radius;
+	firstPoint.z = (-cos(currentDelta) + sphereCenter.z) * radius;
+	points.push_back(firstPoint);
+	currentDelta += delta;
+
+	for (unsigned int i = 1; i < linesPerAxis; ++i, currentDelta += delta)
+	{
+		point.x = (sin(currentDelta) + sphereCenter.x) * radius;
+		point.y = sphereCenter.y * radius;
+		point.z = (-cos(currentDelta) + sphereCenter.z) * radius;
+
+		points.push_back(point);
+		points.push_back(point);
+	}
+	points.push_back(firstPoint);
+
+
+	/// Generate circle around Z axis.
+	currentDelta = 0.0f;
+
+	firstPoint.x = (sin(currentDelta) + sphereCenter.x) * radius;
+	firstPoint.y = (-cos(currentDelta) + sphereCenter.y) * radius;
+	firstPoint.z = sphereCenter.z * radius;
+	points.push_back(firstPoint);
+	currentDelta += delta;
+
+	for (unsigned int i = 1; i < linesPerAxis; ++i, currentDelta += delta)
+	{
+		point.x = (sin(currentDelta) + sphereCenter.x) * radius;
+		point.y = (-cos(currentDelta) + sphereCenter.y) * radius;
+		point.z = sphereCenter.z * radius;
+
+		points.push_back(point);
+		points.push_back(point);
+	}
+	points.push_back(firstPoint);
+
+
+	lineRendererOut->addPoints(points.data(), points.size());
+}
+
+} // namespace bsGeometry
