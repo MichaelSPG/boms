@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <memory>
 
 #include <Windows.h>
@@ -13,6 +12,7 @@
 class bsMesh;
 class bsMeshCache;
 class bsDx11Renderer;
+struct LightInstanceData;
 
 
 struct bsPointLightCInfo
@@ -61,6 +61,9 @@ public:
 	/*	Draws the mesh this light uses to represent itself.
 	*/
 	void draw(bsDx11Renderer* dx11Renderer) const;
+
+	void drawInstanced(ID3D11DeviceContext& deviceContext, ID3D11Buffer* instanceBuffer,
+		unsigned int instanceCount);
 
 	inline float getRadius() const
 	{

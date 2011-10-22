@@ -50,11 +50,15 @@ struct bsFrameStats
 	{
 		std::stringstream ss;
 		ss.setf(std::ios::floatfield, std::ios::fixed);
+		ss.imbue(std::locale(""));
+
 		ss  << "\nVisible scene nodes: " << visibleSceneNodeCount
 			<< "\nUnique meshes drawn: " << uniqueMeshesDrawn
 			<< "\nTotal meshes drawn: " << totalMeshesDrawn
 			<< "\nTotal lines drawn: " << linesDrawn
-			<< "\nVisible lights: " << visibleLights;
+			<< "\nVisible lights: " << visibleLights
+			<< "\nTris (w/instanced): " << totalTrianglesDrawn
+			<< '(' << totalTrianglesDrawnNotInstanced << ')';
 
 		return ss.str();
 	}
@@ -63,11 +67,15 @@ struct bsFrameStats
 	{
 		std::wstringstream ss;
 		ss.setf(std::ios::floatfield, std::ios::fixed);
+		ss.imbue(std::locale(""));
+
 		ss  << L"\nVisible scene nodes: " << visibleSceneNodeCount
 			<< L"\nUnique meshes drawn: " << uniqueMeshesDrawn
 			<< L"\nTotal meshes drawn: " << totalMeshesDrawn
 			<< L"\nTotal lines drawn: " << linesDrawn
-			<< L"\nVisible lights: " << visibleLights;
+			<< L"\nVisible lights: " << visibleLights
+			<< L"\nTris (w/instanced): " << totalTrianglesDrawn
+			<< L'(' << totalTrianglesDrawnNotInstanced << L')';
 
 		return ss.str();
 	}
@@ -78,6 +86,9 @@ struct bsFrameStats
 	unsigned int	totalMeshesDrawn;
 	unsigned int	linesDrawn;
 	unsigned int	visibleLights;
+
+	unsigned int	totalTrianglesDrawn;
+	unsigned int	totalTrianglesDrawnNotInstanced;
 };
 
 
@@ -122,6 +133,11 @@ public:
 		return mFrameStats;
 	}
 
+	void setUseInstancing(bool useInstancing)
+	{
+		mUseInstancing = useInstancing;
+	}
+
 private:
 	/*	Gets the renderables from the scene nodes and groups them based on what kind of
 		renderable they are
@@ -132,6 +148,11 @@ private:
 
 	//Functions to draw individual renderable types.
 	void drawMeshes();
+	void drawMeshesInstanced();
+
+	void drawLightsNotInstanced();
+	void drawLightsInstanced();
+
 
 	void setWorldConstantBuffer(const XMMATRIX& world);
 
@@ -140,6 +161,8 @@ private:
 	void setLightConstantBuffer(const CBLight& cbLight);
 
 	void unbindGeometryShader();
+
+	bool mUseInstancing;
 
 	bsCamera*		mCamera;
 	
@@ -152,11 +175,16 @@ private:
 	std::shared_ptr<bsPixelShader>	mWireframePixelShader;
 	std::shared_ptr<bsVertexShader>	mWireframeVertexShader;
 
+	std::shared_ptr<bsPixelShader>	mMeshInstancedPixelShader;
+	std::shared_ptr<bsVertexShader>	mMeshInstancedVertexShader;
+
 	std::shared_ptr<bsPixelShader>	mMeshPixelShader;
 	std::shared_ptr<bsVertexShader>	mMeshVertexShader;
 
 	std::shared_ptr<bsPixelShader>	mLightPixelShader;
 	std::shared_ptr<bsVertexShader>	mLightVertexShader;
+	std::shared_ptr<bsPixelShader>	mLightInstancedPixelShader;
+	std::shared_ptr<bsVertexShader>	mLightInstancedVertexShader;
 
 	bsFrameStats		mFrameStats;
 

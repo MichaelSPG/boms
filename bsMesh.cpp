@@ -97,3 +97,26 @@ void bsMesh::draw(bsDx11Renderer* dx11Renderer) const
 		context->DrawIndexed(mIndexCounts[i], 0, 0);
 	}
 }
+
+void bsMesh::drawInstanced(ID3D11DeviceContext& deviceContext, ID3D11Buffer* instanceBuffer,
+	unsigned int instanceCount) const
+{
+	if (!mLoadingFinished)
+	{
+		return;
+	}
+
+	unsigned int strides[2] = { sizeof(bsVertexNormalTex), sizeof(XMMATRIX) };
+	unsigned int offsets[2] = { 0, 0 };
+	ID3D11Buffer* vertexInstanceBuffers[2] = { nullptr, instanceBuffer };
+
+	const unsigned int bufferCount = mVertexBuffers.size();
+	for (unsigned int i = 0; i < bufferCount; ++i)
+	{
+		vertexInstanceBuffers[0] = mVertexBuffers[i];
+		deviceContext.IASetVertexBuffers(0, 2, vertexInstanceBuffers, strides, offsets);
+		deviceContext.IASetIndexBuffer(mIndexBuffers[i], DXGI_FORMAT_R32_UINT, 0);
+
+		deviceContext.DrawIndexedInstanced(mIndexCounts[i], instanceCount, 0, 0, 0);
+	}
+}

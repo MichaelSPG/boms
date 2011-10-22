@@ -25,11 +25,14 @@
 #include "bsMath.h"
 #include "bsConstantBuffers.h"
 
+#include "bsAlignedAllocator.h"
+
 
 bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shaderManager)
 	: mCamera(nullptr)
 	, mDx11Renderer(dx11Renderer)
 	, mShaderManager(shaderManager)
+	, mUseInstancing(false)
 {
 	BS_ASSERT(dx11Renderer);
 	BS_ASSERT(shaderManager);
@@ -69,48 +72,68 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	inputElementDesc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	inputElementDesc.InstanceDataStepRate = 0;
 	inputLayout.push_back(inputElementDesc);
-	/*inputElementDesc.SemanticName = "COLOR";
-	inputElementDesc.AlignedByteOffset = 12;
-	inputLayout.push_back(inputElementDesc);
-	*/
 
 	mWireframeVertexShader = mShaderManager->getVertexShader("Wireframe.fx", inputLayout.data(), inputLayout.size());
 	mWireframePixelShader = mShaderManager->getPixelShader("Wireframe.fx");
 
-/*
-	//Mesh
-	inputLayout.clear();
 
-	//Vertex data.
-	inputElementDesc.SemanticName = "POSITION";
-	inputElementDesc.SemanticIndex = 0;
-	inputElementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	inputElementDesc.InputSlot = 0;
-	inputElementDesc.AlignedByteOffset = 0;
-	inputElementDesc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-	inputElementDesc.InstanceDataStepRate = 0;
-	inputLayout.push_back(inputElementDesc);
+	D3D11_INPUT_ELEMENT_DESC layout[7] =
+	{
+		//Vertex data.
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 
-	inputElementDesc.SemanticName = "NORMAL";
-	inputElementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	inputElementDesc.AlignedByteOffset = 12u;
-	inputLayout.push_back(inputElementDesc);
+		//Instance data (4x4 matrix).
+		{ "TEXCOORD", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+		{ "TEXCOORD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 16, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+		{ "TEXCOORD", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 32, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+		{ "TEXCOORD", 4, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 48, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+	};
 
-	inputElementDesc.SemanticName = "TEXCOORD";
-	inputElementDesc.AlignedByteOffset = 24u;
-	inputElementDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
-	inputLayout.push_back(inputElementDesc);
+	mMeshInstancedVertexShader = mShaderManager->getVertexShader("MeshInstanced.fx", layout, 7);
+	mMeshInstancedPixelShader = mShaderManager->getPixelShader("MeshInstanced.fx");
 
+	{
+		D3D11_INPUT_ELEMENT_DESC layoutNotInstanced[3] =
+		{
+			//Vertex data.
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		};
+
+		mMeshVertexShader = mShaderManager->getVertexShader("Mesh.fx", layoutNotInstanced, 3);
+		mMeshPixelShader = mShaderManager->getPixelShader("MeshInstanced.fx");
+	}
 
 	//Light
 	inputLayout.clear();
-	d.SemanticName = "POSITION";
-	d.Format = DXGI_FORMAT_R32G32B32_FLOAT;
-	d.AlignedByteOffset = 0;
-	inputLayout.push_back(d);
+	inputElementDesc.SemanticName = "POSITION";
+	inputElementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	inputElementDesc.AlignedByteOffset = 0;
+	inputLayout.push_back(inputElementDesc);
 
 	mLightVertexShader = mShaderManager->getVertexShader("Light.fx", inputLayout.data(), inputLayout.size());
 	mLightPixelShader = mShaderManager->getPixelShader("Light.fx");
+
+	D3D11_INPUT_ELEMENT_DESC lightInstanced[7] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+
+		//Instance data (4x4 matrix + pos/radius/color/intensity).
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+		{ "TEXCOORD", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 16, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+		{ "TEXCOORD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 32, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+		{ "TEXCOORD", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 48, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+		//Position/radius
+		{ "TEXCOORD", 4, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 64, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+		//Color/intensity
+		{ "TEXCOORD", 5, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 80, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+	};
+
+	mLightInstancedVertexShader = mShaderManager->getVertexShader("LightInstanced.fx", lightInstanced, 7);
+	mLightInstancedPixelShader = mShaderManager->getPixelShader("LightInstanced.fx");
 }
 
 bsRenderQueue::~bsRenderQueue()
@@ -140,8 +163,14 @@ void bsRenderQueue::drawGeometry()
 	sortLights();
 
 	//Render all the geometric renderable types
-	drawMeshes();
-	//drawLines();
+	if (mUseInstancing)
+	{
+		drawMeshesInstanced();
+	}
+	else
+	{
+		drawMeshes();
+	}
 }
 
 void bsRenderQueue::setWorldConstantBuffer(const XMMATRIX& world)
@@ -323,14 +352,79 @@ void bsRenderQueue::drawMeshes()
 			transformMat = XMMatrixMultiply(transformMat, positionMat);
 			transformMat = XMMatrixTranspose(transformMat);
 			*/
-			XMFLOAT4X4 xmf4x4;
+			//XMFLOAT4X4 xmf4x4;
 			//XMStoreFloat4x4(&xmf4x4, transformMat);
 			//XMStoreFloat4x4(&xmf4x4, );
 			setWorldConstantBuffer(sceneNodes[i]->getTransposedTransform());
 
 			mesh->draw(mDx11Renderer);
+
+			const unsigned int triangleCount = mesh->getTriangleCount();
+			mFrameStats.totalTrianglesDrawn += triangleCount;
+			mFrameStats.totalTrianglesDrawnNotInstanced += triangleCount;
 		}
 	}
+}
+
+void drawMeshInstanced(const bsDx11Renderer& renderer, const bsMesh& mesh,
+	const XMMATRIX* transforms, unsigned int transformCount);
+
+void bsRenderQueue::drawMeshesInstanced()
+{
+	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(
+		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	mShaderManager->setPixelShader(mMeshInstancedPixelShader);
+	mShaderManager->setVertexShader(mMeshInstancedVertexShader);
+
+	mFrameStats.uniqueMeshesDrawn = mMeshesToDraw.size();
+
+
+	std::vector<XMMATRIX, bsAlignedAllocator<XMMATRIX>> transforms;
+
+	for (auto itr = mMeshesToDraw.begin(), end = mMeshesToDraw.end(); itr != end; ++itr)
+	{
+		const bsMesh& mesh = *itr->first;
+		if (!mesh.hasFinishedLoading())
+		{
+			continue;
+		}
+
+		const std::vector<bsSceneNode*>& sceneNodes = itr->second;
+		mFrameStats.totalMeshesDrawn += sceneNodes.size();
+		mFrameStats.totalTrianglesDrawn += mesh.getTriangleCount();
+		mFrameStats.totalTrianglesDrawnNotInstanced += mesh.getTriangleCount() * sceneNodes.size();
+
+		transforms.clear();
+		transforms.reserve(sceneNodes.size());
+		for (unsigned int i = 0; i < sceneNodes.size(); ++i)
+		{
+			transforms.push_back(sceneNodes[i]->getTransposedTransform());
+		}
+
+		drawMeshInstanced(*mDx11Renderer, mesh, transforms.data(), transforms.size());
+	}
+}
+
+void drawMeshInstanced(const bsDx11Renderer& renderer, const bsMesh& mesh,
+	const XMMATRIX* transforms, unsigned int transformCount)
+{
+	D3D11_BUFFER_DESC instanceBufferDesc = { 0 };
+	instanceBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	instanceBufferDesc.ByteWidth = sizeof(XMMATRIX) * transformCount;
+	instanceBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	
+	D3D11_SUBRESOURCE_DATA instanceData = { 0 };
+	instanceData.pSysMem = transforms;
+
+	ID3D11Buffer* instanceBuffer;
+	HRESULT hr = renderer.getDevice()->CreateBuffer(&instanceBufferDesc, &instanceData, &instanceBuffer);
+	BS_ASSERT(SUCCEEDED(hr));
+
+	mesh.drawInstanced(*renderer.getDeviceContext(), instanceBuffer, transformCount);
+
+
+	instanceBuffer->Release();
 }
 
 void bsRenderQueue::drawLines()
@@ -366,6 +460,107 @@ void bsRenderQueue::drawLines()
 }
 
 void bsRenderQueue::drawLights()
+{
+	if (mUseInstancing)
+	{
+		drawLightsInstanced();
+	}
+	else
+	{
+		drawLightsNotInstanced();
+	}
+}
+
+void drawInstancedLight(const bsDx11Renderer& renderer, bsLight& light,
+	const LightInstanceData* lightInstanceData, unsigned int instanceCount)
+{
+	D3D11_BUFFER_DESC instanceBufferDesc = { 0 };
+	instanceBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	instanceBufferDesc.ByteWidth = sizeof(LightInstanceData) * instanceCount;
+	instanceBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+
+	D3D11_SUBRESOURCE_DATA instanceData = { 0 };
+	instanceData.pSysMem = lightInstanceData;
+
+	ID3D11Buffer* instanceBuffer;
+	HRESULT hr = renderer.getDevice()->CreateBuffer(&instanceBufferDesc, &instanceData, &instanceBuffer);
+	BS_ASSERT(SUCCEEDED(hr));
+
+	//bsLight::drawInstanced(*renderer.getDeviceContext(), instanceBuffer, instanceCount);
+	light.drawInstanced(*renderer.getDeviceContext(), instanceBuffer, instanceCount);
+
+	instanceBuffer->Release();
+}
+
+void bsRenderQueue::drawLightsInstanced()
+{
+	mShaderManager->setPixelShader(mLightInstancedPixelShader);
+	mShaderManager->setVertexShader(mLightInstancedVertexShader);
+
+	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(
+		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	XMMATRIX scalingMatrix;
+	XMMATRIX fullTransform;
+	XMFLOAT4X4 lightWorldTransform;
+	CBLight cbLight;
+
+	const unsigned int lightCount = mLightPositionPairs.size();
+
+	std::vector<LightInstanceData, bsAlignedAllocator<LightInstanceData>> lightData;
+	lightData.reserve(lightCount);
+
+	for (size_t i = 0; i < lightCount; ++i)
+	{
+		const bsLight* light = mLightPositionPairs[i].first;
+		const XMFLOAT3& position = mLightPositionPairs[i].second;
+
+		//Create the light's transform, which includes the light's radius as scaling factor
+		//and the node's position.
+		//Multiply with 2 to get diameter rather than radius.
+		const float scale = light->getRadius() * 2.0f;
+		scalingMatrix = XMMatrixScaling(scale, scale, scale);
+		fullTransform = XMMatrixMultiply(scalingMatrix,
+			XMMatrixTranslation(position.x, position.y, position.z));
+		fullTransform = XMMatrixTranspose(fullTransform);
+
+
+		LightInstanceData data;
+		data.world = fullTransform;
+		data.colorIntensity = XMVectorSet(light->mColor.x, light->mColor.y, light->mColor.z,
+			light->mIntensity);
+		data.positionRadius = XMVectorSet(position.x, position.y, position.z, light->mRadius);
+		lightData.push_back(data);
+
+
+		//XMStoreFloat4x4(&lightWorldTransform, fullTransform);
+#if 0
+		setWorldConstantBuffer(fullTransform);
+
+
+		memcpy(&cbLight.lightColor.x, &light->mColor.x, sizeof(XMFLOAT3));
+		cbLight.lightColor.w = light->mIntensity;
+
+		memcpy(&cbLight.lightPosition.x, &position.x, sizeof(XMFLOAT3));
+		cbLight.lightPosition.w = light->mRadius;
+
+		setLightConstantBuffer(cbLight);
+
+		light->draw(mDx11Renderer);
+#endif
+	}
+
+	drawInstancedLight(*mDx11Renderer, *mLightPositionPairs[0].first,
+		lightData.data(), lightData.size());
+	//
+	//for (unsigned int i = 0; i < lightCount; ++i)
+	//{
+	//	drawInstancedLight(*mDx11Renderer, *mLightPositionPairs[i].first,
+	//		lightData.data(), lightData.size());
+	//}
+}
+
+void bsRenderQueue::drawLightsNotInstanced()
 {
 	mShaderManager->setPixelShader(mLightPixelShader);
 	mShaderManager->setVertexShader(mLightVertexShader);

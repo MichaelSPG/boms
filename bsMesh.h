@@ -58,6 +58,34 @@ public:
 		return mLoadingFinished;
 	}
 
+	/*	Returns the total amount of triangles in this mesh.
+	*/
+	inline unsigned int getTriangleCount() const
+	{
+		return (unsigned int)std::accumulate(std::begin(mVertexCounts),
+			std::end(mVertexCounts), 0) / 3;
+	}
+
+
+	inline const std::vector<ID3D11Buffer*>& getVertexBuffers() const
+	{
+		return mVertexBuffers;
+	}
+
+	inline const std::vector<ID3D11Buffer*>& getIndexBuffers() const
+	{
+		return mIndexBuffers;
+	}
+
+	inline const std::vector<unsigned int>& getIndexCounts() const
+	{
+		return mIndexCounts;
+	}
+
+	inline const bsCollision::Sphere& getBoundingSphere() const
+	{
+		return mBoundingSphere;
+	}
 
 private:
 	//Not copyable
