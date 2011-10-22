@@ -43,7 +43,6 @@ void bsLine3D::addPoints(const XMFLOAT3* points, unsigned int pointCount)
 	BS_ASSERT2(pointCount != 0, "Cannot add zero points");
 	mFinished = false;
 
-	mPoints.resize(mPoints.size() + pointCount);
 	mPoints.insert(mPoints.end(), points, points + pointCount);
 }
 
