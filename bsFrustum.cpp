@@ -90,14 +90,10 @@ inline XMVECTOR transformPlane(const XMVECTOR& plane, const XMVECTOR& rotation,
 	const XMVECTOR& translation)
 {
 	const XMVECTOR normal = XMVector3Rotate(plane, rotation);
-	const XMVECTOR d = XMVectorSplatW(plane) - XMVector3Dot(normal, translation);
+	const XMVECTOR d = XMVectorSubtract(XMVectorSplatW(plane), XMVector3Dot(normal, translation));
 	return XMVectorInsert(normal, d, 0, 0, 0, 0, 1);
 }
 
-#pragma warning(push)
-//warning C4701: potentially uninitialized local variable 'transformedFrustum' used
-//False positive, all of the variable's members are initialized when returning.
-#pragma warning(disable:4701)
 bsFrustum bsTransformFrustum(const bsFrustum& frustum, const XMVECTOR& rotation,
 	const XMVECTOR& translation)
 {
@@ -112,6 +108,13 @@ bsFrustum bsTransformFrustum(const bsFrustum& frustum, const XMVECTOR& rotation,
 		transformedFrustum.planes[i] = XMPlaneNormalize(transformedFrustum.planes[i]);
 	}
 
+	transformedFrustum.rightSlope = frustum.rightSlope;
+	transformedFrustum.leftSlope = frustum.leftSlope;
+	transformedFrustum.topSlope = frustum.topSlope;
+	transformedFrustum.bottomSlope = frustum.bottomSlope;
+	transformedFrustum.nearClip = frustum.nearClip;
+	transformedFrustum.farClip = frustum.farClip;
+
 	/*
 	const XMMATRIX m = XMMatrixMultiply(XMMatrixTranslationFromVector(translation),
 		XMMatrixRotationQuaternion(rotation));
@@ -122,4 +125,3 @@ bsFrustum bsTransformFrustum(const bsFrustum& frustum, const XMVECTOR& rotation,
 	*/
 	return transformedFrustum;
 }
-#pragma warning(pop)

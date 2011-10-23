@@ -4,9 +4,10 @@
 #include <Windows.h>
 #include <xnamath.h>
 
-#include <Physics/Collide/Query/CastUtil/hkpWorldRayCastOutput.h>
-
 #include "bsScene.h"
+#include "bsFrustum.h"
+
+struct hkpWorldRayCastOutput;
 
 class bsScene;
 class bsEntity;
@@ -101,9 +102,9 @@ public:
 		return mViewProjection;
 	}
 
-	/*	Returns a vector of all scene nodes that overlap with the frustum.
+	/*	Returns a vector of all entities which overlap with the frustum.
 	*/
-	std::vector<bsSceneNode*> getVisibleSceneNodes() const;
+	std::vector<bsEntity*> getVisibleEntities() const;
 
 	/*	Updates and uploads view/projection matrices to the GPU.
 		This should be called at least every time the camera's transform/projection has
@@ -140,6 +141,11 @@ public:
 	hkpWorldRayCastOutput screenPointToWorldRay(const XMFLOAT2& screenPoint,
 		float rayLength, XMVECTOR& destinationOut, XMVECTOR& originOut) const;
 
+	inline const bsFrustum& getFrustum() const
+	{
+		return mFrustum;
+	}
+
 private:
 	/*	Updates projection matrix with current projection info. Called whenever projection
 		info has been modified.
@@ -151,6 +157,7 @@ private:
 	*/
 	void updateViewProjection();
 
+	bsFrustum	mFrustum;
 
 	XMMATRIX	mProjection;
 	XMMATRIX	mViewProjection;

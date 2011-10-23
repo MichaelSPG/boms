@@ -4,14 +4,16 @@
 
 #include <memory>
 
+#include <Physics/Collide/Query/CastUtil/hkpWorldRayCastOutput.h>
+
 #include "bsMath.h"
+#include "bsEntity.h"
 #include "bsScene.h"
 #include "bsLog.h"
 #include "bsAssert.h"
 #include "bsHavokManager.h"
 #include "bsDx11Renderer.h"
 #include "bsConstantBuffers.h"
-#include "bsSceneNode.h"
 #include "bsRayCastUtil.h"
 
 
@@ -51,8 +53,12 @@ void bsCamera::update()
 
 void bsCamera::updateProjection()
 {
+	//Create a projection matrix based on the current projection info.
+
 	mProjection = XMMatrixPerspectiveFovLH(mProjectionInfo.mFieldOfView,
 		mProjectionInfo.mAspectRatio, mProjectionInfo.mNearClip, mProjectionInfo.mFarClip);
+
+	mFrustum = bsComputeFrustumFromProjection(mProjection);
 }
 
 void bsCamera::updateViewProjection()
@@ -62,9 +68,8 @@ void bsCamera::updateViewProjection()
 		and to avoid needless branching.
 	*/
 
-	bsSceneNode* owner = mEntity->getOwner();
-	const XMVECTOR& pos = owner->getPosition();
-	const XMVECTOR& rot = owner->getRotation();
+	const XMVECTOR& pos = mEntity->mTransform.getPosition();
+	const XMVECTOR& rot = mEntity->mTransform.getRotation();
 
 	//Calculate view matrix.
 	const XMVECTOR inversePosition = XMVector3Rotate(XMVectorScale(pos, -1.0f), rot);
@@ -81,34 +86,34 @@ void bsCamera::updateViewProjection()
 	cbCam.view = XMMatrixTranspose(viewTransform);
 	cbCam.projection = XMMatrixTranspose(mProjection);
 	cbCam.viewProjection = XMMatrixTranspose(viewProjection);
-	cbCam.cameraPosition = owner->getPosition();
+	cbCam.cameraPosition = mEntity->mTransform.getPosition();
 	XMVECTOR determinant;
 	cbCam.inverseViewProjection = XMMatrixInverse(&determinant, viewProjection);
 
 	mDeviceContext->UpdateSubresource(mCameraConstantBuffer, 0, nullptr, &cbCam, 0, 0);
 }
 
-std::vector<bsSceneNode*> bsCamera::getVisibleSceneNodes() const
+std::vector<bsEntity*> bsCamera::getVisibleEntities() const
 {
 	BS_ASSERT2(mScene != nullptr, "Trying to get a camera's visible nodes, but camera"
 		" is not in a scene");
 
 	//Temporary solution, no culling.
-	return mScene->getSceneNodes();
+	return mScene->getEntities();
 }
 
 XMMATRIX bsCamera::getView() const
 {
 	XMVECTOR determinant;
-	return XMMatrixInverse(&determinant, mEntity->getOwner()->getTransform());
+	return XMMatrixInverse(&determinant, mEntity->mTransform.getTransform());
 }
 
 hkpWorldRayCastOutput bsCamera::screenPointToWorldRay(const XMFLOAT2& screenPoint,
 	float rayLength, XMVECTOR& destinationOut, XMVECTOR& originOut) const
 {
 	//Build view matrix with inverted rotation.
-	const XMVECTOR& cameraPosition = mEntity->getOwner()->getPosition();
-	const XMVECTOR cameraRotation = mEntity->getOwner()->getRotation();
+	const XMVECTOR& cameraPosition = mEntity->mTransform.getPosition();
+	const XMVECTOR cameraRotation = mEntity->mTransform.getRotation();
 	const XMMATRIX positionMat = XMMatrixTranslationFromVector(
 		XMVectorSubtract(XMVectorZero(), cameraPosition));
 	const XMMATRIX rotationMat = XMMatrixRotationQuaternion(cameraRotation);
