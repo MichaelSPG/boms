@@ -1,16 +1,19 @@
 #include "StdAfx.h"
 
-#include "bsLine3D.h"
-
 #include <string>
 
+#include <Common/Base/hkBase.h>
+#include <Common/Visualize/hkDebugDisplay.h>
+
+#include "bsLineRenderer.h"
 #include "bsDx11Renderer.h"
 #include "bsVertexTypes.h"
 #include "bsLog.h"
 #include "bsAssert.h"
+#include "bsConvert.h"
 
 
-bsLine3D::bsLine3D(const XMFLOAT4& colorRgba)
+bsLineRenderer::bsLineRenderer(const XMFLOAT4& colorRgba)
 	: mFinished(true)
 	, mColor(colorRgba)
 	, mVertexBuffer(nullptr)
@@ -18,7 +21,7 @@ bsLine3D::bsLine3D(const XMFLOAT4& colorRgba)
 {
 }
 
-bsLine3D::~bsLine3D()
+bsLineRenderer::~bsLineRenderer()
 {
 	if (mVertexBuffer)
 	{
@@ -30,23 +33,23 @@ bsLine3D::~bsLine3D()
 	}
 }
 
-void bsLine3D::addPoint(const XMFLOAT3& position)
+void bsLineRenderer::addPoint(const XMFLOAT3& position)
 {
 	mFinished = false;
 
 	mPoints.push_back(position);
 }
 
-void bsLine3D::addPoints(const XMFLOAT3* points, unsigned int pointCount)
+void bsLineRenderer::addPoints(const XMFLOAT3* points, unsigned int pointCount)
 {
-	BS_ASSERT(points);
+	BS_ASSERT(points != nullptr);
 	BS_ASSERT2(pointCount != 0, "Cannot add zero points");
 	mFinished = false;
 
 	mPoints.insert(mPoints.end(), points, points + pointCount);
 }
 
-bool bsLine3D::build(bsDx11Renderer* dx11Renderer)
+bool bsLineRenderer::build(bsDx11Renderer* dx11Renderer)
 {
 	if (mVertexBuffer)
 	{
@@ -63,7 +66,7 @@ bool bsLine3D::build(bsDx11Renderer* dx11Renderer)
 	const unsigned int pointCount = mPoints.size();
 
 	BS_ASSERT2(pointCount, "No points defined");
-	BS_ASSERT2((pointCount & 1) == 0, "Attempted to build bsLine3D with an odd amount of points");
+	BS_ASSERT2((pointCount & 1) == 0, "Attempted to build bsLineRenderer with an odd amount of points");
 
 	//Vertex buffer
 	D3D11_BUFFER_DESC bufferDescription;
@@ -123,8 +126,8 @@ bool bsLine3D::build(bsDx11Renderer* dx11Renderer)
 
 	return true;
 }
-#include <Common/Visualize/hkDebugDisplay.h>
-void bsLine3D::draw(bsDx11Renderer* dx11Renderer)
+
+void bsLineRenderer::draw(bsDx11Renderer* dx11Renderer)
 {
 	//TODO: Don't allow this function to be run when the following is true.
 	if (mPoints.empty())
@@ -133,7 +136,7 @@ void bsLine3D::draw(bsDx11Renderer* dx11Renderer)
 	}
 
 	BS_ASSERT(dx11Renderer);
-	BS_ASSERT2(mFinished, "Trying to draw a bsLine3D which has not had its buffers created."
+	BS_ASSERT2(mFinished, "Trying to draw a bsLineRenderer which has not had its buffers created."
 		" Did you forget to call build()?");
 
 	ID3D11DeviceContext* context = dx11Renderer->getDeviceContext();

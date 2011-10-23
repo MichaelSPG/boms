@@ -1,12 +1,11 @@
 #pragma once
 
-
 #include <vector>
 
 #include <d3d11.h>
+#include <xnamath.h>
 
 #include "bsRenderable.h"
-#include "bsMath.h"
 
 struct ID3D11Buffer;
 struct ID3D11Buffer;
@@ -18,14 +17,14 @@ class bsDx11Renderer;
 
 	Lines ignore scale.
 */
-class bsLine3D : public bsRenderable
+class bsLineRenderer : public bsRenderable
 {
 	friend class bsRenderQueue;
 
 public:
-	bsLine3D(const XMFLOAT4& colorRgba);
+	bsLineRenderer(const XMFLOAT4& colorRgba);
 
-	~bsLine3D();
+	~bsLineRenderer();
 
 	inline RenderableType getRenderableType() const
 	{

@@ -13,13 +13,13 @@
 #include <Common/Base/Types/Geometry/Aabb/hkAabb.h>
 #include <Common/Base/Types/Geometry/Sphere/hkSphere.h>
 
-#include "bsLine3D.h"
+#include "bsLineRenderer.h"
 #include "bsConvert.h"
 #include "bsAssert.h"
 
 namespace bsGeometry
 {
-void createLinesFromShape(const hkpShape* const shape, bsLine3D* line3D)
+void createLinesFromShape(const hkpShape* const shape, bsLineRenderer* line3D)
 {
 	//BS_ASSERT(shape->getType() == HK_SHAPE_BOX);
 
@@ -92,7 +92,7 @@ void createLinesFromShape(const hkpShape* const shape, bsLine3D* line3D)
 }
 
 void createLinesFromSphere(const XMFLOAT3& sphereCenter, float radius,
-	unsigned int linesPerAxis, bsLine3D* lineRendererOut)
+	unsigned int linesPerAxis, bsLineRenderer* lineRendererOut)
 {
 	std::vector<XMFLOAT3> points;
 	// 3=XYZ axes, 2=start and end points for each line.
