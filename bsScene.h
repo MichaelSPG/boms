@@ -5,17 +5,19 @@
 
 #include <Common/Base/hkBase.h>
 
-class bsResourceManager;
-class bsSceneNode;
 class bsCamera;
 class bsDx11Renderer;
 class bsRenderable;
 class bsHavokManager;
 class hkpWorld;
 struct bsCoreCInfo;
+class hkJobQueue;
+class bsEntity;
 
 
-//Keys used for properties attached to Havok rigid bodies and similar.
+/*	Keys used for properties attached to Havok rigid bodies and similar, making it
+	possible to find an entity from a Havok rigid body.
+*/
 enum bsPropertyKeys
 {
 	//Pointer to the bsEntity owning the Havok entity.
@@ -23,27 +25,32 @@ enum bsPropertyKeys
 };
 
 
-/*	The scene graph is responsibe for creation of scene nodes.
-	It also creates the Havok world used for visibility detection of nodes.
+/*	A scene represents a collection of entities.
+	A scene must always contain at least one camera (created by default).
+
+	All the entities in a scene is owned by that scene, and upon destruction of a scene,
+	all of the entities in it will also be destroyed. If you do not want specific entities
+	to be destroyed when the scene is destroyed, remove them before destroying the scene
+	by calling removeEntity().
 */
 class bsScene
 {
-	friend class bsSceneNode;
-
 public:
-	bsScene(bsDx11Renderer* renderer, bsResourceManager* resourceManager,
-		bsHavokManager* havokManager, const bsCoreCInfo& cInfo);
+	bsScene(bsDx11Renderer* renderer, bsHavokManager* havokManager,
+		const bsCoreCInfo& cInfo);
 
 	~bsScene();
 
-	/*	Creates a new scene node with the given translation.
-		This new node will not be the child of any other nodes.
-	*/
-	//bsSceneNode* createSceneNode(const hkVector4& position = hkVector4(0.0f, 0.0f, 0.0f, 0.0f));
 
-	/*	Adds a scene node to the scene, and to the physics world if it contains physics components.
+	/*	Adds an entity to the scene, and to the physics world if it contains physics
+		components.
 	*/
-	void addSceneNode(bsSceneNode* sceneNode);
+	void addEntity(bsEntity& entity);
+
+	/*	Removes an entity from the scene, and from the physical world if it contains
+		physics components.
+	*/
+	void removeEntity(bsEntity& entityToRemove);
 
 	inline bsDx11Renderer* getRenderer() const 
 	{
@@ -55,9 +62,12 @@ public:
 		return mCamera;
 	}
 
-	inline const std::vector<bsSceneNode*> getSceneNodes() const
+	/*	Returns a vector containing every entity currently in the scene.
+		
+	*/
+	inline const std::vector<bsEntity*>& getEntities() const
 	{
-		return mSceneNodes;
+		return mEntities;
 	}
 	
 	inline hkpWorld* getPhysicsWorld() const
@@ -65,26 +75,35 @@ public:
 		return mPhysicsWorld;
 	}
 
-	void update(float deltaTime);
+	void update(float deltaTimeMs);
 
-	inline void setStepPhysics(bool stepPhysics)
+
+	/*	Enabled or disables stepping of physics. This can be used to closely inspect the
+		state of the world during a frame without the physics affecting objects, making
+		it easier to take screenshots or similar of explosions, etc.
+	*/
+	inline void setStepPhysicsEnabled(bool stepPhysics)
 	{
 		mStepPhysics = stepPhysics;
 	}
 
-	inline bool getStepPhysics() const
+	inline bool isStepPhysicsEnabled() const
 	{
 		return mStepPhysics;
 	}
 
 private:
-	/*	Increments the amount of created nodes and returns it.
-		Used to assign unique IDs to nodes.
+	/*	Increments the amount of created entities and returns it.
+		Used to assign unique IDs to entities.
 	*/
 	inline unsigned int getNewId()
 	{
-		return ++mNumCreatedNodes;
+		return ++mNumCreatedEntities;
 	}
+
+	/*	Creates a Havok world.
+	*/
+	void createPhysicsWorld(hkJobQueue& jobQueue);
 
 	/*	Synchronizes all active (non-sleeping) rigid bodies with their entities.
 	*/
@@ -93,11 +112,10 @@ private:
 
 	bsCamera*	mCamera;
 
-	std::vector<bsSceneNode*>	mSceneNodes;
+	std::vector<bsEntity*>	mEntities;
 
-	unsigned int					mNumCreatedNodes;
+	unsigned int		mNumCreatedEntities;
 	bsDx11Renderer*		mDx11Renderer;
-	bsResourceManager*	mResourceManager;
 
 	hkpWorld*	mPhysicsWorld;
 
