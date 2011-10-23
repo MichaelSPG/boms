@@ -4,9 +4,15 @@
 
 #include <algorithm>
 #include <functional>
+#include <fstream>
 
 #include <Common/Base/Algorithm/PseudoRandom/hkPseudoRandomGenerator.h>
 #include <Physics/Utilities/Dynamics/Keyframe/hkpKeyFrameUtility.h>
+#include <Physics/Dynamics/hkpDynamics.h>
+#include <Physics/Dynamics/Entity/hkpRigidBody.h>
+#include <Physics/Collide/Shape/Convex/Box/hkpBoxShape.h>
+#include <Physics/Collide/Shape/Convex/Sphere/hkpSphereShape.h>
+#include <Physics/Utilities/Dynamics/Inertia/hkpInertiaTensorComputer.h>
 
 #include "bsLog.h"
 #include "bsScene.h"
@@ -19,8 +25,8 @@
 #include "bsWindow.h"
 #include "bsHavokManager.h"
 #include "bsCore.h"
-#include "bsSceneNode.h"
-#include "bsLine3D.h"
+#include "bsEntity.h"
+#include "bsLineRenderer.h"
 #include "bsResourceManager.h"
 #include "bsLight.h"
 #include "bsDx11Renderer.h"
@@ -35,6 +41,8 @@
 #include "bsScene.h"
 
 #include "bsCharacterController.h"
+#include "bsRandomNumberGenerator.h"
+#include "bsGeometryUtils.h"
 
 
 bsSmoothCameraMovement* camMov;
@@ -85,12 +93,11 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 	bsTextManager* textManager = mCore->getResourceManager()->getTextManager();
 
 	
-	mScene = new bsScene(mCore->getDx11Renderer(), mCore->getResourceManager(),
-		mCore->getHavokManager(), coreCInfo);
+	mScene = new bsScene(mCore->getDx11Renderer(), mCore->getHavokManager(), coreCInfo);
 
 	mDeferredRenderer = new bsDeferredRenderer(mCore->getDx11Renderer(),
 		mScene->getCamera(), mCore->getResourceManager()->getShaderManager(),
-		window);
+		window, mCore->getRenderQueue());
 	//Register the text manager with the rendering system so that it'll draw texts
 	mDeferredRenderer->registerEndOfRenderCallback(std::bind(&bsTextManager::drawAllTexts, textManager));
 
@@ -99,7 +106,7 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 
 	mPrimCreator = new bsPrimitiveCreator(*mCore->getResourceManager()->getMeshCache());
 
-	bsLog::logMessage("Initialization completed successfully", pantheios::SEV_NOTICE);
+	bsLog::logMessage("Initialization completed successfully", bsLog::SEV_NOTICE);
 
 	
 
@@ -108,46 +115,55 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 
 	bsCharacterControllerCInfo cInfo;
 	cInfo.world = mScene->getPhysicsWorld();
-	cInfo.maxRunSpeed = 50.0f;
-	cInfo.mass = 1.0f;
+	cInfo.maxRunSpeed = 20.0f;
+	cInfo.mass = 25.0f;
 	cInfo.jumpHeight = 2.5f;
-	cInfo.airSpeed = 100.0f;
-	cInfo.gravityStrength = 3.0f;
-	cc = new bsCharacterController(cInfo);
+	cInfo.airSpeed = 50.0f;
+	cInfo.gravityStrength = 2.5f;
+	mCharacterController = new bsCharacterController(cInfo);
 
 
-	ccNode = new bsSceneNode();
-	bsSceneNode* camNode = mScene->getCamera()->getEntity()->getOwner();
-	camNode->setLocalPosition(XMVectorSet(0.0f, cInfo.eyeHeight, 0.0f, 0.0f));
-	mScene->addSceneNode(ccNode);
-	camNode->setParentSceneNode(ccNode);
+	characterControllerEntity = new bsEntity();
+	//bsEntity* camEntity = mScene->getCamera()->getEntity()->getOwner();
+	bsEntity& camEntity = *mScene->getCamera()->getEntity();
+	camEntity.mTransform.setLocalPosition(XMVectorSet(0.0f, cInfo.eyeHeight, 0.0f, 0.0f));
+	mScene->addEntity(*characterControllerEntity);
+	camEntity.mTransform.setParentTransform(&characterControllerEntity->mTransform);
 
-	ccNode->setPosition(XMVectorSet(1.0f, 3.5f, -13.0f, 0.0f));
-	ccNode->getEntity().attach(cc->getRigidBody());
+	characterControllerEntity->mTransform.setPosition(XMVectorSet(2.8f, 3.5f, -5.6f, 0.0f));
+	characterControllerEntity->attachRigidBody(*mCharacterController->getRigidBody());
 
-	//camNode->setLocalRotation(XMVectorSet(-0.004, -0.973f, 0.23f, 0.015f));
+	//camEntity->setLocalRotation(XMVectorSet(-0.004, -0.973f, 0.23f, 0.015f));
 
 
 	createMeshes();
-	createSomeLights();
+	//createSomeLights();
 	createTexts();
-	createNodes();
-	createWalls(100.0f, 100.0f, 25.0f);
+	createEntities();
+	//createWalls(100.0f, 100.0f, 25.0f);
 	createKeyframedRb();
 	createLines();
+	createFactory();
 
 
-	bsSceneNode* box = mPrimCreator->createBox(XMVectorSet(0.5f, 0.5f, 0.5f, 1.0f));
-	box->setLocalPosition(XMVectorSet(2.5f, 2.0f, 0.0f, 0.0f));
-	box->getEntity().mRigidBody->setMotionType(hkpMotion::MOTION_FIXED);
+	bsEntity* box = mPrimCreator->createBox(XMVectorSet(0.5f, 0.5f, 0.5f, 1.0f));
+	box->mTransform.setLocalPosition(XMVectorSet(2.5f, 2.0f, 0.0f, 0.0f));
+	box->mRigidBody->setMotionType(hkpMotion::MOTION_FIXED);
 
-	bsSceneNode* sphere = mPrimCreator->createSphere(0.5f);
-	sphere->setLocalPosition(XMVectorSet(5.0f, 1.0f, 0.0f, 0.0f));
-	sphere->getEntity().mRigidBody->setMotionType(hkpMotion::MOTION_FIXED);
+	bsEntity* sphere = mPrimCreator->createSphere(0.5f);
+	sphere->mTransform.setLocalPosition(XMVectorSet(5.0f, 1.0f, 0.0f, 0.0f));
+	sphere->mRigidBody->setMotionType(hkpMotion::MOTION_FIXED);
 
 
-	mScene->addSceneNode(box);
-	mScene->addSceneNode(sphere);
+	mScene->addEntity(*box);
+	mScene->addEntity(*sphere);
+
+	mScene->removeEntity(*box);
+	mScene->removeEntity(*sphere);
+
+	mScene->addEntity(*box);
+	mScene->addEntity(*sphere);
+
 
 	//plane->setLocalRotation(hkQuaternion(hkVector4(1.0f, 0.0f, 0.0f), 0.1f));
 	/*
@@ -156,30 +172,30 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 	plane->getEntity().mRigidBody->getWorld()->unlock();
 	*/
 	/*
-	bsSceneNode* test = new bsSceneNode();
+	bsEntity* test = new bsEntity();
 	test->getEntity().attach(mCore->getResourceManager()->getMeshCache()->getMesh("bun_zipper.bsm"));
 	test->setLocalScaleUniform(15.0f);
 	test->setLocalPosition(hkVector4(10.0f, 10.0f, 10.0f));
 	
-	mScene->addSceneNode(test);
+	mScene->addEntity(test);
 	*/
 
 	const float camMoveSpeed = 10.0f;
-	camMov = new bsSmoothCameraMovement(mScene->getCamera()->getEntity()->getOwner(),
-		camMoveSpeed, camMoveSpeed, camMoveSpeed);
+	camMov = new bsSmoothCameraMovement(camEntity.mTransform, camMoveSpeed, camMoveSpeed,
+		camMoveSpeed);
 
 	{
-		bsSceneNode* lightNode = new bsSceneNode();
+		bsEntity* lightEntity = new bsEntity();
 		bsPointLightCInfo ci;
 		ci.color = XMFLOAT3(1.0f, 0.0f, 1.0f);
 		ci.radius = 10.0f;
 		ci.intensity = 0.75f;
 		bsLight* light = new bsLight(bsLight::LT_POINT, mCore->getResourceManager()->getMeshCache(), ci);
 
-		lightNode->getEntity().attach(light);
-		mScene->addSceneNode(lightNode);
+		lightEntity->attachLight(*light);
+		mScene->addEntity(*lightEntity);
 
-		nodes["light"] = lightNode;
+		entities["light"] = lightEntity;
 	}
 
 	{
@@ -201,34 +217,22 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 
 		mCore->getDx11Renderer()->getDeviceContext()->PSSetSamplers(3, 1, &sampler);
 	}
-
-
-	bsSceneNode* node1 = new bsSceneNode();
-	mScene->addSceneNode(node1);
-	bsSceneNode* node2 = new bsSceneNode();
-	mScene->addSceneNode(node2);
-	node2->setParentSceneNode(node1);
-
-	node1->getEntity().attach(mMeshes["cube"]);
-	node2->getEntity().attach(mMeshes["cube"]);
-
-	node2->setLocalPosition(XMVectorSet(0.0f, 1.01f, 0.0f, 0.0f));
-	node1->setPosition(XMVectorSet(0.0f, 0.5f, 0.0f, 0.0f));
 }
 
 Application::~Application()
 {
-	bsLog::logMessage("Shutting down", pantheios::SEV_NOTICE);
+	bsLog::logMessage("Shutting down", bsLog::SEV_NOTICE);
 
 	mInputManager->destroyInputObject(mKeyboard);
 	mInputManager->destroyInputObject(mMouse);
 	mInputManager->destroyInputSystem(mInputManager);
-	/*
-	for (auto itr = nodes.begin(), end = nodes.end(); itr != end; ++itr)
-	{
-		delete itr->second;
-	}
-	*/
+	
+	delete camMov;
+
+	delete mCharacterController;
+
+	delete mPrimCreator;
+
 	delete mScene;
 	delete mDeferredRenderer;
 	delete mCore;
@@ -242,7 +246,7 @@ void Application::update(float deltaTime)
 	mMouse->capture();
 	
 	bsCamera* camera = mScene->getCamera();
-	bsSceneNode* camNode = camera->getEntity()->getOwner();
+	bsEntity& camEntity = *camera->getEntity();
 	
 	
 	float right = a ? (-1.0f) : (d ? 1.0f : 0.0f);
@@ -254,7 +258,7 @@ void Application::update(float deltaTime)
 	mRenderStats.setFps(1.0f / deltaTime * 1000.0f);
 	mRenderStats.setFrameTime(deltaTime);
 
-	const XMMATRIX& camTransform = camNode->getTransform();
+	const XMMATRIX& camTransform = camEntity.mTransform.getTransform();
 	const XMVECTOR dir = XMVectorSet(camTransform._13, camTransform._23, camTransform._33, 0.0f);
 
 	if (mFreeCamMode)
@@ -263,7 +267,10 @@ void Application::update(float deltaTime)
 	}
 	else
 	{
-		cc->step(16.66667f, forward, -right, space, bsMath::toHK(dir));
+		const float speedMultiplier = 0.5f;
+
+		mCharacterController->step(16.66667f, forward * speedMultiplier, -right * speedMultiplier, space,
+			bsMath::toHK(dir));
 	}
 
 
@@ -275,9 +282,9 @@ void Application::update(float deltaTime)
 		.getFrameStatsStringWide());
 
 	XMFLOAT4A camPos;
-	XMStoreFloat4A(&camPos, camNode->getPosition());
+	XMStoreFloat4A(&camPos, camEntity.mTransform.getPosition());
 	XMFLOAT4A camRot;
-	XMStoreFloat4A(&camRot, camNode->getRotation());
+	XMStoreFloat4A(&camRot, camEntity.mTransform.getRotation());
 	
 	wchar_t cameraInfoBuffer[1000] = { 0 };
 	swprintf_s(cameraInfoBuffer, 1000, L"Cam pos: x: %.3f, y: %.3f, z: %.3f\n"
@@ -289,8 +296,8 @@ void Application::update(float deltaTime)
 
 	if (leftMouseDown)
 	{
-		bsSceneNode* lineNode = nodes["line"];
-		bsLine3D* line = lineNode->getEntity().getComponent<bsLine3D*>();
+		bsEntity& lineEntity = *entities["line"];
+		bsLineRenderer& line = *lineEntity.getLineRenderer();
 		const float rayLength = 100.0f;
 
 		hkpWorldRayCastOutput output;
@@ -326,45 +333,57 @@ void Application::update(float deltaTime)
 			//XMStoreFloat3(points, destination2);
 			//XMStoreFloat3(points + 1, origin);
 
-			line->clear();
-			line->setColor(XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f));
-			line->addPoints(points, 2);
+			line.clear();
+			line.setColor(XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f));
+			line.addPoints(points, 2);
 			{
 				XMStoreFloat3(points, hitPoint);
 				XMStoreFloat3(points + 1, normalFromHitPoint);
 				++points[1].y;
-				line->addPoints(points, 2);
+				line.addPoints(points, 2);
 			}
-			line->build(mCore->getDx11Renderer());
+			line.build(mCore->getDx11Renderer());
 
 			hkpRigidBody* rb = hkpGetRigidBody(output.m_rootCollidable);
 			rb->getWorld()->markForWrite();
 			if (rb->getMotionType() != hkpMotion::MOTION_FIXED)
 			{
 				XMVECTOR impulse = XMVectorSubtract(destinationOut, originOut);
-				impulse = XMVector3Normalize(impulse);
-				impulse = XMVectorScale(impulse, 10.0f * rb->getMass());
+				impulse = XMLoadFloat3(&normal);
+				//impulse = XMVector3Normalize(impulse);
+				impulse = XMVectorScale(impulse, -10.0f * rb->getMass());
 				//rb->applyPointImpulse(bsMath::toHK(impulse), bsMath::toHK(hitPoint));
 				rb->applyForce(0.0166666666666f, bsMath::toHK(impulse), bsMath::toHK(hitPoint));
 			}
 			rb->getWorld()->unmarkForWrite();
 
-			nodes["light"]->setPosition(XMVectorAdd(hitPoint, XMLoadFloat3(&normal)));
+			entities["light"]->mTransform.setPosition(XMVectorAdd(hitPoint, XMLoadFloat3(&normal)));
 
 			
-			bsSceneNode* textNode = nodes["text"];
-			textNode->setPosition(XMLoadFloat3(points + 1));
-			bsText3D* text = textNode->getEntity().getComponent<bsText3D*>();
-			//wchar_t pointText[35];
-			//swprintf_s(pointText, L"[%3.3f, %3.3f, %3.3f]", points[1].x, points[1].y, points[1].z);
+			bsEntity& textEntity = *entities["text"];
+			textEntity.mTransform.setPosition(XMLoadFloat3(points + 1));
+			bsText3D& text = *textEntity.getTextRenderer();
 
-			wchar_t buf[200];
-			swprintf_s(buf, L"mass: %.1f", rb->getMass());
-			text->setText(buf);
+			wchar_t buf[200] = { 0 };
+			//swprintf_s(buf, L"mass: %.1f", liftRigidBody->getMass());
+			swprintf_s(buf, L"[%3.3f, %3.3f, %3.3f]", points[1].x, points[1].y, points[1].z);
+			text.setText(buf);
+
+			static XMVECTOR current = XMVectorZero(), previous = XMVectorZero();
+			previous = XMLoadFloat3(&points[1]);
+
+			if (!XMVector3NearEqual(current, previous, XMVectorReplicate(0.25f)))
+			{
+				std::wfstream fs("lights.txt", std::ios::app);
+				fs << buf << std::endl;
+			}
+
+			current = XMLoadFloat3(&points[1]);
 		}
 	}
 
 	//Keyframed RB
+	
 	{
 		static float accumulatedDt = mCurve->getEnd();
 		const float speed = (1.0f / mCurve->getEnd()) * 50000.0f;
@@ -378,13 +397,13 @@ void Application::update(float deltaTime)
 		
 		const float invDeltaTimeSecs = 1.0f / 0.016666667f;
 
-		hkpRigidBody* rb = nodes["lift"]->getEntity().mRigidBody;
-		rb->getWorld()->markForWrite();
-		hkQuaternion nextRotation = rb->getRotation();
+		hkpRigidBody& liftRigidBody = *entities["lift"]->mRigidBody;
+		liftRigidBody.getWorld()->markForWrite();
+		hkQuaternion nextRotation = liftRigidBody.getRotation();
 		nextRotation.mul(hkQuaternion(hkVector4(0.0f, 1.0f, 0.0f), 0.0025f));
 		nextRotation.setIdentity();
 
-		hkVector4 nextPosition = rb->getPosition();
+		hkVector4 nextPosition = liftRigidBody.getPosition();
 		{
 			mCurve->getPoint(accumulatedDt, nextPosition);
 		}
@@ -407,8 +426,8 @@ void Application::update(float deltaTime)
 		}
 
 		hkpKeyFrameUtility::applyHardKeyFrame(nextPosition, nextRotation, invDeltaTimeSecs,
-			rb);
-		rb->getWorld()->unmarkForWrite();
+			&liftRigidBody);
+		liftRigidBody.getWorld()->unmarkForWrite();
 	}
 
 	mScene->update(deltaTime);
@@ -418,7 +437,7 @@ void Application::update(float deltaTime)
 		mQuit = true;
 	}
 }
-#include "bsAlignedAllocator.h"
+
 bool Application::keyPressed(const OIS::KeyEvent& arg)
 {
 	if (arg.key == OIS::KC_W)
@@ -517,8 +536,8 @@ bool Application::keyPressed(const OIS::KeyEvent& arg)
 			rng.getRandomRotation(q);
 
 
-			nodes["line"]->setPosition(bsMath::toXM(p));
-			nodes["line"]->setLocalRotation(bsMath::toXM(q));
+			entities["line"]->mTransform.setPosition(bsMath::toXM(p));
+			entities["line"]->mTransform.setLocalRotation(bsMath::toXM(q));
 		}
 		break;
 
@@ -527,7 +546,15 @@ bool Application::keyPressed(const OIS::KeyEvent& arg)
 		break;
 
 	case OIS::KC_P:
-		mScene->setStepPhysics(!mScene->getStepPhysics());
+		mScene->setStepPhysicsEnabled(!mScene->isStepPhysicsEnabled());
+		break;
+
+	case OIS::KC_Y:
+		mCore->getRenderQueue()->setUseInstancing(true);
+		break;
+
+	case OIS::KC_U:
+		mCore->getRenderQueue()->setUseInstancing(false);
 		break;
 	}
 
@@ -536,27 +563,27 @@ bool Application::keyPressed(const OIS::KeyEvent& arg)
 
 void Application::toggleFreeCam()
 {
-	bsSceneNode* camNode = mScene->getCamera()->getEntity()->getOwner();
-	//const XMVECTOR camPosition = camNode->getPosition();
-	const XMVECTOR camRotation = camNode->getRotation();
+	bsEntity& camEntity = *mScene->getCamera()->getEntity();
+	//const XMVECTOR camPosition = camEntity->getPosition();
+	const XMVECTOR camRotation = camEntity.mTransform.getRotation();
 
-	if (!camNode->getParentSceneNode())
+	if (!camEntity.mTransform.getParentTransform())
 	{
 		//In free cam mode.
-		camNode->setPosition(XMVectorZero());
-		camNode->setLocalPosition(XMVectorSet(0.0f, 1.1f, 0.0f, 0.0f));
-		//camNode->setLocalRotation(XMQuaternionIdentity());
+		camEntity.mTransform.setPosition(XMVectorZero());
+		camEntity.mTransform.setLocalPosition(XMVectorSet(0.0f, 1.1f, 0.0f, 0.0f));
+		//camEntity->setLocalRotation(XMQuaternionIdentity());
 
-		camNode->setParentSceneNode(ccNode);
+		camEntity.mTransform.setParentTransform(&characterControllerEntity->mTransform);
 
 		mFreeCamMode = false;
 	}
 	else
 	{
 		//Attached to controller.
-		camNode->setParentSceneNode(nullptr);
-		//camNode->setPosition(camPosition);
-		camNode->setLocalRotation(camRotation);
+		camEntity.mTransform.setParentTransform(nullptr);
+		//camEntity->setPosition(camPosition);
+		camEntity.mTransform.setLocalRotation(camRotation);
 
 		mFreeCamMode = true;
 	}
@@ -602,8 +629,8 @@ XMFLOAT3 yawPitchRoll = XMFLOAT3(0.0f, 0.0f, 0.0f);
 bool Application::mouseMoved(const OIS::MouseEvent& arg)
 {
 	bsCamera* camera = mScene->getCamera();
-	bsSceneNode* camNode = camera->getEntity()->getOwner();
-	const XMVECTOR& cameraRot = camNode->getRotation();
+	bsEntity& camEntity = *camera->getEntity();
+	const XMVECTOR& cameraRot = camEntity.mTransform.getRotation();
 
 	if (rightMouseDown)
 	{
@@ -634,7 +661,7 @@ bool Application::mouseMoved(const OIS::MouseEvent& arg)
 
 		finalRot = XMQuaternionRotationRollPitchYaw(yawPitchRoll.y, yawPitchRoll.x, 0.0f);
 		
-		camNode->setLocalRotation(XMQuaternionInverse(finalRot));
+		camEntity.mTransform.setLocalRotation(XMQuaternionInverse(finalRot));
 	}
 
 
@@ -643,8 +670,8 @@ bool Application::mouseMoved(const OIS::MouseEvent& arg)
 	{
 		XMVECTOR scroll = XMVectorSet(0.0f, 0.0f, rotationZ, 0.0f);
 		scroll = XMVector3InverseRotate(scroll, cameraRot);
-		scroll = XMVectorAdd(scroll, camNode->getPosition());
-		camNode->setPosition(scroll);
+		scroll = XMVectorAdd(scroll, camEntity.mTransform.getPosition());
+		camEntity.mTransform.setPosition(scroll);
 	}
 
 	return true;
@@ -663,7 +690,7 @@ bool Application::mousePressed(const OIS::MouseEvent& arg, OIS::MouseButtonID id
 		break;
 
 	case OIS::MB_Middle:
-		nodes["line"]->getEntity().getComponent<bsLine3D*>()->clear();
+		entities["line"]->getLineRenderer()->clear();
 		break;
 	}
 
@@ -688,7 +715,7 @@ bool Application::mouseReleased(const OIS::MouseEvent &arg, OIS::MouseButtonID i
 
 void Application::createSomeLights()
 {
-	std::vector<bsSceneNode*> nodes_(5);
+	std::vector<bsEntity*> entities_(5);
 	XMFLOAT3 lightColors[5] = 
 	{
 		XMFLOAT3(1.0f, 1.0f, 1.0f),
@@ -698,7 +725,7 @@ void Application::createSomeLights()
 		XMFLOAT3(0.0f, 1.0f, 1.0f)
 	};
 
-	for (unsigned int i = 0; i < nodes_.size(); ++i)
+	for (unsigned int i = 0; i < entities_.size(); ++i)
 	{
 		bsPointLightCInfo ci;
 		ci.color = lightColors[i];
@@ -707,74 +734,63 @@ void Application::createSomeLights()
 		bsLight* light = new bsLight(bsLight::LT_POINT,
 			mCore->getResourceManager()->getMeshCache(), ci);
 
-		nodes_[i] = new bsSceneNode();
-		nodes_[i]->getEntity().attach(light);
+		entities_[i] = new bsEntity();
+		entities_[i]->attachLight(*light);
 	}
 	//auto torus = mCore->getResourceManager()->getMeshCache()->getMesh("torus_knot.bsm");
-	//nodes_[0]->attachRenderable(torus);
+	//entities_[0]->attachRenderable(torus);
 
-	nodes_[0]->setPosition(XMVectorSet(3.0f, 50.0f, 3.0f, 0.0f));
+	entities_[0]->mTransform.setPosition(XMVectorSet(3.0f, 50.0f, 3.0f, 0.0f));
 	/*
-	nodes_[0]->getEntity().detach<bsLight*>();
+	entities_[0]->getEntity().detach<bsLight*>();
 	bsPointLightCInfo ci;
 	ci.color = lightColors[0];
 	ci.intensity = 1.0f;
 	ci.radius = 15.0f;
-	nodes_[0]->getEntity().attach(new bsLight(bsLight::LT_POINT,
+	entities_[0]->getEntity().attach(new bsLight(bsLight::LT_POINT,
 	mCore->getResourceManager()->getMeshCache(), ci));
 	*/
-	nodes_[0]->setPosition(XMVectorSet(  0.0f, 50.5f,  0.0f, 0.0f));
-	nodes_[1]->setPosition(XMVectorSet(  0.0f, 7.50f,  25.0f, 0.0f));
-	nodes_[2]->setPosition(XMVectorSet(  0.0f, 7.50f, -25.0f, 0.0f));
-	nodes_[3]->setPosition(XMVectorSet( 25.0f, 7.50f,   0.0f, 0.0f));
-	nodes_[4]->setPosition(XMVectorSet(-25.0f, 7.50f,   0.0f, 0.0f));
+	entities_[0]->mTransform.setPosition(XMVectorSet(  0.0f, 50.5f,  0.0f, 0.0f));
+	entities_[1]->mTransform.setPosition(XMVectorSet(  0.0f, 7.50f,  25.0f, 0.0f));
+	entities_[2]->mTransform.setPosition(XMVectorSet(  0.0f, 7.50f, -25.0f, 0.0f));
+	entities_[3]->mTransform.setPosition(XMVectorSet( 25.0f, 7.50f,   0.0f, 0.0f));
+	entities_[4]->mTransform.setPosition(XMVectorSet(-25.0f, 7.50f,   0.0f, 0.0f));
 
-	for (size_t i = 0; i < nodes_.size(); ++i)
+	for (size_t i = 0; i < entities_.size(); ++i)
 	{
-		mScene->addSceneNode(nodes_[i]);
+		mScene->addEntity(*entities_[i]);
 	}
 
-#if 0
+	//Random position lights
 	{
 		hkPseudoRandomGenerator rng(GetTickCount());
-		const float worldSize = 250.0f;
-		const hkVector4 minRange(-worldSize, 1.0f, -worldSize);
-		const hkVector4 maxRange(worldSize, 10.0f, worldSize);
-		hkVector4 out;
-
-		bsPointLightCInfo lightCi;
-		lightCi.intensity = 1.0f;
-
-
-		std::vector<bsSceneNode*> sceneNodes(500);
-		for (unsigned int i = 0; i < sceneNodes.size(); ++i)
+		const float offsetPositive = 80.0f;
+		const float offsetNegative = -5.0f;
+		const float maxHeight = 15.0f;
+		for (unsigned int i = 0; i < 100; ++i)
 		{
-			//Random position
-			rng.getRandomVectorRange(minRange, maxRange, out);
-			out(1) = 5.0f;
-			sceneNodes[i] = mCore->getSceneGraph()->createSceneNode(out);
+			bsEntity* lightEntity = new bsEntity();
+			lightEntity->mTransform.setPosition(XMVectorSet(
+				rng.getRandRange(offsetNegative, offsetPositive), rng.getRandRange(2.0f, maxHeight),
+				rng.getRandRange(offsetNegative, offsetPositive), 1.0f));
 
-			//Random color
-			rng.getRandomVector01(out);
-			memcpy(&lightCi.color, &out(0), 12);
+			bsPointLightCInfo plci;
+			plci.color = XMFLOAT3(rng.getRandRange(0.0f, 1.0f), rng.getRandRange(0.0f, 1.0f), rng.getRandRange(0.0f, 1.0f));
+			plci.radius = rng.getRandRange(2.0f, 25.0f);
+			plci.intensity = 1.0f;
 
-			//Random radius
-			lightCi.radius = rng.getRandRange(25, 75.0f);
-
-			std::shared_ptr<bsLight> light(std::make_shared<bsLight>(bsLight::LT_POINT,
-				mCore->getResourceManager()->getMeshCache(), lightCi));
-
-			sceneNodes[i]->attachRenderable(light);
+			bsLight* light = new bsLight(bsLight::LT_POINT, mCore->getResourceManager()->getMeshCache(),
+				plci);
+			lightEntity->attachLight(*light);
+			mScene->addEntity(*lightEntity);
 		}
 	}
-#endif
 }
 
 void Application::createMeshes()
 {
 	bsMeshCache* meshCache = mCore->getResourceManager()->getMeshCache();
 
-	mMeshes.insert(std::make_pair("roi", meshCache->getMesh("roi.bsm")));
 	mMeshes.insert(std::make_pair("teapot", meshCache->getMesh("teapot.bsm")));
 	mMeshes.insert(std::make_pair("gourd", meshCache->getMesh("gourd.bsm")));
 	mMeshes.insert(std::make_pair("sphere", meshCache->getMesh("sphere_1m_d.bsm")));
@@ -830,117 +846,70 @@ void Application::createTexts()
 	mTexts.insert(std::make_pair("camPos", camPos));
 	mTexts.insert(std::make_pair("crosshair", crosshair));
 }
-#include <Physics/Collide/Shape/HeightField/Plane/hkpPlaneShape.h>
-void Application::createNodes()
+
+#include <Common/Base/Reflection/hkClass.h>
+#include <Common/Base/System/Io/Reader/hkStreamReader.h>
+#include <Common/Base/System/Io/IStream/hkIStream.h>
+#include <Common/Serialize/Util/hkNativePackfileUtils.h>
+#include <Common/Serialize/Util/hkRootLevelContainer.h>
+#include <Common/Serialize/Util/hkStructureLayout.h>
+#include <Physics/Utilities/Serialize/hkpPhysicsData.h>
+#include <Common/Serialize/Util/hkSerializeUtil.h>
+
+void Application::createEntities()
 {
-	const XMVECTOR spherePosition = XMVectorSet(2.5f, 5.0f, 0.0f, 0.0f);
-
-	bsSceneNode* sphereNode = new bsSceneNode();
-	sphereNode->setPosition(spherePosition);
-	bsEntity& entity = sphereNode->getEntity();
-	entity.attach(mMeshes["sphere"]);
-
-	hkpRigidBodyCinfo ci;
-	ci.m_shape = new hkpSphereShape(0.5f);
-	ci.m_motionType = hkpMotion::MOTION_SPHERE_INERTIA;
-	ci.m_position = bsMath::toHK(spherePosition);
-	ci.m_friction = 0.0f;
-	ci.m_restitution = 1.01f;
-	ci.m_linearDamping;
-	ci.m_mass = (4.0f / 3.0f) * XM_PI * (0.5f * 0.5f * 0.5f);
-	hkpRigidBody* sphereRb = new hkpRigidBody(ci);
-	ci.m_shape->removeReference();
-	entity.attach(sphereRb);
-
-	bsPointLightCInfo plci;
-	plci.color = XMFLOAT3(1.0f, 1.0f, 1.0f);
-	plci.intensity = 1.0f;
-	plci.radius = 10.0f;
-	bsLight* l = new bsLight(bsLight::LT_POINT, mCore->getResourceManager()->getMeshCache(), plci);
-	entity.attach(l);
-	
-	mScene->addSceneNode(sphereNode);
-	nodes.insert(std::make_pair("sphere", sphereNode));
-	
-	//Light ball
-#if 0
+	//Sphere
 	{
-		bsSceneNode* lightNode = new bsSceneNode();
-		lightNode->setPosition(XMVectorAdd(spherePosition, XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)));
-		bsEntity& lightEntity = lightNode->getEntity();
-		lightEntity.attach(l);
-	
-		sphereNode->addChildSceneNode(lightNode);
-	}
-#endif
+		const XMVECTOR spherePosition = XMVectorSet(12.5f, 5.0f, 5.0f, 0.0f);
 
-#if 0
-	bsSceneNode* ground = new bsSceneNode(hkVector4(0.0f, 0.0f, 0.0f));
-	bsEntity& groundEntity = ground->getEntity();
-	//auto groundMesh = mCore->getResourceManager()->getMeshCache()->getMeshCreator()
-//		.createBox(XMFLOAT3(100.0f, 0.1f, 100.0f));
-	auto groundMesh = mCore->getResourceManager()->getMeshCache()->getMesh("plane_1m.bsm");
-	//groundEntity.attach(groundMesh);
+		bsEntity* sphereEntity = new bsEntity();
+		sphereEntity->attachMesh(mMeshes["sphere"]);
 
-	hkpRigidBodyCinfo ci2;
-	ci2.m_shape = new hkpPlaneShape(hkVector4(0.0f, 1.0f, 0.0f), hkVector4(0.0f, 0.0f, 0.0f), hkVector4(50.0f, 0.05f, 50.0f));
-	//ci2.m_shape = new hkpBoxShape(hkVector4(50.0f, 0.05f, 50.0f));
-	ci2.m_motionType = hkpMotion::MOTION_FIXED;
-	ci2.m_position = ground->getPosition();
-	hkpRigidBody* groundRb = new hkpRigidBody(ci2);
-	groundEntity.attach(groundRb);
-
-	ground->setScale2(XMVectorSet(100.0f, 1.0f, 100.0f, 0.0f));
-
-	mScene->addSceneNode(ground);
-	nodes.insert(std::make_pair("ground", ground));
-#endif
-
-	bsSceneNode* ground = mPrimCreator->createPlane(XMVectorSet(50.0f, 1.0f, 50.0f, 0.0f));
-	mScene->addSceneNode(ground);
-	nodes["ground"] = ground;
-
-
-	bsSceneNode* greebleNode = new bsSceneNode();
-	bsEntity& greebleEntity = greebleNode->getEntity();
-	//greebleEntity.attach(mMeshes["greeble"]);
-	greebleEntity.attach(mCore->getResourceManager()->getMeshCache()->getMesh("greeble_town.bsm"));
-	mScene->addSceneNode(greebleNode);
-	nodes.insert(std::make_pair("greeble", greebleNode));
-
-	hkPseudoRandomGenerator rng(GetTickCount());
-	const float offsetPos = 200.0f;
-	for (unsigned int i = 0; i < 100; ++i)
-	{
-		bsSceneNode* lightNode = new bsSceneNode();
-		lightNode->setPosition(XMVectorSet(rng.getRandRange(-offsetPos, offsetPos), 5.0f, rng.getRandRange(-offsetPos, offsetPos), 1.0f));
+		hkpRigidBodyCinfo ci;
+		ci.m_shape = new hkpSphereShape(0.5f);
+		ci.m_motionType = hkpMotion::MOTION_SPHERE_INERTIA;
+		ci.m_position = bsMath::toHK(spherePosition);
+		//ci.m_friction = 0.0f;
+		//ci.m_restitution = 1.01f;
+		//ci.m_linearDamping;
+		ci.m_mass = (4.0f / 3.0f) * XM_PI * (0.5f * 0.5f * 0.5f);
+		hkpRigidBody* sphereRb = new hkpRigidBody(ci);
+		ci.m_shape->removeReference();
+		sphereEntity->attachRigidBody(*sphereRb);
 
 		bsPointLightCInfo plci;
-		plci.color = XMFLOAT3(rng.getRandRange(0.0f, 1.0f), rng.getRandRange(0.0f, 1.0f), rng.getRandRange(0.0f, 1.0f));
-		plci.radius = rng.getRandRange(2.0f, 25.0f);
+		plci.color = XMFLOAT3(1.0f, 1.0f, 1.0f);
 		plci.intensity = 1.0f;
+		plci.radius = 10.0f;
+		bsLight* light = new bsLight(bsLight::LT_POINT, mCore->getResourceManager()->getMeshCache(), plci);
+		sphereEntity->attachLight(*light);
+	
+		mScene->addEntity(*sphereEntity);
+		entities.insert(std::make_pair("sphere", sphereEntity));
 
-		bsLight* light = new bsLight(bsLight::LT_POINT, mCore->getResourceManager()->getMeshCache(),
-			plci);
-		lightNode->getEntity().attach(light);
-		mScene->addSceneNode(lightNode);
+		sphereEntity->mTransform.setPosition(spherePosition);
+	}
+	
+	//Ground
+	{
+		//bsEntity* ground = mPrimCreator->createPlane(XMVectorSet(50.0f, 1.0f, 50.0f, 0.0f));
+		//mScene->addEntity(ground);
+		//entities["ground"] = ground;
 	}
 
 
-	bsSceneNode* lineNode = new bsSceneNode();
-	bsEntity& lineEntity = lineNode->getEntity();
-	bsLine3D* line3D = new bsLine3D(XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f));
-	lineEntity.attach(line3D);
-	nodes.insert(std::make_pair("line", lineNode));
-	mScene->addSceneNode(lineNode);
+	bsEntity* lineEntity = new bsEntity();
+	bsLineRenderer* line3D = new bsLineRenderer(XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f));
+	lineEntity->attachLineRenderer(*line3D);
+	entities.insert(std::make_pair("line", lineEntity));
+	mScene->addEntity(*lineEntity);
 
-	bsSceneNode* textNode = new bsSceneNode();
-	bsEntity& textEntity = textNode->getEntity();
+	bsEntity* textEntity = new bsEntity();
 	bsText3D* text3D = new bsText3D(mCore->getDx11Renderer()->getDeviceContext(),
 		mCore->getDx11Renderer()->getDevice(), mCore->getResourceManager()->getTextManager()->getFw1Factory());
-	textEntity.attach(text3D);
-	nodes["text"] = textNode;
-	mScene->addSceneNode(textNode);
+	textEntity->attachTextRenderer(*text3D);
+	entities["text"] = textEntity;
+	mScene->addEntity(*textEntity);
 }
 
 void Application::createSpheres(unsigned int count)
@@ -949,7 +918,7 @@ void Application::createSpheres(unsigned int count)
 	const hkVector4 minPos(-25.0f,  2.5f, -25.0f);
 	const hkVector4 maxPos( 25.0f, 15.0f,  25.0f);
 
-	std::vector<bsSceneNode*> spheres;
+	std::vector<bsEntity*> spheres;
 	spheres.reserve(count);
 
 	hkVector4 pos;
@@ -964,9 +933,8 @@ void Application::createSpheres(unsigned int count)
 		const float volume = (4.0f / 3.0f) * XM_PI * (radius * radius * radius);
 
 #if 1
-		bsSceneNode* node = new bsSceneNode();
-		bsEntity& entity = node->getEntity();
-		entity.attach(mMeshes["sphere"]);
+		bsEntity* sphereEntity = new bsEntity();
+		sphereEntity->attachMesh(mMeshes["sphere"]);
 
 		hkpMassProperties massProps;
 		hkInertiaTensorComputer::computeSphereVolumeMassProperties(radius, volume, massProps);
@@ -978,14 +946,14 @@ void Application::createSpheres(unsigned int count)
 		rbci.m_position = pos;
 		//rbci.m_mass = volume;
 		hkpRigidBody* rb = new hkpRigidBody(rbci);
-		entity.attach(rb);
+		sphereEntity->attachRigidBody(*rb);
 
-		mScene->addSceneNode(node);
+		mScene->addEntity(*sphereEntity);
 
-		node->setLocalScaleUniform(radius * 2.0f);
+		sphereEntity->mTransform.setLocalScaleUniform(radius * 2.0f);
 #endif
-		//bsSceneNode* sphere = mPrimCreator->createSphere(radius);
-		node->setLocalPosition(bsMath::toXM(pos));
+		//bsEntity* sphere = mPrimCreator->createSphere(radius);
+		sphereEntity->mTransform.setLocalPosition(bsMath::toXM(pos));
 
 		/*
 		//Detach mesh+attach light
@@ -998,7 +966,7 @@ void Application::createSpheres(unsigned int count)
 		sphere->getEntity().attach(light);
 		*/
 
-		//mScene->addSceneNode(sphere);
+		//mScene->addEntity(sphere);
 	}
 }
 
@@ -1009,6 +977,13 @@ void Application::createBoxes(bool staticBoxes, unsigned int count)
 	const hkVector4 maxPos( 25.0f, 15.0f,  25.0f);
 
 	auto mesh = mCore->getResourceManager()->getMeshCache()->getMesh("unit_cube.bsm");
+	//auto mesh = mCore->getResourceManager()->getMeshCache()->getMesh("teapot.bsm");
+
+	XMFLOAT3 boundingSphereCenter;
+	XMStoreFloat3(&boundingSphereCenter, mesh->getBoundingSphere().positionAndRadius);
+	const float bsradius = mesh->getBoundingSphere().getRadius();
+	float boundingSphereRadius = bsradius;
+
 
 	hkVector4 pos;
 	XMFLOAT4A scale;
@@ -1022,13 +997,17 @@ void Application::createBoxes(bool staticBoxes, unsigned int count)
 		scale.x = rng.getRandRange(0.5f, 5.0f);
 		scale.y = rng.getRandRange(0.5f, 5.0f);
 		scale.z = rng.getRandRange(0.5f, 5.0f);
+		scale.x = scale.y = scale.z;
+
+
+		const float maxScale = max(max(scale.x, scale.y), scale.z);
+		boundingSphereRadius = bsradius * maxScale;
 
 		const float volume = scale.x * scale.y * scale.z;
 
 #if 1
-		bsSceneNode* node = new bsSceneNode();
-		bsEntity& entity = node->getEntity();
-		entity.attach(mesh);
+		bsEntity* boxEntity = new bsEntity();
+		boxEntity->attachMesh(mesh);
 
 		hkVector4 halfExtents(scale.x * 0.5f, scale.y * 0.5f, scale.z * 0.5f);
 		const hkVector4 convexRadius(hkConvexShapeDefaultRadius, hkConvexShapeDefaultRadius,
@@ -1045,18 +1024,28 @@ void Application::createBoxes(bool staticBoxes, unsigned int count)
 		rbci.m_position = pos;
 
 		hkpRigidBody* rb = new hkpRigidBody(rbci);
-		entity.attach(rb);
+		boxEntity->attachRigidBody(*rb);
 
-		mScene->addSceneNode(node);
+		mScene->addEntity(*boxEntity);
 
-		node->setLocalScale(XMLoadFloat4A(&scale));
-		node->setPosition(bsMath::toXM(pos));
+		boxEntity->mTransform.setLocalScale(XMLoadFloat4A(&scale));
+		boxEntity->mTransform.setPosition(bsMath::toXM(pos));
 #endif
+
+		bsLineRenderer* lineRenderer = new bsLineRenderer(XMFLOAT4(0.25f, 1.0f, 0.25f, 1.0f));
+
+		bsGeometry::createLinesFromSphere(boundingSphereCenter, boundingSphereRadius,
+			24, lineRenderer);
+		lineRenderer->build(mCore->getDx11Renderer());
+
+		boxEntity->attachLineRenderer(*lineRenderer);
+
+		
 		/*
-		bsSceneNode* box = mPrimCreator->createBox(XMVectorScale(XMLoadFloat4A(&scale), 0.5f));
-		box->setLocalPosition(bsMath::toXM(pos));
-		box->getEntity().mRigidBody->setMotionType(motion);
-		mScene->addSceneNode(box);
+		bsEntity* boxEntity = mPrimCreator->createBox(XMVectorScale(XMLoadFloat4A(&scale), 0.5f));
+		boxEntity->setLocalPosition(bsMath::toXM(pos));
+		boxEntity->getEntity().mRigidBody->setMotionType(motion);
+		mScene->addEntity(boxEntity);
 		*/
 	}
 }
@@ -1069,43 +1058,43 @@ void Application::createWalls(float offsetFromCenter, float length, float height
 	const XMVECTOR westPos = XMVectorSet(-offsetFromCenter * 0.5f, height * 0.5f, 0.0f, 0.0f);
 
 	
-	bsSceneNode* northNode = mPrimCreator->createBox(XMVectorSet(length * 0.5f, height * 0.5f, 5.0f * 0.5f, 1.0f));
-	bsSceneNode* eastNode = mPrimCreator->createBox(XMVectorSet(length * 0.5f, height * 0.5f, 5.0f * 0.5f, 1.0f));
-	bsSceneNode* southNode = mPrimCreator->createBox(XMVectorSet(length * 0.5f, height * 0.5f, 5.0f * 0.5f, 1.0f));
-	bsSceneNode* westNode = mPrimCreator->createBox(XMVectorSet(length * 0.5f, height * 0.5f, 5.0f * 0.5f, 1.0f));
-	northNode->getEntity().mRigidBody->setMotionType(hkpMotion::MOTION_FIXED);
-	eastNode->getEntity().mRigidBody->setMotionType(hkpMotion::MOTION_FIXED);
-	southNode->getEntity().mRigidBody->setMotionType(hkpMotion::MOTION_FIXED);
-	westNode->getEntity().mRigidBody->setMotionType(hkpMotion::MOTION_FIXED);
+	bsEntity* northEntity = mPrimCreator->createBox(XMVectorSet(length * 0.5f, height * 0.5f, 5.0f * 0.5f, 1.0f));
+	bsEntity* eastEntity = mPrimCreator->createBox(XMVectorSet(length * 0.5f, height * 0.5f, 5.0f * 0.5f, 1.0f));
+	bsEntity* southEntity = mPrimCreator->createBox(XMVectorSet(length * 0.5f, height * 0.5f, 5.0f * 0.5f, 1.0f));
+	bsEntity* westEntity = mPrimCreator->createBox(XMVectorSet(length * 0.5f, height * 0.5f, 5.0f * 0.5f, 1.0f));
+	northEntity->mTransform.getEntity().mRigidBody->setMotionType(hkpMotion::MOTION_FIXED);
+	eastEntity->mTransform.getEntity().mRigidBody->setMotionType(hkpMotion::MOTION_FIXED);
+	southEntity->mTransform.getEntity().mRigidBody->setMotionType(hkpMotion::MOTION_FIXED);
+	westEntity->mTransform.getEntity().mRigidBody->setMotionType(hkpMotion::MOTION_FIXED);
 
-	northNode->setLocalPosition(northPos);
-	eastNode->setLocalPosition(eastPos);
-	southNode->setLocalPosition(southPos);
-	westNode->setLocalPosition(westPos);
+	northEntity->mTransform.setLocalPosition(northPos);
+	eastEntity->mTransform.setLocalPosition(eastPos);
+	southEntity->mTransform.setLocalPosition(southPos);
+	westEntity->mTransform.setLocalPosition(westPos);
 
 
 
 	XMVECTOR scale = XMVectorSet(length, height, 5.0f, 1.0f);
-	northNode->setLocalScale(scale);
-	eastNode->setLocalScale(scale);
-	southNode->setLocalScale(scale);
-	westNode->setLocalScale(scale);
+	northEntity->mTransform.setLocalScale(scale);
+	eastEntity->mTransform.setLocalScale(scale);
+	southEntity->mTransform.setLocalScale(scale);
+	westEntity->mTransform.setLocalScale(scale);
 
 	const XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	XMVECTOR rotation = XMQuaternionRotationNormal(up, XMConvertToRadians(90.0f));
-	eastNode->setLocalRotation(rotation);
+	eastEntity->mTransform.setLocalRotation(rotation);
 
 	rotation = XMQuaternionRotationNormal(up, XMConvertToRadians(180.0f));
-	southNode->setLocalRotation(rotation);
+	southEntity->mTransform.setLocalRotation(rotation);
 
 	rotation = XMQuaternionRotationNormal(up, XMConvertToRadians(270.0f));
-	westNode->setLocalRotation(rotation);
+	westEntity->mTransform.setLocalRotation(rotation);
 
 
-	mScene->addSceneNode(northNode);
-	mScene->addSceneNode(eastNode);
-	mScene->addSceneNode(southNode);
-	mScene->addSceneNode(westNode);
+	mScene->addEntity(*northEntity);
+	mScene->addEntity(*eastEntity);
+	mScene->addEntity(*southEntity);
+	mScene->addEntity(*westEntity);
 }
 
 void Application::createKeyframedRb()
@@ -1113,12 +1102,11 @@ void Application::createKeyframedRb()
 	const XMVECTOR boxSize = XMVectorSet(5.0f, 0.1f, 5.0f, 0.0f);
 	const XMVECTOR position = XMVectorSet(10.0f, 0.1f, 0.0f, 0.0f);
 
-	bsSceneNode* keyframedNode = new bsSceneNode();
-	keyframedNode->setPosition(position);
+	bsEntity* keyframedEntity = new bsEntity();
+	keyframedEntity->mTransform.setPosition(position);
 
-	bsEntity& entity = keyframedNode->getEntity();
-	entity.attach(mMeshes["cube"]);
-	keyframedNode->setLocalScale(boxSize);
+	keyframedEntity->attachMesh(mMeshes["cube"]);
+	keyframedEntity->mTransform.setLocalScale(boxSize);
 
 	float volume = XMVectorGetX(boxSize) * XMVectorGetY(boxSize) * XMVectorGetZ(boxSize);
 	hkVector4 halfExtents(bsMath::toHK(boxSize));
@@ -1134,11 +1122,25 @@ void Application::createKeyframedRb()
 	ci.m_position = bsMath::toHK(position);
 
 	hkpRigidBody* rb = new hkpRigidBody(ci);
-	entity.attach(rb);
+	keyframedEntity->attachRigidBody(*rb);
 
-	mScene->addSceneNode(keyframedNode);
 
-	nodes["lift"] = keyframedNode;
+
+	XMFLOAT4 bounding;
+	XMStoreFloat4(&bounding, keyframedEntity->getMesh()->getBoundingSphere().positionAndRadius);
+
+	bsLineRenderer* lineRenderer = new bsLineRenderer(XMFLOAT4(0.25f, 1.0f, 0.25f, 1.0f));
+	bsGeometry::createLinesFromSphere(XMFLOAT3(bounding.x, bounding.y, bounding.z), bounding.w * 5.0f,
+		24, lineRenderer);
+	lineRenderer->build(mCore->getDx11Renderer());
+	keyframedEntity->attachLineRenderer(*lineRenderer);
+
+
+
+
+	mScene->addEntity(*keyframedEntity);
+
+	entities["lift"] = keyframedEntity;
 
 	float j = 1.0f;
 	for (size_t i = 0; i < 10; ++i, j += 1.0f)
@@ -1163,15 +1165,26 @@ void Application::createKeyframedRb()
 		//ci.m_mass = 10.0f;
 		hkpRigidBody* rb = new hkpRigidBody(ci);
 
-		bsSceneNode* box = new bsSceneNode();
-		box->getEntity().attach(rb);
-		box->getEntity().attach(mMeshes["cube"]);
+		bsEntity* boxEntity = new bsEntity();
+		boxEntity->attachRigidBody(*rb);
+		boxEntity->attachMesh(mMeshes["cube"]);
 
 		//const XMVECTOR boxPosition = XMVectorAdd(position, XMVectorSet(x, (j + 1.1001f) * 1.01f, z, 0.0f));
 		const XMVECTOR boxPosition = XMVectorAdd(position, XMVectorSet(0.0f, j * 1.0001f, 0.0f, 0.0f));
-		box->setPosition(boxPosition);
-		//box->setLocalScale(XMVectorSet(2.1f, 2.1f, 2.1f, 0.0f));
-		mScene->addSceneNode(box);
+		boxEntity->mTransform.setPosition(boxPosition);
+		//boxEntity->setLocalScale(XMVectorSet(2.1f, 2.1f, 2.1f, 0.0f));
+
+
+		XMFLOAT4 bounding;
+		XMStoreFloat4(&bounding, boxEntity->getMesh()->getBoundingSphere().positionAndRadius);
+
+		bsLineRenderer* lineRenderer = new bsLineRenderer(XMFLOAT4(0.25f, 1.0f, 0.25f, 1.0f));
+		bsGeometry::createLinesFromSphere(XMFLOAT3(bounding.x, bounding.y, bounding.z), bounding.w,
+			24, lineRenderer);
+		lineRenderer->build(mCore->getDx11Renderer());
+		boxEntity->attachLineRenderer(*lineRenderer);
+
+		mScene->addEntity(*boxEntity);
 	}
 }
 
@@ -1238,11 +1251,164 @@ void Application::createLines()
 		pointList.push_back(p);
 	}
 
-	bsSceneNode* node = new bsSceneNode();
-	bsLine3D* line = new bsLine3D(XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f));
+	bsEntity* lineEntity = new bsEntity();
+	bsLineRenderer* line = new bsLineRenderer(XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f));
 	line->addPoints(&pointList[0], pointList.size());
 	line->build(mCore->getDx11Renderer());
-	node->getEntity().attach(line);
-	mScene->addSceneNode(node);
-	nodes["mCurve"] = node;
+	lineEntity->attachLineRenderer(*line);
+	mScene->addEntity(*lineEntity);
+	entities["mCurve"] = lineEntity;
+}
+
+bsEntity* Application::createLightAtPosition(const XMVECTOR& position, float radius, const XMFLOAT3& color)
+{
+	bsEntity* entity = new bsEntity();
+
+	bsPointLightCInfo plci;
+	plci.color = color;
+	plci.intensity = 1.0f;
+	plci.radius = radius;
+	
+	bsLight* light = new bsLight(bsLight::LT_POINT, mCore->getResourceManager()->getMeshCache(),
+		plci);
+	entity->attachLight(*light);
+
+	entity->mTransform.setPosition(position);
+
+	return entity;
+}
+
+void Application::createFactory()
+{
+	bsEntity* greebleEntity = new bsEntity();
+	//greebleEntity.attach(mMeshes["greeble"]);
+	//greebleEntity.attach(mCore->getResourceManager()->getMeshCache()->getMesh("greeble_town.bsm"));
+	greebleEntity->attachMesh(mCore->getResourceManager()->getMeshCache()->getMesh("factory.bsm"));
+	//greebleEntity.attach(mCore->getResourceManager()->getMeshCache()->getMesh("arrow.bsm"));
+	greebleEntity->mTransform.setPosition(XMVectorSet(0.0f, 0.1f, 0.0f, 0.0f));
+
+	entities.insert(std::make_pair("greeble", greebleEntity));
+	{
+		const std::string fileName = mCore->getResourceManager()->getFileSystem()->
+			getPathFromFilename("factory.hkx");
+		//getPathFromFilename("arrow.hkx");
+
+		hkResource* loadedData;
+		hkSerializeUtil::ErrorDetails loadError;
+		loadedData = hkSerializeUtil::load(fileName.c_str(), &loadError);
+		BS_ASSERT(loadedData);
+
+		hkRootLevelContainer* container = loadedData->getContents<hkRootLevelContainer>();
+		BS_ASSERT(container);
+
+		hkpPhysicsData* physicsData = static_cast<hkpPhysicsData*>(container->
+			findObjectByType(hkpPhysicsDataClass.getName()));
+		BS_ASSERT(physicsData);
+
+		const hkArray<hkpPhysicsSystem*>& physicsSystems = physicsData->getPhysicsSystems();
+		BS_ASSERT(physicsSystems.getSize() == 1);
+		BS_ASSERT(physicsSystems[0]->getRigidBodies().getSize() == 1);
+
+		hkpRigidBody* rb = physicsSystems[0]->getRigidBodies()[0];
+		//rb->setPosition(hkVector4(0.0f, 0.1f, 0.0f));
+		//hkQuaternion q = rb->getRotation();
+		//rb->setRotation(hkQuaternion::getIdentity());
+
+		greebleEntity->attachRigidBody(*rb);
+		//greebleEntity->setPosition(XMVectorSplatOne());
+
+		//loadedData->removeReference();
+	}
+	mScene->addEntity(*greebleEntity);
+
+	createFactoryLights();
+}
+
+void Application::createFactoryLights()
+{
+	std::vector<bsEntity*> factoryLightEntities;
+	factoryLightEntities.reserve(50);
+
+	const XMFLOAT3 pole1Color(1.0f, 1.0f, 0.0f);
+	const float pole1Radius = 10.0f;
+
+	//Light poles, outside
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(-3.888f, 7.357f, 20.353f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(-3.758f, 7.425f, -5.118f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(11.155f, 7.290f, -5.153f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(26.460f, 7.338f, -5.140f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(41.830f, 7.248f, -5.163f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(55.885f, 7.562f, -6.136f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(54.399f, 7.354f, 7.460f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(56.222f, 7.353f, 20.534f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(41.958f, 7.337f, 20.358f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(26.807f, 7.357f, 20.353f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(11.326f, 7.291f, 20.369f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(8.721f, 8.152f, 10.135f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(23.830f, 8.142f, 10.134f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(39.133f, 8.137f, 10.133f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(40.390f, 8.401f, 5.729f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(23.978f, 8.196f, 4.693f, 0.0f), pole1Radius, pole1Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(8.772f, 8.181f, 4.695f, 0.0f), pole1Radius, pole1Color));
+
+
+	const XMFLOAT3 pole2Color(1.0f, 1.0f, 0.0f);
+	const float pole2Radius = 10.0f;
+
+	//Light poles, other side
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(6.613f, 7.173f, 59.080f, 0.0f), pole2Radius, pole2Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(6.562f, 7.429f, 65.674f, 0.0f), pole2Radius, pole2Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(18.676f, 7.471f, 66.730f, 0.0f), pole2Radius, pole2Color));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(19.777f, 7.268f, 59.104f, 0.0f), pole2Radius, pole2Color));
+
+
+	const XMFLOAT3 insideColor(1.0f, 0.75f, 0.0f);
+	const float insideRadius = 5.0f;
+
+	//Lights inside factory
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(32.394f, 2.540f, 32.108f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(6.613f, 7.173f, 59.080f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(6.562f, 7.429f, 65.674f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(18.676f, 7.471f, 66.730f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(19.777f, 7.268f, 59.104f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(13.338f, 2.540f, 27.841f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(20.105f, 2.540f, 34.408f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(27.829f, 2.540f, 37.567f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(32.822f, 2.540f, 43.459f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(27.967f, 2.540f, 46.547f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(20.151f, 2.540f, 49.886f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(32.885f, 2.540f, 43.716f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(45.068f, 3.683f, 37.157f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(45.059f, 3.683f, 41.054f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(45.071f, 3.683f, 45.268f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(36.378f, 2.540f, 53.706f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(41.332f, 2.540f, 53.683f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(46.456f, 2.540f, 53.727f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(51.567f, 2.540f, 53.837f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(47.540f, 2.540f, 47.603f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(52.665f, 2.540f, 47.512f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(54.069f, 2.540f, 60.130f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(54.779f, 2.540f, 29.036f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(67.384f, 3.059f, 54.627f, 0.0f), insideRadius, insideColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(58.841f, 3.063f, 47.061f, 0.0f), insideRadius, insideColor));
+
+
+	const XMFLOAT3 underColor(1.0f, 0.0f, 0.0f);
+	const float underRadius = 7.5f;
+
+	//Underground
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(49.232f, -2.032f, 57.773f, 0.0f), underRadius, underColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(49.286f, -2.032f, 67.051f, 0.0f), underRadius, underColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(33.145f, -0.762f, 67.122f, 0.0f), underRadius, underColor));
+	factoryLightEntities.push_back(createLightAtPosition(XMVectorSet(33.100f, -0.762f, 57.669f, 0.0f), underRadius, underColor));
+
+
+
+
+	const XMVECTOR offset = XMVectorSet(0.0f, -0.05f, 0.0f, 0.0f);
+	for (unsigned int i = 0; i < factoryLightEntities.size(); ++i)
+	{
+		factoryLightEntities[i]->mTransform.translate(offset);
+		mScene->addEntity(*factoryLightEntities[i]);
+	}
 }

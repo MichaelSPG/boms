@@ -10,6 +10,8 @@
 #include "bsRenderStats.h"
 #include "bsPrimitiveCreator.h"
 
+#include <Common/Base/hkBase.h>
+#include <Physics/Dynamics/hkpDynamics.h>
 #include <Physics/Dynamics/Constraint/Bilateral/PointToPath/hkpLinearParametricCurve.h>
 
 class bsLog;
@@ -17,7 +19,7 @@ class bsCore;
 class bsDeferredRenderer;
 class bsMesh;
 class bsText2D;
-class bsSceneNode;
+class bsEntity;
 class bsScene;
 class bsCharacterController;
 
@@ -55,7 +57,7 @@ private:
 
 	void createTexts();
 
-	void createNodes();
+	void createEntities();
 
 	void createSpheres(unsigned int count);
 
@@ -66,6 +68,10 @@ private:
 	void createKeyframedRb();
 
 	void createLines();
+
+	void createFactory();
+	void createFactoryLights();
+	bsEntity* createLightAtPosition(const XMVECTOR& position, float radius, const XMFLOAT3& color);
 
 	void toggleFreeCam();
 
@@ -82,14 +88,14 @@ private:
 
 	std::unordered_map<std::string, std::shared_ptr<bsMesh>> mMeshes;
 	std::unordered_map<std::string, std::shared_ptr<bsText2D>> mTexts;
-	std::unordered_map<std::string, bsSceneNode*> nodes;
+	std::unordered_map<std::string, bsEntity*> entities;
 
 	bsRenderStats mRenderStats;
 	bsScene* mScene;
 	bsPrimitiveCreator* mPrimCreator;
 	
-	bsCharacterController* cc;
-	bsSceneNode* ccNode;
+	bsCharacterController* mCharacterController;
+	bsEntity* characterControllerEntity;
 	bool mFreeCamMode;
 
 	hkpLinearParametricCurve* mCurve;
