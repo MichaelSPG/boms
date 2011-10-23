@@ -5,8 +5,6 @@
 #include "bsMath.h"
 
 #include <Physics/Dynamics/World/hkpWorld.h>
-#include <Physics/Collide/Query/CastUtil/hkpWorldRayCastInput.h>
-#include <Physics/Collide/Query/CastUtil/hkpWorldRayCastOutput.h>
 
 
 void bsRayCastUtil::castRay(const XMVECTOR& origin, const XMVECTOR& destination,

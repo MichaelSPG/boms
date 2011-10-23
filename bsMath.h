@@ -4,11 +4,7 @@
 #include <stdlib.h>//rand()
 
 #include <Windows.h>//xnamath.h needs defines from this header, such as FLOAT
-#define XM_NO_OPERATOR_OVERLOADS//http://msdn.microsoft.com/en-us/library/ee418732%28v=VS.85%29.aspx#AvoidOverLoad
 #include <xnamath.h>
-
-#include <Common/Base/hkBase.h>
-#include <Common/Base/Math/hkMath.h>
 
 #include "bsConvert.h"
 

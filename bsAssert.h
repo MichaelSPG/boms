@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <sstream>
 
 #include <Windows.h>
@@ -15,6 +14,7 @@
 #endif // BS_ASSERT_NO_BREAK
 
 #ifdef BS_DEBUG
+
 /*	Log message with condition, custom text, file, line and function name, and then break.
 */
 #define BS_ASSERT2(condition, text)														 \

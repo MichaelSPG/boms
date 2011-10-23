@@ -3,9 +3,12 @@
 #include <Windows.h>
 #include <xnamath.h>
 
+#include <Common/Base/hkBase.h>
+#include <Physics/Collide/Query/CastUtil/hkpWorldRayCastInput.h>
+#include <Physics/Collide/Query/CastUtil/hkpWorldRayCastOutput.h>
+
 class hkpWorld;
-struct hkpWorldRayCastOutput;
-struct hkpWorldRayCastInput;
+class hkVector4;
 
 
 namespace bsRayCastUtil

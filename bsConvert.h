@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include <Common/Base/hkBase.h>
 #include <Common/Base/Math/hkMath.h>
 
 #include <Windows.h>
@@ -8,7 +9,6 @@
 
 
 /*	Functions to convert between XNA math and Havok math classes.
-	
 */
 namespace bsMath
 {
