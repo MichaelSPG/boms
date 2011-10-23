@@ -110,3 +110,5 @@ private:
 
 	bool			mLoadingFinished;
 };
+
+typedef std::shared_ptr<bsMesh> bsSharedMesh;
