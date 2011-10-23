@@ -6,11 +6,10 @@
 #include <algorithm>
 
 #include "bsCamera.h"
-#include "bsSceneNode.h"
+#include "bsEntity.h"
 #include "bsRenderable.h"
 #include "bsMesh.h"
-#include "bsPrimitive.h"
-#include "bsLine3D.h"
+#include "bsLineRenderer.h"
 #include "bsLight.h"
 
 #include "bsDx11Renderer.h"
@@ -26,6 +25,8 @@
 #include "bsConstantBuffers.h"
 
 #include "bsAlignedAllocator.h"
+
+#include <Common/Base/hkBase.h>
 
 
 bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shaderManager)
@@ -214,17 +215,17 @@ void bsRenderQueue::sortRenderables()
 {
 	BS_ASSERT2(mCamera, "Camera must be set before attempting to render a frame");
 
-	std::vector<bsSceneNode*> sceneNodes = mCamera->getVisibleSceneNodes();
+	std::vector<bsEntity*> entities = mCamera->getVisibleEntities();
 
-	mFrameStats.visibleSceneNodeCount = sceneNodes.size();
+	mFrameStats.visibleEntityCount = entities.size();
 	
 
-	//Gather all the renderables from the visible nodes.
-	for (unsigned int i = 0, count = sceneNodes.size(); i < count; ++i)
+	//Gather all the renderables from the visible meshEntities.
+	for (unsigned int i = 0, count = entities.size(); i < count; ++i)
 	{
-		bsEntity& entity = sceneNodes[i]->getEntity();
+		bsEntity& entity = *entities[i];
 
-		const std::shared_ptr<bsMesh>& mesh = entity.getComponent<std::shared_ptr<bsMesh>&>();
+		const bsSharedMesh& mesh = entity.getMesh();
 		if (mesh)
 		{
 			auto finder = mMeshesToDraw.find(mesh.get());
@@ -232,18 +233,18 @@ void bsRenderQueue::sortRenderables()
 			if (finder == mMeshesToDraw.end())
 			{
 				//Not found, create it
-				std::vector<bsSceneNode*> nodes(1);
-				nodes[0] = sceneNodes[i];
-				mMeshesToDraw.insert(std::make_pair(mesh.get(), nodes));
+				std::vector<bsEntity*> meshEntities(1);
+				meshEntities[0] = &entity;
+				mMeshesToDraw.insert(std::make_pair(mesh.get(), meshEntities));
 			}
 			else
 			{
-				//Found, add the scene node to the mesh' list of scene nodes
-				finder->second.push_back(sceneNodes[i]);
+				//Found, add the entity to the mesh' list of entities
+				finder->second.push_back(&entity);
 			}
 		}
 
-		bsLine3D* line = entity.getComponent<bsLine3D*>();
+		bsLineRenderer* line = entity.getLineRenderer();
 		if (line != nullptr)
 		{
 			auto finder = mLinesToDraw.find(line);
@@ -251,46 +252,29 @@ void bsRenderQueue::sortRenderables()
 			if (finder == mLinesToDraw.end())
 			{
 				//Not found, create it
-				std::vector<bsSceneNode*> nodes(1);
-				nodes[0] = sceneNodes[i];
-				mLinesToDraw.insert(std::make_pair(line, nodes));
+				std::vector<bsEntity*> lineEntities(1);
+				lineEntities[0] = &entity;
+				mLinesToDraw.insert(std::make_pair(line, lineEntities));
 			}
 			else
 			{
 				//Found
-				finder->second.push_back(sceneNodes[i]);
+				finder->second.push_back(&entity);
 			}
 		}
 
-		bsLight* light = entity.getComponent<bsLight*>();
+		bsLight* light = entity.getLight();
 		if (light != nullptr)
 		{
 			XMFLOAT3 position;
-			XMStoreFloat3(&position, sceneNodes[i]->getPosition());
+			XMStoreFloat3(&position, entity.mTransform.getPosition());
 			mLightPositionPairs.push_back(std::make_pair(light, position));
-
-#if 0
-			auto finder = mLightsToDraw.find(light);
-
-			if (finder == mLightsToDraw.end())
-			{
-				//Not found, create it
-				std::vector<bsSceneNode*> nodes(1);
-				nodes[0] = sceneNodes[i];
-				mLightsToDraw.insert(std::make_pair(light, nodes));
-			}
-			else
-			{
-				//Found
-				finder->second.push_back(sceneNodes[i]);
-			}
-#endif
 		}
 
-		bsText3D* text = entity.getComponent<bsText3D*>();
+		bsText3D* text = entity.getTextRenderer();
 		if (text != nullptr)
 		{
-			mText3dToDraw.push_back(std::make_pair(sceneNodes[i], text));
+			mText3dToDraw.push_back(std::make_pair(&entity, text));
 		}
 	}
 
@@ -306,6 +290,7 @@ void bsRenderQueue::drawMeshes()
 {
 	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(
 		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 
 	mShaderManager->setPixelShader(mMeshPixelShader);
 	mShaderManager->setVertexShader(mMeshVertexShader);
@@ -319,16 +304,16 @@ void bsRenderQueue::drawMeshes()
 		{
 			continue;
 		}
-		const std::vector<bsSceneNode*>& sceneNodes = itr->second;
+		const std::vector<bsEntity*>& entities = itr->second;
 
-		mFrameStats.totalMeshesDrawn += sceneNodes.size();
+		mFrameStats.totalMeshesDrawn += entities.size();
 
-		//For each scene node which contains this mesh, draw the mesh with different
+		//For each entity which contains this mesh, draw the mesh with different
 		//transforms.
-		for (unsigned int i = 0, count = sceneNodes.size(); i < count; ++i)
+		for (unsigned int i = 0, count = entities.size(); i < count; ++i)
 		{
 			/*
-			const hkTransform& transform = sceneNodes[i]->getDerivedTransformation();
+			const hkTransform& transform = entities[i]->getDerivedTransformation();
 			float f4x4[16];
 			transform.get4x4ColumnMajor(f4x4);
 			XMFLOAT4X4 xmf4x4(f4x4);
@@ -340,9 +325,9 @@ void bsRenderQueue::drawMeshes()
 
 
 			/*
-			const XMVECTOR& pos = sceneNodes[i]->getPosition();
-			const XMVECTOR& rot = sceneNodes[i]->getDerivedRotation2();
-			const XMVECTOR& scale = sceneNodes[i]->getDerivedScale2();
+			const XMVECTOR& pos = entities[i]->getPosition();
+			const XMVECTOR& rot = entities[i]->getDerivedRotation2();
+			const XMVECTOR& scale = entities[i]->getDerivedScale2();
 
 			const XMMATRIX positionMat = XMMatrixTranslationFromVector(pos);
 			const XMMATRIX rotationMat = XMMatrixRotationQuaternion(rot);
@@ -355,7 +340,7 @@ void bsRenderQueue::drawMeshes()
 			//XMFLOAT4X4 xmf4x4;
 			//XMStoreFloat4x4(&xmf4x4, transformMat);
 			//XMStoreFloat4x4(&xmf4x4, );
-			setWorldConstantBuffer(sceneNodes[i]->getTransposedTransform());
+			setWorldConstantBuffer(entities[i]->mTransform.getTransposedTransform());
 
 			mesh->draw(mDx11Renderer);
 
@@ -390,16 +375,16 @@ void bsRenderQueue::drawMeshesInstanced()
 			continue;
 		}
 
-		const std::vector<bsSceneNode*>& sceneNodes = itr->second;
-		mFrameStats.totalMeshesDrawn += sceneNodes.size();
+		const std::vector<bsEntity*>& entities = itr->second;
+		mFrameStats.totalMeshesDrawn += entities.size();
 		mFrameStats.totalTrianglesDrawn += mesh.getTriangleCount();
-		mFrameStats.totalTrianglesDrawnNotInstanced += mesh.getTriangleCount() * sceneNodes.size();
+		mFrameStats.totalTrianglesDrawnNotInstanced += mesh.getTriangleCount() * entities.size();
 
 		transforms.clear();
-		transforms.reserve(sceneNodes.size());
-		for (unsigned int i = 0; i < sceneNodes.size(); ++i)
+		transforms.reserve(entities.size());
+		for (unsigned int i = 0; i < entities.size(); ++i)
 		{
-			transforms.push_back(sceneNodes[i]->getTransposedTransform());
+			transforms.push_back(entities[i]->mTransform.getTransposedTransform());
 		}
 
 		drawMeshInstanced(*mDx11Renderer, mesh, transforms.data(), transforms.size());
@@ -436,23 +421,42 @@ void bsRenderQueue::drawLines()
 		D3D_PRIMITIVE_TOPOLOGY_LINELIST);
 		//D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+	static float angle = 0.0f;
+	angle += XMConvertToRadians(2.0f);
+	if (angle > XM_PI * 2.0f)
+	{
+		angle = 0.0f;
+	}
+
 	for (auto itr = mLinesToDraw.begin(), end = mLinesToDraw.end(); itr != end; ++itr)
 	{
-		bsLine3D* currentLine = itr->first;
-		const std::vector<bsSceneNode*>& sceneNodes = itr->second;
+		bsLineRenderer* currentLine = itr->first;
+		const std::vector<bsEntity*>& entities = itr->second;
 
-		mFrameStats.linesDrawn += sceneNodes.size();
+		mFrameStats.linesDrawn += entities.size();
 
-		for (unsigned int i = 0, count = sceneNodes.size(); i < count; ++i)
+		for (unsigned int i = 0, count = entities.size(); i < count; ++i)
 		{
 			/*
-			const hkTransform& transform = sceneNodes[i]->getDerivedTransformation();
+			const hkTransform& transform = entities[i]->getDerivedTransformation();
 			float f4x4[16];
 			transform.get4x4ColumnMajor(f4x4);
 			XMFLOAT4X4 world(f4x4);
 			bsMath::XMFloat4x4Transpose(world);
 			*/
-			setWireframeConstantBuffer(sceneNodes[i]->getTransposedTransform(), currentLine->mColor);
+
+			const XMMATRIX position = XMMatrixTranslationFromVector(entities[i]->mTransform.getPosition());
+			XMMATRIX rotation = XMMatrixRotationQuaternion(entities[i]->mTransform.getRotation());
+			const XMMATRIX extraRot = XMMatrixRotationY(angle);
+
+			//rotation = XMMatrixMultiply(rotation, extraRot);
+			//rotation = extraRot;
+
+			//rotation = XMMatrixRotationQuaternion(mCamera->getEntity()->getOwner()->getRotation());
+			//XMVECTOR determinant;
+			//rotation = XMMatrixInverse(&determinant, rotation);
+			
+			setWireframeConstantBuffer(XMMatrixMultiplyTranspose(rotation, position), currentLine->mColor);
 
 			currentLine->draw(mDx11Renderer);
 		}
@@ -516,7 +520,7 @@ void bsRenderQueue::drawLightsInstanced()
 		const XMFLOAT3& position = mLightPositionPairs[i].second;
 
 		//Create the light's transform, which includes the light's radius as scaling factor
-		//and the node's position.
+		//and the entity's position.
 		//Multiply with 2 to get diameter rather than radius.
 		const float scale = light->getRadius() * 2.0f;
 		scalingMatrix = XMMatrixScaling(scale, scale, scale);
@@ -579,7 +583,7 @@ void bsRenderQueue::drawLightsNotInstanced()
 		const XMFLOAT3& position = mLightPositionPairs[i].second;
 
 		//Create the light's transform, which includes the light's radius as scaling factor
-		//and the node's position.
+		//and the entity's position.
 		//Multiply with 2 to get diameter rather than radius.
 		const float scale = light->getRadius() * 2.0f;
 		scalingMatrix = XMMatrixScaling(scale, scale, scale);
@@ -614,7 +618,7 @@ void bsRenderQueue::sortLights()
 	std::vector<std::pair<const bsLight*, XMFLOAT4X4>> containingCamera;
 
 	
-	const XMVECTOR& cameraPosition = mCamera->getEntity()->getOwner()->getPosition();
+	const XMVECTOR& cameraPosition = mCamera->getEntity()->mTransform.getPosition();
 	const float nearClip = mCamera->getProjectionInfo().mNearClip;
 	const float nearClipSquared = nearClip * nearClip;
 
@@ -631,7 +635,7 @@ void bsRenderQueue::sortLights()
 		const XMFLOAT3& position = mLightPositionPairs[i].second;
 
 		//Create the light's transform, which includes the light's radius as scaling factor
-		//and the node's position.
+		//and the entity's position.
 		const float scale = light->getRadius();
 		scalingMatrix = XMMatrixScaling(scale, scale, scale);
 		fullTransform = XMMatrixMultiply(scalingMatrix,
@@ -671,13 +675,13 @@ void bsRenderQueue::drawTexts()
 	const XMMATRIX viewProjection = mCamera->getViewProjection();
 
 	std::for_each(std::begin(mText3dToDraw), std::end(mText3dToDraw),
-		[&](const std::pair<bsSceneNode*, bsText3D*>& text)
+		[&](const std::pair<bsEntity*, bsText3D*>& text)
 	{
-		const XMMATRIX& nodeTransform = text.first->getTransform();
+		const XMMATRIX& entityTransform = text.first->mTransform.getTransform();
 		const XMMATRIX worldTransform = XMMatrixMultiply(
 			//180 degrees around X axis
 			XMMatrixRotationAxis(XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f), XMConvertToRadians(180.0f)),
-			nodeTransform);
+			entityTransform);
 
 		XMMATRIX transform = XMMatrixMultiply(worldTransform, viewProjection);
 		transform = XMMatrixMultiply(XMMatrixScaling(0.03f, 0.03f, 0.03f), transform);

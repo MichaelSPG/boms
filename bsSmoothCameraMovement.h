@@ -1,6 +1,6 @@
 #pragma once
 
-class bsSceneNode;
+class bsTransform;
 
 
 /*	Smoothly moves a camera by using acceleration for moving it, resulting in a smoother
@@ -9,7 +9,7 @@ class bsSceneNode;
 class bsSmoothCameraMovement
 {
 public:
-	bsSmoothCameraMovement(bsSceneNode* cameraNode, float maxForwardSpeed,
+	bsSmoothCameraMovement(bsTransform& cameraTransform, float maxForwardSpeed,
 		float maxRightSpeed, float maxUpSpeed);
 
 	~bsSmoothCameraMovement();
@@ -22,7 +22,7 @@ public:
 	void update(float forwardSpeed, float rightSpeed, float upSpeed, float deltaTimeMs);
 
 private:
-	bsSceneNode*	mCameraNode;
+	bsTransform*	mCameraTransform;
 
 	float mCurrentForwardSpeed;
 	float mCurrentRightSpeed;

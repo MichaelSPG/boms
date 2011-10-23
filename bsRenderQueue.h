@@ -11,7 +11,7 @@
 #include <Windows.h>
 #include <xnamath.h>
 
-class bsSceneNode;
+class bsEntity;
 class bsRenderable;
 class bsMesh;
 class bsPrimitive;
@@ -20,7 +20,7 @@ class bsShaderManager;
 class bsVertexShader;
 class bsPixelShader;
 class bsCamera;
-class bsLine3D;
+class bsLineRenderer;
 class bsLight;
 class bsText3D;
 struct CBLight;
@@ -52,7 +52,7 @@ struct bsFrameStats
 		ss.setf(std::ios::floatfield, std::ios::fixed);
 		ss.imbue(std::locale(""));
 
-		ss  << "\nVisible scene nodes: " << visibleSceneNodeCount
+		ss  << "\nVisible entities: " << visibleEntityCount
 			<< "\nUnique meshes drawn: " << uniqueMeshesDrawn
 			<< "\nTotal meshes drawn: " << totalMeshesDrawn
 			<< "\nTotal lines drawn: " << linesDrawn
@@ -69,7 +69,7 @@ struct bsFrameStats
 		ss.setf(std::ios::floatfield, std::ios::fixed);
 		ss.imbue(std::locale(""));
 
-		ss  << L"\nVisible scene nodes: " << visibleSceneNodeCount
+		ss  << L"\nVisible entities: " << visibleEntityCount
 			<< L"\nUnique meshes drawn: " << uniqueMeshesDrawn
 			<< L"\nTotal meshes drawn: " << totalMeshesDrawn
 			<< L"\nTotal lines drawn: " << linesDrawn
@@ -81,7 +81,7 @@ struct bsFrameStats
 	}
 
 
-	unsigned int	visibleSceneNodeCount;
+	unsigned int	visibleEntityCount;
 	unsigned int	uniqueMeshesDrawn;
 	unsigned int	totalMeshesDrawn;
 	unsigned int	linesDrawn;
@@ -116,7 +116,7 @@ public:
 	void drawTexts();
 
 	/*	Sets the active camera.
-		This camera is used to generate a list of scene nodes that are visible per frame,
+		This camera is used to generate a list of entities that are visible per frame,
 		i.e. ones that are inside the frustum.
 	*/
 	inline void setCamera(bsCamera* camera)
@@ -139,7 +139,7 @@ public:
 	}
 
 private:
-	/*	Gets the renderables from the scene nodes and groups them based on what kind of
+	/*	Gets the renderables from the entities and groups them based on what kind of
 		renderable they are
 	*/
 	void sortRenderables();
@@ -188,9 +188,9 @@ private:
 
 	bsFrameStats		mFrameStats;
 
-	std::unordered_map<bsMesh*, std::vector<bsSceneNode*>>		mMeshesToDraw;
-	std::unordered_map<bsLine3D*, std::vector<bsSceneNode*>>	mLinesToDraw;
+	std::unordered_map<bsMesh*, std::vector<bsEntity*>>		mMeshesToDraw;
+	std::unordered_map<bsLineRenderer*, std::vector<bsEntity*>>	mLinesToDraw;
 	std::vector<std::pair<bsLight*, XMFLOAT3>>	mLightPositionPairs;
 
-	std::vector<std::pair<bsSceneNode*, bsText3D*>> mText3dToDraw;
+	std::vector<std::pair<bsEntity*, bsText3D*>> mText3dToDraw;
 };

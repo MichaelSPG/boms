@@ -1,16 +1,17 @@
 #include "StdAfx.h"
-#include <Common/Base/Math/Vector/hkVector4.h>
+
+#include <Common/Base/hkBase.h>
 
 #include "bsSmoothCameraMovement.h"
 
 #include "bsMath.h"
-#include "bsSceneNode.h"
+#include "bsEntity.h"
 #include "bsCamera.h"
 
 
-bsSmoothCameraMovement::bsSmoothCameraMovement(bsSceneNode* cameraNode,
+bsSmoothCameraMovement::bsSmoothCameraMovement(bsTransform& cameraTransform,
 	float maxForwardSpeed, float maxRightSpeed, float maxUpSpeed)
-	: mCameraNode(cameraNode)
+	: mCameraTransform(&cameraTransform)
 
 	, mCurrentForwardSpeed(0.0f)
 	, mCurrentRightSpeed(0.0f)
@@ -47,8 +48,8 @@ void bsSmoothCameraMovement::update(float forwardSpeed, float rightSpeed, float 
 		mCurrentForwardSpeed, 0.0f);
 
 	//Rotate the translation to be aligned with the camera's rotation.
-	const XMVECTOR& cameraRotation = mCameraNode->getRotation();
+	const XMVECTOR& cameraRotation = mCameraTransform->getRotation();
 	translation = XMVector3Rotate(translation, XMQuaternionInverse(cameraRotation));
 
-	mCameraNode->translate(translation);
+	mCameraTransform->translate(translation);
 }

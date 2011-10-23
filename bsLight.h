@@ -25,7 +25,7 @@ struct bsPointLightCInfo
 
 /*	This class represents a dynamic light source.
 
-	Must be attached to a scene node in order to illuminate objects.
+	Must be attached to an entity in order to be active.
 	
 	This class currently lacks functionality and will be extended in the future.
 */
