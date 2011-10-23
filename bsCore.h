@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <tbb/tbb_thread.h>
 
 #include "bsAssert.h"

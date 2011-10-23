@@ -1,7 +1,10 @@
 #include "StdAfx.h"
 
-#include "bsCore.h"
+#include <Common/Base/hkBase.h>
+#include <Common/Base/System/hkBaseSystem.h>
+#include <Common/Base/Memory/System/Util/hkMemoryInitUtil.h>
 
+#include "bsCore.h"
 #include "bsWindow.h"
 #include "bsWindowsUtils.h"
 #include "bsScene.h"
@@ -32,7 +35,7 @@ bsCore::bsCore(const bsCoreCInfo& cInfo)
 	mResourceManager = new bsResourceManager();
 	mResourceManager->initAll(cInfo.assetDirectory, mDx11Renderer, mFileIoManager);
 
-	mHavokManager = new bsHavokManager(cInfo.worldSize);
+	mHavokManager = new bsHavokManager();
 
 	mRenderQueue = new bsRenderQueue(mDx11Renderer, mResourceManager->getShaderManager());
 
