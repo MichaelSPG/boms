@@ -34,6 +34,10 @@ public:
 		return *mJobQueue;
 	}
 
+	/*	Returns information about memory used by Havok.
+	*/
+	hkMemoryAllocator::MemoryStatistics getMemoryStatistics() const;
+
 private:
 	void createVDB(hkpWorld* world);
 

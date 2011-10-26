@@ -6,7 +6,6 @@
 #include <Common/Base/System/hkBaseSystem.h>
 #include <Common/Base/System/Error/hkDefaultError.h>
 #include <Common/Base/Memory/System/Util/hkMemoryInitUtil.h>
-//#include <Common/Base/Monitor/hkMonitorStream.h>
 #include <Common/Base/Memory/System/hkMemorySystem.h>
 #include <Common/Base/Memory/Allocator/Malloc/hkMallocAllocator.h>
 
@@ -227,4 +226,12 @@ void bsHavokManager::stepVisualDebugger(float deltaTimeMs)
 
 	hkMonitorStream::getInstance().reset();
 	mThreadPool->clearTimerData();
+}
+
+hkMemoryAllocator::MemoryStatistics bsHavokManager::getMemoryStatistics() const
+{
+	hkMemoryAllocator::MemoryStatistics memStats;
+	hkMemorySystem::getInstance().getHeapStatistics(memStats);
+	
+	return memStats;
 }
