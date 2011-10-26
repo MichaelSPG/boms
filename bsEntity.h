@@ -90,12 +90,16 @@ public:
 	bsText3D* getTextRenderer();
 
 
+	/*	Returns a pointer to the scene this entity is currently in, or null if it's not
+		in a scene.
+	*/
+	const bsScene* getScene() const;
 
 	void addedToScene(bsScene& scene, unsigned int id);
 	void removedFromScene(bsScene& scene);
 
 
-	//private:
+private:
 	//This entity's unique ID for this scene.
 	unsigned int	mSceneID;
 	bsTransform		mTransform;

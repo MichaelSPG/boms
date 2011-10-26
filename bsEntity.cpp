@@ -269,3 +269,8 @@ void bsEntity::removedFromScene(bsScene& scene)
 
 	mScene = nullptr;
 }
+
+const bsScene* bsEntity::getScene() const
+{
+	return mScene;
+}

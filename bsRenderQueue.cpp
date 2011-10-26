@@ -267,7 +267,7 @@ void bsRenderQueue::sortRenderables()
 		if (light != nullptr)
 		{
 			XMFLOAT3 position;
-			XMStoreFloat3(&position, entity.mTransform.getPosition());
+			XMStoreFloat3(&position, entity.getTransform().getPosition());
 			mLightPositionPairs.push_back(std::make_pair(light, position));
 		}
 
@@ -340,7 +340,7 @@ void bsRenderQueue::drawMeshes()
 			//XMFLOAT4X4 xmf4x4;
 			//XMStoreFloat4x4(&xmf4x4, transformMat);
 			//XMStoreFloat4x4(&xmf4x4, );
-			setWorldConstantBuffer(entities[i]->mTransform.getTransposedTransform());
+			setWorldConstantBuffer(entities[i]->getTransform().getTransposedTransform());
 
 			mesh->draw(mDx11Renderer);
 
@@ -384,7 +384,7 @@ void bsRenderQueue::drawMeshesInstanced()
 		transforms.reserve(entities.size());
 		for (unsigned int i = 0; i < entities.size(); ++i)
 		{
-			transforms.push_back(entities[i]->mTransform.getTransposedTransform());
+			transforms.push_back(entities[i]->getTransform().getTransposedTransform());
 		}
 
 		drawMeshInstanced(*mDx11Renderer, mesh, transforms.data(), transforms.size());
@@ -445,8 +445,8 @@ void bsRenderQueue::drawLines()
 			bsMath::XMFloat4x4Transpose(world);
 			*/
 
-			const XMMATRIX position = XMMatrixTranslationFromVector(entities[i]->mTransform.getPosition());
-			XMMATRIX rotation = XMMatrixRotationQuaternion(entities[i]->mTransform.getRotation());
+			const XMMATRIX position = XMMatrixTranslationFromVector(entities[i]->getTransform().getPosition());
+			XMMATRIX rotation = XMMatrixRotationQuaternion(entities[i]->getTransform().getRotation());
 			const XMMATRIX extraRot = XMMatrixRotationY(angle);
 
 			//rotation = XMMatrixMultiply(rotation, extraRot);
@@ -618,7 +618,7 @@ void bsRenderQueue::sortLights()
 	std::vector<std::pair<const bsLight*, XMFLOAT4X4>> containingCamera;
 
 	
-	const XMVECTOR& cameraPosition = mCamera->getEntity()->mTransform.getPosition();
+	const XMVECTOR& cameraPosition = mCamera->getEntity()->getTransform().getPosition();
 	const float nearClip = mCamera->getProjectionInfo().mNearClip;
 	const float nearClipSquared = nearClip * nearClip;
 
@@ -677,7 +677,7 @@ void bsRenderQueue::drawTexts()
 	std::for_each(std::begin(mText3dToDraw), std::end(mText3dToDraw),
 		[&](const std::pair<bsEntity*, bsText3D*>& text)
 	{
-		const XMMATRIX& entityTransform = text.first->mTransform.getTransform();
+		const XMMATRIX& entityTransform = text.first->getTransform().getTransform();
 		const XMMATRIX worldTransform = XMMatrixMultiply(
 			//180 degrees around X axis
 			XMMatrixRotationAxis(XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f), XMConvertToRadians(180.0f)),

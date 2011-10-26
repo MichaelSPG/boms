@@ -68,8 +68,8 @@ void bsCamera::updateViewProjection()
 		and to avoid needless branching.
 	*/
 
-	const XMVECTOR& pos = mEntity->mTransform.getPosition();
-	const XMVECTOR& rot = mEntity->mTransform.getRotation();
+	const XMVECTOR& pos = mEntity->getTransform().getPosition();
+	const XMVECTOR& rot = mEntity->getTransform().getRotation();
 
 	//Calculate view matrix.
 	const XMVECTOR inversePosition = XMVector3Rotate(XMVectorScale(pos, -1.0f), rot);
@@ -86,7 +86,7 @@ void bsCamera::updateViewProjection()
 	cbCam.view = XMMatrixTranspose(viewTransform);
 	cbCam.projection = XMMatrixTranspose(mProjection);
 	cbCam.viewProjection = XMMatrixTranspose(viewProjection);
-	cbCam.cameraPosition = mEntity->mTransform.getPosition();
+	cbCam.cameraPosition = mEntity->getTransform().getPosition();
 	XMVECTOR determinant;
 	cbCam.inverseViewProjection = XMMatrixInverse(&determinant, viewProjection);
 
@@ -105,15 +105,15 @@ std::vector<bsEntity*> bsCamera::getVisibleEntities() const
 XMMATRIX bsCamera::getView() const
 {
 	XMVECTOR determinant;
-	return XMMatrixInverse(&determinant, mEntity->mTransform.getTransform());
+	return XMMatrixInverse(&determinant, mEntity->getTransform().getTransform());
 }
 
 hkpWorldRayCastOutput bsCamera::screenPointToWorldRay(const XMFLOAT2& screenPoint,
 	float rayLength, XMVECTOR& destinationOut, XMVECTOR& originOut) const
 {
 	//Build view matrix with inverted rotation.
-	const XMVECTOR& cameraPosition = mEntity->mTransform.getPosition();
-	const XMVECTOR cameraRotation = mEntity->mTransform.getRotation();
+	const XMVECTOR& cameraPosition = mEntity->getTransform().getPosition();
+	const XMVECTOR cameraRotation = mEntity->getTransform().getRotation();
 	const XMMATRIX positionMat = XMMatrixTranslationFromVector(
 		XMVectorSubtract(XMVectorZero(), cameraPosition));
 	const XMMATRIX rotationMat = XMMatrixRotationQuaternion(cameraRotation);

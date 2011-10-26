@@ -25,7 +25,7 @@ bsEntity* bsPrimitiveCreator::createSphere(float radius)
 
 	entity->attachRigidBody(*new hkpRigidBody(rbCinfo));
 
-	entity->mTransform.setLocalScaleUniform(radius * 2.0f);
+	entity->getTransform().setLocalScaleUniform(radius * 2.0f);
 
 	return entity;
 }
@@ -48,7 +48,7 @@ bsEntity* bsPrimitiveCreator::createBox(const XMVECTOR& halfExtents)
 
 	entity->attachRigidBody(*new hkpRigidBody(rbCinfo));
 
-	entity->mTransform.setLocalScale(XMVectorScale(halfExtents, 2.0f));
+	entity->getTransform().setLocalScale(XMVectorScale(halfExtents, 2.0f));
 
 	return entity;
 }
@@ -71,7 +71,7 @@ bsEntity* bsPrimitiveCreator::createPlane(const XMVECTOR& halfExtents)
 	XMVECTOR scale = XMVectorScale(halfExtents, 2.0f);
 	//Set Y scale to 1 regardless of input.
 	scale = XMVectorSetY(scale, 1.0f);
-	entity->mTransform.setLocalScale(scale);
+	entity->getTransform().setLocalScale(scale);
 
 	return entity;
 }

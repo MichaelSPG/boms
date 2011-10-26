@@ -88,7 +88,7 @@ void bsScene::addEntity(bsEntity& entity)
 
 void bsScene::removeEntity(bsEntity& entityToRemove)
 {
-	BS_ASSERT2(entityToRemove.mScene == this, "Trying to remove en entity from a scene"
+	BS_ASSERT2(entityToRemove.getScene() == this, "Trying to remove en entity from a scene"
 		" it is not a part of");
 
 	const auto itr = std::find(std::begin(mEntities), std::end(mEntities), &entityToRemove);
@@ -171,7 +171,7 @@ void bsScene::synchronizeActiveEntities()
 				bsEntity* entity = static_cast<bsEntity*>
 					(rigidBody->getProperty(BSPK_ENTITY_POINTER).getPtr());
 
-				entity->mTransform.setTransformFromRigidBody(bsMath::toXM(rigidBody->getPosition()),
+				entity->getTransform().setTransformFromRigidBody(bsMath::toXM(rigidBody->getPosition()),
 					bsMath::toXM(rigidBody->getRotation()));
 			}
 		}
