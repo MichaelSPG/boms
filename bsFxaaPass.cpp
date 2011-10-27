@@ -19,7 +19,6 @@ bsFxaaPass::bsFxaaPass(bsShaderManager* shaderManager, bsDx11Renderer* dx11Rende
 	, mFxaaPixelShader(shaderManager->getPixelShader("Fxaa.fx"))
 	, mPassthroughPixelShader(shaderManager->getPixelShader("Passthrough.fx"))
 	, mOneOverScreenSize(1.0f / screenWidth, 1.0f / screenHeight)
-	, mEnabled(true)
 {
 	std::vector<D3D11_INPUT_ELEMENT_DESC> inputLayout(2);
 	D3D11_INPUT_ELEMENT_DESC inputDesc;
@@ -50,26 +49,20 @@ bsFxaaPass::bsFxaaPass(bsShaderManager* shaderManager, bsDx11Renderer* dx11Rende
 
 bsFxaaPass::~bsFxaaPass()
 {
-	
+	mOneOverScreenSizeBuffer->Release();
 }
 
 void bsFxaaPass::draw()
 {
 	mShaderManager->setVertexShader(mVertexShader);
-	if (mEnabled)
-	{
-		mShaderManager->setPixelShader(mFxaaPixelShader);
+	mShaderManager->setPixelShader(mFxaaPixelShader);
 
-		CBFxaa constantBuffer;
-		constantBuffer.oneOverScreenSize = mOneOverScreenSize;
+	CBFxaa constantBuffer;
+	constantBuffer.oneOverScreenSize = mOneOverScreenSize;
 
-		mDeviceContext->PSSetConstantBuffers(4, 1, &mOneOverScreenSizeBuffer);
-		mDeviceContext->UpdateSubresource(mOneOverScreenSizeBuffer, 0, nullptr,
-			&constantBuffer, 0, 0);
-	}
-	else
-	{
-		mShaderManager->setPixelShader(mPassthroughPixelShader);
-	}
+	mDeviceContext->PSSetConstantBuffers(4, 1, &mOneOverScreenSizeBuffer);
+	mDeviceContext->UpdateSubresource(mOneOverScreenSizeBuffer, 0, nullptr,
+		&constantBuffer, 0, 0);
+
 	mFullscreenQuad.draw(mDeviceContext);
 }

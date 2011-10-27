@@ -22,17 +22,6 @@ public:
 
 	void draw();
 
-	
-	inline void setEnabled(bool enabled)
-	{
-		mEnabled = enabled;
-	}
-
-	inline bool isEnabled() const
-	{
-		return mEnabled;
-	}
-
 
 private:
 	ID3D11DeviceContext*	mDeviceContext;
@@ -46,6 +35,4 @@ private:
 
 	ID3D11Buffer*	mOneOverScreenSizeBuffer;
 	XMFLOAT2		mOneOverScreenSize;
-
-	bool	mEnabled;
 };
