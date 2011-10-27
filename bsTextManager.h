@@ -10,6 +10,7 @@
 
 class bsDx11Renderer;
 class bsScrollingText2D;
+struct bsFrameStatistics;
 
 
 /*	This class is responsible for creation and destruction of text objects.
@@ -43,7 +44,7 @@ public:
 
 	/*	Renders all the text objects to the screen (except for ones that are disabled).		
 	*/
-	void drawAllTexts();
+	void drawAllTexts(bsFrameStatistics& frameStatistics);
 
 	/*	Updates all the texts, making them scroll or applies other effects if applicable.
 	*/

@@ -6,6 +6,8 @@
 #include "bsLog.h"
 #include "bsAssert.h"
 #include "bsScrollingText2D.h"
+#include "bsFrameStatistics.h"
+#include "bsTimer.h"
 
 
 bsTextManager::bsTextManager(bsDx11Renderer* dx11Renderer)
@@ -69,13 +71,18 @@ void bsTextManager::destroyUnusedTexts()
 	}), mTextBoxes.end());
 }
 
-void bsTextManager::drawAllTexts()
+void bsTextManager::drawAllTexts(bsFrameStatistics& frameStatistics)
 {
+	bsTimer timer;
+	float preDraw = timer.getTimeMilliSeconds();
+
 	std::for_each(mTexts.begin(), mTexts.end(),
 		[](const std::shared_ptr<bsText2D>& textObject)
 	{
 		textObject->draw();
 	});
+
+	frameStatistics.renderingInfo.textDuration = timer.getTimeMilliSeconds() - preDraw;
 }
 
 void bsTextManager::updateTexts(float deltaTime)

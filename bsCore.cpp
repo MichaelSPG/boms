@@ -15,6 +15,8 @@
 #include "bsAssert.h"
 #include "bsRenderQueue.h"
 #include "bsRenderSystem.h"
+#include "bsTimer.h"
+#include "bsFrameStatistics.h"
 
 
 bsCore::bsCore(const bsCoreCInfo& cInfo)
@@ -69,7 +71,7 @@ bsCore::~bsCore()
 	bsLog::deinit();
 }
 
-bool bsCore::update(float deltaTimeMs)
+bool bsCore::update(float deltaTimeMs, bsFrameStatistics& framStatistics)
 {
 	BS_ASSERT2(mRenderSystem, "A render system must be set before calling bsCore::update");
 
@@ -78,7 +80,12 @@ bool bsCore::update(float deltaTimeMs)
 		return false;
 	}
 
-	mRenderSystem->renderOneFrame();
+	bsTimer timer;
+	float preRender = timer.getTimeMilliSeconds();
+
+	mRenderSystem->renderOneFrame(framStatistics);
+
+	framStatistics.renderingInfo.totalRenderingDuration = timer.getTimeMilliSeconds() - preRender;
 
 	return true;
 }

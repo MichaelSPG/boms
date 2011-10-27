@@ -19,6 +19,7 @@
 #include "bsCoreCInfo.h"
 #include "bsMath.h"
 #include "bsTemplates.h"
+#include "bsFrameStatistics.h"
 
 
 bsScene::bsScene(bsDx11Renderer* renderer, bsHavokManager* havokManager,
@@ -117,16 +118,27 @@ void bsScene::removeEntity(bsEntity& entityToRemove)
 	}
 }
 
-void bsScene::update(float deltaTimeMs)
+void bsScene::update(float deltaTimeMs, bsFrameStatistics& framStatistics)
 {
+	bsTimer timer;
+
+	float preStep = timer.getTimeMilliSeconds();
 	if (mStepPhysics)
 	{
 		mHavokManager->stepWorld(*mPhysicsWorld, deltaTimeMs);
 	}
 
+	framStatistics.physicsInfo.stepDuration = timer.getTimeMilliSeconds() - preStep;
+
 	mCamera->update();
 
-	synchronizeActiveEntities();
+	float preSynchronize = timer.getTimeMilliSeconds();
+	unsigned int totalActiveRigidBodies, totalActiveSimulationIslands;
+	synchronizeActiveEntities(&totalActiveRigidBodies, &totalActiveSimulationIslands);
+
+	framStatistics.physicsInfo.synchronizationDuration = timer.getTimeMilliSeconds() - preSynchronize;
+	framStatistics.physicsInfo.numActiveRigidBodies = totalActiveRigidBodies;
+	framStatistics.physicsInfo.numActiveSimulationIslands = totalActiveSimulationIslands;
 }
 
 void bsScene::createPhysicsWorld(hkJobQueue& jobQueue)
@@ -147,15 +159,22 @@ void bsScene::createPhysicsWorld(hkJobQueue& jobQueue)
 	mPhysicsWorld->unmarkForWrite();
 }
 
-void bsScene::synchronizeActiveEntities()
+void bsScene::synchronizeActiveEntities(unsigned int* totalActiveRigidBodies,
+	unsigned int* totalActiveSimulationIslands)
 {
+	BS_ASSERT(totalActiveRigidBodies);
+	BS_ASSERT(totalActiveSimulationIslands);
+
 	/*	This function synchronizes every rigid body which is in an active simulation
 		island with its scene entity.  Inactive simulation islands are not simulated, and
 		are therefore not required to be synchronized.
 	*/
 
+	unsigned int numActiveRigidBodies = 0;
+
 	mPhysicsWorld->markForRead();
 	const hkArray<hkpSimulationIsland*>& activeIslands = mPhysicsWorld->getActiveSimulationIslands();
+	*totalActiveSimulationIslands = activeIslands.getSize();
 
 	for (int i = 0; i < activeIslands.getSize(); ++i)
 	{
@@ -168,6 +187,8 @@ void bsScene::synchronizeActiveEntities()
 			
 			if (rigidBody != nullptr)
 			{
+				++numActiveRigidBodies;
+
 				bsEntity* entity = static_cast<bsEntity*>
 					(rigidBody->getProperty(BSPK_ENTITY_POINTER).getPtr());
 
@@ -178,4 +199,6 @@ void bsScene::synchronizeActiveEntities()
 	}
 
 	mPhysicsWorld->unmarkForRead();
+
+	*totalActiveRigidBodies = numActiveRigidBodies;
 }

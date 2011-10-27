@@ -13,6 +13,7 @@ class bsHavokManager;
 class bsWindow;
 class bsRenderQueue;
 class bsRenderSystem;
+struct bsFrameStatistics;
 
 
 /*	This class contains all the core components of the engine and is responsible for the
@@ -34,7 +35,7 @@ public:
 		Returns false if the program should exit (Alt+F4 was pressed,
 		close button clicked, etc).
 	*/
-	bool update(float deltaTimeMs);
+	bool update(float deltaTimeMs, bsFrameStatistics& framStatistics);
 	
 	inline bsResourceManager* getResourceManager() const
 	{

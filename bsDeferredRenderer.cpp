@@ -15,6 +15,8 @@
 #include "bsFullScreenQuad.h"
 #include "bsShaderManager.h"
 #include "bsAssert.h"
+#include "bsTimer.h"
+#include "bsFrameStatistics.h"
 
 
 bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* camera,
@@ -259,110 +261,195 @@ void bsDeferredRenderer::createShaders()
 	mMergerPixelShader = mShaderManager->getPixelShader("Merger.fx");
 }
 
-void bsDeferredRenderer::renderOneFrame()
+void bsDeferredRenderer::renderOneFrame(bsFrameStatistics& frameStatistics)
 {
+	bsTimer timer;
+
+	float preCull, cullDuration,
+		preOpaque, opaqueDuration,
+		preTransparent, transparentDuration,//Normal transparent geometry + 3D texts
+		preLines, linesDuration,
+		preLight, lightDuration,
+		preAccumulate, accumulateDuration,
+		preFxaa, fxaaDuration,
+		prePresent, presentDuration,
+		preStateChange, stateChangeDuration;
+
 	ID3D11DeviceContext* deviceContext = mDx11Renderer->getDeviceContext();
 
 	mRenderQueue->reset();
 
 	//Set and clear G buffer
-	mDx11Renderer->setRenderTargets(&mGBuffer.position, 3);
+	preStateChange = timer.getTimeMilliSeconds();
+	{
+		mDx11Renderer->setRenderTargets(&mGBuffer.position, 3);
 
-	//Enable depth testing.
-	deviceContext->OMSetDepthStencilState(mDepthEnabledStencilState, 0);
+		//Enable depth testing.
+		deviceContext->OMSetDepthStencilState(mDepthEnabledStencilState, 0);
+	}
+	stateChangeDuration = timer.getTimeMilliSeconds() - preStateChange;
 
-	//Draw the geometry into the G buffers.
-	mRenderQueue->drawGeometry();
+	preOpaque = timer.getTimeMilliSeconds();
+	{
+		//Draw the geometry into the G buffers.
+		mRenderQueue->drawGeometry();
+	}
+	opaqueDuration = timer.getTimeMilliSeconds() - preOpaque;
 
-	//Unbind G buffer render targets.
-	mDx11Renderer->setRenderTargets(nullptr, 3);
+	preStateChange = timer.getTimeMilliSeconds();
+	{
+		//Unbind G buffer render targets.
+		mDx11Renderer->setRenderTargets(nullptr, 3);
 
-	//Set the GBuffer as shader resources, allowing them to be used as input by shaders
-	ID3D11ShaderResourceView* shaderResourceViews[4];
-	shaderResourceViews[0] = mGBuffer.position->getShaderResourceView();
-	shaderResourceViews[1] = mGBuffer.normal->getShaderResourceView();
-	shaderResourceViews[2] = mGBuffer.diffuse->getShaderResourceView();
-	deviceContext->PSSetShaderResources(0, 3, shaderResourceViews);
+		//Set the GBuffer as shader resources, allowing them to be used as input by shaders
+	}
+		ID3D11ShaderResourceView* shaderResourceViews[4];
+	{
+		shaderResourceViews[0] = mGBuffer.position->getShaderResourceView();
+		shaderResourceViews[1] = mGBuffer.normal->getShaderResourceView();
+		shaderResourceViews[2] = mGBuffer.diffuse->getShaderResourceView();
+		deviceContext->PSSetShaderResources(0, 3, shaderResourceViews);
 
-	//////////////////////////////////////////////////////////////////////////
-	//Render lights
+		//////////////////////////////////////////////////////////////////////////
+		//Render lights
 
-	//Set the light render target.
-	mDx11Renderer->setRenderTargets(&mLightRenderTarget, 1);
+		//Set the light render target.
+		mDx11Renderer->setRenderTargets(&mLightRenderTarget, 1);
 
-	//Enable light rasterization, ie no cull backfacing
-	deviceContext->RSSetState(mCullFrontFacingNoDepthClip);
-	//Enable blending
-	deviceContext->OMSetBlendState(mLightBlendState, nullptr, 0xFFFFFFFF);
-	//Disable depth
-	deviceContext->OMSetDepthStencilState(mDepthDisabledStencilState, 0);
+		//Enable light rasterization, ie no cull backfacing
+		deviceContext->RSSetState(mCullFrontFacingNoDepthClip);
+		//Enable blending
+		deviceContext->OMSetBlendState(mLightBlendState, nullptr, 0xFFFFFFFF);
+		//Disable depth
+		deviceContext->OMSetDepthStencilState(mDepthDisabledStencilState, 0);
+	}
+	stateChangeDuration += timer.getTimeMilliSeconds() - preStateChange;
+
 	
-	mRenderQueue->drawLights();
+	preLight = timer.getTimeMilliSeconds();
+	{
+		mRenderQueue->drawLights();
+	}
+	lightDuration = timer.getTimeMilliSeconds() - preLight;
 
 	deviceContext->OMSetDepthStencilState(mDepthEnabledStencilState, 0);
 
 	//Draw lines here since we don't want them to be affected by lights.
-	mRenderQueue->drawLines();
+	preLines = timer.getTimeMilliSeconds();
+	{
+		mRenderQueue->drawLines();
+	}
+	linesDuration = timer.getTimeMilliSeconds() - preLines;
 
-	mRenderQueue->drawTexts();
+	preTransparent = timer.getTimeMilliSeconds();
+	{
+		mRenderQueue->drawTexts();
+	}
+	transparentDuration = timer.getTimeMilliSeconds() - preTransparent;
+
 	deviceContext->OMSetDepthStencilState(mDepthDisabledStencilState, 0);
 
 	//////////////////////////////////////////////////////////////////////////
 	//
+	preStateChange = timer.getTimeMilliSeconds();
+	{
+		mDx11Renderer->setRenderTargets(&mFinalRenderTarget, 1);
 
-	mDx11Renderer->setRenderTargets(&mFinalRenderTarget, 1);
+		shaderResourceViews[3] = mLightRenderTarget->getShaderResourceView();
 
-	shaderResourceViews[3] = mLightRenderTarget->getShaderResourceView();
+		deviceContext->PSSetShaderResources(0, 4, shaderResourceViews);
 
-	deviceContext->PSSetShaderResources(0, 4, shaderResourceViews);
+		//////////////////////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////////////////////
+		mShaderManager->setPixelShader(mMergerPixelShader);
+		mShaderManager->setVertexShader(mMergerVertexShader);
 
-	mShaderManager->setPixelShader(mMergerPixelShader);
-	mShaderManager->setVertexShader(mMergerVertexShader);
-
-	//Enable geometry rasterization for fullscreen quad and next geometry pass
-	deviceContext->RSSetState(mGeometryRasterizerState);
-	deviceContext->OMSetBlendState(mGeometryBlendState, nullptr, 0xFFFFFFFF);
+		//Enable geometry rasterization for fullscreen quad and next geometry pass
+		deviceContext->RSSetState(mGeometryRasterizerState);
+		deviceContext->OMSetBlendState(mGeometryBlendState, nullptr, 0xFFFFFFFF);
+	}
+	stateChangeDuration += timer.getTimeMilliSeconds() - preStateChange;
 
 	//mDx11Renderer->setBackBufferAsRenderTarget();
 	//Draw a fullscreen quad with the merger shader to produce final output.
-	mFullScreenQuad->draw(mDx11Renderer->getDeviceContext());
+	preAccumulate = timer.getTimeMilliSeconds();
+	{
+		mFullScreenQuad->draw(mDx11Renderer->getDeviceContext());
+	}
+	accumulateDuration = timer.getTimeMilliSeconds() - preAccumulate;
 
 
 	//////////////////////////////////////////////////////////////////////////
 	//FXAA
 
+	preAccumulate = timer.getTimeMilliSeconds();
 	//Unbind previous render target.
-	mDx11Renderer->setRenderTargets(nullptr, 1);
+	{
+		mDx11Renderer->setRenderTargets(nullptr, 1);
 
-	mDx11Renderer->setBackBufferAsRenderTarget();
+		mDx11Renderer->setBackBufferAsRenderTarget();
 
-	shaderResourceViews[0] = mFinalRenderTarget->getShaderResourceView();
-	deviceContext->PSSetShaderResources(0, 1, shaderResourceViews);
+		shaderResourceViews[0] = mFinalRenderTarget->getShaderResourceView();
+		deviceContext->PSSetShaderResources(0, 1, shaderResourceViews);
+	}
+	accumulateDuration += timer.getTimeMilliSeconds() - preAccumulate;
 
-	mFxaaPass.draw();
+	preFxaa = timer.getTimeMilliSeconds();
+	{
+		mFxaaPass.draw();
+	}
+	fxaaDuration = timer.getTimeMilliSeconds() - preFxaa;
 
 
 	//deviceContext->OMSetDepthStencilState(mDepthEnabledStencilState, 0);
 	//deviceContext->RSSetState(mGeometryRasterizerState);
 	//mRenderQueue->drawLines();
 
+	preAccumulate = timer.getTimeMilliSeconds();
 	//Unbind shader resource views.
-	memset(shaderResourceViews, 0, sizeof(ID3D11ShaderResourceView*)
-		* ARRAYSIZE(shaderResourceViews));
-	deviceContext->PSSetShaderResources(0, 4, shaderResourceViews);
+	{
+		memset(shaderResourceViews, 0, sizeof(ID3D11ShaderResourceView*)
+			* ARRAYSIZE(shaderResourceViews));
+		deviceContext->PSSetShaderResources(0, 4, shaderResourceViews);
+	}
+	accumulateDuration += timer.getTimeMilliSeconds() - preAccumulate;
 
 	//Call the callbacks
 	for (unsigned int i = 0, count = mEndOfRenderCallbacks.size(); i < count; ++i)
 	{
-		mEndOfRenderCallbacks[i]();
+		mEndOfRenderCallbacks[i](frameStatistics);
 	}
 
-	mDx11Renderer->present();
+	prePresent = timer.getTimeMilliSeconds();
+	{
+		mDx11Renderer->present();
+	}
+	presentDuration = timer.getTimeMilliSeconds() - prePresent;
 
-	mDx11Renderer->clearBackBuffer();
-	mDx11Renderer->clearRenderTargets(&mGBuffer.position, 3);
-	mDx11Renderer->clearRenderTargets(&mLightRenderTarget, 1);
-	mDx11Renderer->clearRenderTargets(&mFinalRenderTarget, 1);
+	preAccumulate = timer.getTimeMilliSeconds();
+	{
+		mDx11Renderer->clearBackBuffer();
+		mDx11Renderer->clearRenderTargets(&mGBuffer.position, 3);
+		mDx11Renderer->clearRenderTargets(&mLightRenderTarget, 1);
+		mDx11Renderer->clearRenderTargets(&mFinalRenderTarget, 1);
+	}
+	accumulateDuration += timer.getTimeMilliSeconds() - preAccumulate;
+
+
+	//Write frame timings.
+
+	//Not yet implemented.
+	(void)preCull;
+	(void)cullDuration;
+
+	frameStatistics.renderingInfo.cullDuration = -1.0f;//cullDuration;
+	frameStatistics.renderingInfo.opaqueDuration = opaqueDuration;
+	frameStatistics.renderingInfo.transparentDuration = transparentDuration;
+	frameStatistics.renderingInfo.lightDuration = lightDuration;
+	frameStatistics.renderingInfo.lineDuration = linesDuration;
+	frameStatistics.renderingInfo.accumulateDuration = accumulateDuration;
+	frameStatistics.renderingInfo.fxaaDuration = fxaaDuration;
+
+	frameStatistics.renderingInfo.presentDuration = presentDuration;
+	frameStatistics.renderingInfo.additionalStateChangeOverheadDuration = stateChangeDuration;
 }

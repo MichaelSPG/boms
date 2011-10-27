@@ -19,6 +19,7 @@ class bsWindow;
 class bsFullScreenQuad;
 class bsVertexShader;
 class bsPixelShader;
+struct bsFrameStatistics;
 
 
 /*	Class for deferred shading.
@@ -44,13 +45,13 @@ public:
 	/*	Renders a single frame, and executes all registered end-of-render callback
 		functions just before the frame is presented.
 	*/
-	virtual void renderOneFrame();
+	virtual void renderOneFrame(bsFrameStatistics& frameStatistics);
 
 	/*	All functions registered here will be called after rendering is done, but before
 		present is called, making it possible to draw UI elements and similar on top of
 		the rendered frame.
 	*/
-	inline void registerEndOfRenderCallback(const std::function<void(void)>& func)
+	inline void registerEndOfRenderCallback(const std::function<void(bsFrameStatistics&)>& func)
 	{
 		mEndOfRenderCallbacks.push_back(func);
 	}
@@ -85,7 +86,7 @@ private:
 	std::shared_ptr<bsVertexShader>	mMergerVertexShader;
 	std::shared_ptr<bsPixelShader>	mMergerPixelShader;
 
-	std::vector<std::function<void(void)>>	mEndOfRenderCallbacks;
+	std::vector<std::function<void(bsFrameStatistics&)>>	mEndOfRenderCallbacks;
 
 	ID3D11RasterizerState*	mGeometryRasterizerState;
 	ID3D11RasterizerState*	mCullBackFacingNoDepthClip;

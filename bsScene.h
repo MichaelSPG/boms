@@ -11,6 +11,7 @@ class bsRenderable;
 class bsHavokManager;
 class hkpWorld;
 struct bsCoreCInfo;
+struct bsFrameStatistics;
 class hkJobQueue;
 class bsEntity;
 
@@ -75,7 +76,7 @@ public:
 		return mPhysicsWorld;
 	}
 
-	void update(float deltaTimeMs);
+	void update(float deltaTimeMs, bsFrameStatistics& framStatistics);
 
 
 	/*	Enabled or disables stepping of physics. This can be used to closely inspect the
@@ -106,8 +107,11 @@ private:
 	void createPhysicsWorld(hkJobQueue& jobQueue);
 
 	/*	Synchronizes all active (non-sleeping) rigid bodies with their entities.
+		The two parameters are output parameters and will contain information about the
+		current state of the physics simulation.
 	*/
-	void synchronizeActiveEntities();
+	void synchronizeActiveEntities(unsigned int* totalActiveRigidBodies,
+		unsigned int* totalActiveSimulationIslands);
 
 
 	bsCamera*	mCamera;

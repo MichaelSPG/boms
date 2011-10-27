@@ -1,5 +1,7 @@
 #pragma once
 
+struct bsFrameStatistics;
+
 
 /*	Base class for all render systems.
 	
@@ -10,5 +12,5 @@ public:
 	virtual ~bsRenderSystem()
 	{}
 
-	virtual void renderOneFrame() = 0;
+	virtual void renderOneFrame(bsFrameStatistics& framStatistics) = 0;
 };
