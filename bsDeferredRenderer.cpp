@@ -382,7 +382,7 @@ void bsDeferredRenderer::renderOneFrame(bsFrameStatistics& frameStatistics)
 	//////////////////////////////////////////////////////////////////////////
 	//FXAA
 
-	preAccumulate = timer.getTimeMilliSeconds();
+	preStateChange = timer.getTimeMilliSeconds();
 	//Unbind previous render target.
 	{
 		mDx11Renderer->setRenderTargets(nullptr, 1);
@@ -392,7 +392,7 @@ void bsDeferredRenderer::renderOneFrame(bsFrameStatistics& frameStatistics)
 		shaderResourceViews[0] = mFinalRenderTarget->getShaderResourceView();
 		deviceContext->PSSetShaderResources(0, 1, shaderResourceViews);
 	}
-	accumulateDuration += timer.getTimeMilliSeconds() - preAccumulate;
+	stateChangeDuration += timer.getTimeMilliSeconds() - preAccumulate;
 
 	preFxaa = timer.getTimeMilliSeconds();
 	{
