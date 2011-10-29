@@ -19,12 +19,16 @@ public:
 	*/
 	bsFileSystem(const std::string& basePath);
 
-	~bsFileSystem();
 
 	/*	Returns the full path of the file.
-		If the file does not exist, "" is returned.
+		If the file does not exist, an empty string is returned.
 	*/
 	std::string getPathFromFilename(const std::string& fileName) const;
+
+	inline const std::string& getBasePath() const
+	{
+		return mBasePath;
+	}
 
 private:
 	/*	Builds the file system by scanning the base path and all the folders it contains

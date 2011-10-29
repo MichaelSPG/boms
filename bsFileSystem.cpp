@@ -16,10 +16,6 @@ bsFileSystem::bsFileSystem(const std::string& basePath)
 	buildFileSystem();
 }
 
-bsFileSystem::~bsFileSystem()
-{
-}
-
 void bsFileSystem::buildFileSystem()
 {
 	boost::filesystem::recursive_directory_iterator itr(mBasePath);
