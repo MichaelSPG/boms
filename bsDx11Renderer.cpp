@@ -244,14 +244,16 @@ HRESULT bsDx11Renderer::compileShader(const char* fileName, const char* entryPoi
 {
 	HRESULT hResult;
 
-	DWORD shaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+	unsigned int shaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+	shaderFlags |= D3DCOMPILE_OPTIMIZATION_LEVEL3;
 #ifdef BS_DEBUG
 	shaderFlags |= D3DCOMPILE_DEBUG;
 #endif
+	const unsigned int effectFlags = 0;
 
 	ID3DBlob* errorBlob;
 	hResult = D3DX11CompileFromFileA(fileName, nullptr, nullptr, entryPoint, shaderModel,
-		shaderFlags, 0, nullptr, blobOut, &errorBlob, nullptr);
+		shaderFlags, effectFlags, nullptr, blobOut, &errorBlob, nullptr);
 
 	if (FAILED(hResult))
 	{
