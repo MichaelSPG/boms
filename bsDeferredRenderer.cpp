@@ -8,7 +8,6 @@
 #include <d3d11.h>
 
 #include "bsDx11Renderer.h"
-#include "bsCamera.h"
 #include "bsRenderQueue.h"
 #include "bsRenderTarget.h"
 #include "bsWindow.h"
@@ -19,10 +18,9 @@
 #include "bsFrameStatistics.h"
 
 
-bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* camera,
+bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer,
 	bsShaderManager* shaderManager, bsWindow* window, bsRenderQueue* renderQueue)
 	: mDx11Renderer(dx11Renderer)
-	, mCamera(camera)
 	, mShaderManager(shaderManager)
 	, mFxaaPass(shaderManager, dx11Renderer, (float)window->getWindowWidth(),
 		(float)window->getWindowHeight())
@@ -30,7 +28,6 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* c
 	, mRenderQueue(renderQueue)
 {
 	BS_ASSERT(dx11Renderer);
-	BS_ASSERT(camera);
 	BS_ASSERT(shaderManager);
 
 	ID3D11Device* device = mDx11Renderer->getDevice();
@@ -279,6 +276,12 @@ void bsDeferredRenderer::renderOneFrame(bsFrameStatistics& frameStatistics)
 
 	mRenderQueue->reset();
 
+	preCull = timer.getTimeMilliSeconds();
+	{
+		mRenderQueue->startFrame();
+	}
+	cullDuration = timer.getTimeMilliSeconds() - preCull;
+
 	//Set and clear G buffer
 	preStateChange = timer.getTimeMilliSeconds();
 	{
@@ -438,11 +441,7 @@ void bsDeferredRenderer::renderOneFrame(bsFrameStatistics& frameStatistics)
 
 	//Write frame timings.
 
-	//Not yet implemented.
-	(void)preCull;
-	(void)cullDuration;
-
-	frameStatistics.renderingInfo.cullDuration = -1.0f;//cullDuration;
+	frameStatistics.renderingInfo.cullDuration = cullDuration;
 	frameStatistics.renderingInfo.opaqueDuration = opaqueDuration;
 	frameStatistics.renderingInfo.transparentDuration = transparentDuration;
 	frameStatistics.renderingInfo.lightDuration = lightDuration;
