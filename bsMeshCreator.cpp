@@ -19,7 +19,7 @@
 class bsMeshCreatorFileLoadFinished
 {
 public:
-	bsMeshCreatorFileLoadFinished(const std::shared_ptr<bsMesh> mesh,
+	bsMeshCreatorFileLoadFinished(const std::shared_ptr<bsMesh>& mesh,
 		const std::string& meshName, const bsMeshCreator& meshCreator)
 		: mMesh(mesh)
 		, mMeshName(meshName)
