@@ -32,27 +32,30 @@ __declspec(align(16)) struct Sphere
 	XMVECTOR positionAndRadius;
 };
 
+Sphere createSphereFromPoints(const XMFLOAT3* points, unsigned int pointCount);
+
+Sphere mergeSpheres(const Sphere& sphere1, const Sphere& sphere2);
+
 enum IntersectionResult
 {
 	OUTSIDE,
 	INTERSECTING,
 	INSIDE,
-	INTERSECTING_OR_INSIDE,
 };
 
-/*	Returns OUTSIDE, INTERSECTING or INSIDE.
+/*	Calculates whether a sphere is intersecting with a frustum or not.
+	The sphere's position component should be in local space, while spherePosition should
+	be the sphere's world space offset.
+	The frustum's planes should be in world space.
+
+	Returns OUTSIDE, INTERSECTING or INSIDE.
 */
-IntersectionResult intersectAxisAlignedBoxFrustum(const XMVECTOR& aabbExtents,
-	const XMVECTOR& aabbPosition, const bsFrustum& frustum);
+IntersectionResult intersectSphereFrustum(const Sphere& sphere,
+	const XMVECTOR& spherePosition, const bsFrustum& frustum);
 
-/*	Returns OUTSIDE or INTERSECTING_OR_INSIDE only.
-	Only checks if the box is outside the frustum. If it is not outside, it can be either
-	intersecting or inside the frustum.
+/*	Test if two spheres are intersecting.
+	Returns OUTSIDE or INTERSECTING.
 */
-IntersectionResult intersectAxisAlignedBoxFrustumOutsideOnly(const XMVECTOR& aabbExtents,
-	const XMVECTOR& aabbPosition, const bsFrustum& frustum);
-
-IntersectionResult intersectSphereFrustum(const Sphere& sphere, const bsFrustum& frustum);
-
-IntersectionResult intersectSphereSphere(const Sphere& sphere1, const Sphere& sphere2);
+IntersectionResult intersectSphereSphere(const Sphere& sphere1,
+	const XMVECTOR& sphere1Position, const Sphere& sphere2, const XMVECTOR& sphere2Position);
 }
