@@ -1,5 +1,7 @@
 #include "StdAfx.h"
 
+#include <algorithm>
+
 #include <Common/Base/hkBase.h>
 #include <Physics/Dynamics/hkpDynamics.h>
 #include <Physics/Dynamics/Entity/hkpRigidBody.h>
@@ -12,6 +14,7 @@
 #include "bsCamera.h"
 #include "bsConvert.h"
 #include "bsScene.h"
+#include "bsMesh.h"
 
 
 #pragma warning(push)
@@ -21,6 +24,7 @@
 
 bsEntity::bsEntity()
 	: mTransform(this)
+	, mBaseRadius(FLT_MIN)
 	, mLineRenderer(nullptr)
 	, mLight(nullptr)
 	, mCamera(nullptr)
@@ -29,7 +33,7 @@ bsEntity::bsEntity()
 	, mScene(nullptr)
 	, mSceneID(~0u)
 {
-	mBoundingSphere.positionAndRadius = XMVectorSet(0.0f, 0.0f, 0.0f, FLT_MAX);
+	mBoundingSphere.positionAndRadius = XMVectorSet(0.0f, 0.0f, 0.0f, FLT_MIN);
 
 	BS_ASSERT2(((uintptr_t)this) % 16 == 0, "bsEntity must be 16 byte aligned!");
 }
@@ -91,6 +95,8 @@ void bsEntity::attachMesh(const bsSharedMesh& mesh)
 	BS_ASSERT2(!mMesh, "Trying to attach a mesh, but a mesh is already attached");
 
 	mMesh = mesh;
+
+	updateBoundingSphere(mesh->getBoundingSphere());
 }
 
 void bsEntity::attachLight(bsLight& light)
@@ -98,6 +104,8 @@ void bsEntity::attachLight(bsLight& light)
 	BS_ASSERT2(mLight == nullptr, "Trying to attach a light, but a light is already attached");
 
 	mLight = &light;
+
+	updateBoundingSphere(light.getBoundingSphere());
 }
 
 void bsEntity::attachLineRenderer(bsLineRenderer& lineRenderer)
@@ -106,6 +114,10 @@ void bsEntity::attachLineRenderer(bsLineRenderer& lineRenderer)
 		" renderer is already attached");
 
 	mLineRenderer = &lineRenderer;
+
+	mLineRenderer->attachedToEntity(*this);
+
+	updateBoundingSphere(lineRenderer.getBoundingSphere());
 }
 
 void bsEntity::attachCamera(bsCamera& camera)
@@ -122,6 +134,8 @@ void bsEntity::attachTextRenderer(bsText3D& textRenderer)
 		" renderer is already attached");
 
 	mTextRenderer = &textRenderer;
+
+	updateBoundingSphere(textRenderer.getBoundingSphere());
 }
 
 
@@ -140,6 +154,8 @@ void bsEntity::detachMesh()
 	BS_ASSERT2(mMesh, "Trying to detach a mesh, but no mesh is attached");
 
 	mMesh.reset();
+
+	recalculateBoundingSphere();
 }
 
 void bsEntity::detachLight()
@@ -148,6 +164,8 @@ void bsEntity::detachLight()
 
 	delete mLight;
 	mLight = nullptr;
+
+	recalculateBoundingSphere();
 }
 
 void bsEntity::detachLineRenderer()
@@ -157,6 +175,8 @@ void bsEntity::detachLineRenderer()
 
 	delete mLineRenderer;
 	mLineRenderer = nullptr;
+
+	recalculateBoundingSphere();
 }
 
 void bsEntity::detachCamera()
@@ -174,6 +194,8 @@ void bsEntity::detachTextRenderer()
 
 	delete mTextRenderer;
 	mTextRenderer = nullptr;
+
+	recalculateBoundingSphere();
 }
 
 
@@ -273,4 +295,60 @@ void bsEntity::removedFromScene(bsScene& scene)
 const bsScene* bsEntity::getScene() const
 {
 	return mScene;
+}
+
+void bsEntity::updateBoundingSphere(const bsCollision::Sphere& newSphereToInclude)
+{
+	//If the new sphere is completely contained by the current bounding sphere, it does
+	//not need to be recalculated.
+	if (bsCollision::intersectSphereSphere(mBoundingSphere, mTransform.getPosition(),
+		newSphereToInclude, mTransform.getPosition())
+		!= bsCollision::INSIDE)
+	{
+		mBoundingSphere	= bsCollision::mergeSpheres(mBoundingSphere, newSphereToInclude);
+	}
+}
+
+void bsEntity::recalculateBoundingSphere()
+{
+	bsCollision::Sphere newBoundingSphere;
+	newBoundingSphere.positionAndRadius = XMVectorSet(0.0f, 0.0f, 0.0f, FLT_MIN);
+
+	if (mMesh)
+	{
+		newBoundingSphere = bsCollision::mergeSpheres(newBoundingSphere,
+			mMesh->getBoundingSphere());
+	}
+	if (mLight)
+	{
+		newBoundingSphere = bsCollision::mergeSpheres(newBoundingSphere,
+			mLight->getBoundingSphere());
+	}
+	if (mLineRenderer)
+	{
+		newBoundingSphere = bsCollision::mergeSpheres(newBoundingSphere,
+			mLineRenderer->getBoundingSphere());
+	}
+	if (mTextRenderer)
+	{
+		newBoundingSphere = bsCollision::mergeSpheres(newBoundingSphere,
+			mTextRenderer->getBoundingSphere());
+	}
+
+	mBoundingSphere = newBoundingSphere;
+}
+
+bsCollision::Sphere bsEntity::getBoundingSphere() const
+{
+	bsCollision::Sphere scaledBoundingSphere = mBoundingSphere;
+
+	XMFLOAT4A scale;
+	XMStoreFloat4A(&scale, mTransform.getScale());
+	
+	//Find the max scaled axis and scale the bounding sphere's radius by this value.
+	//This ensures that the bounding sphere will always contain scaled objects.
+	const float maxScale = std::max(std::max(scale.x, scale.y), scale.z);
+	scaledBoundingSphere.setRadius(scaledBoundingSphere.getRadius() * maxScale);
+
+	return scaledBoundingSphere;
 }

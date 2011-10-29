@@ -90,6 +90,9 @@ public:
 	bsText3D* getTextRenderer();
 
 
+	bsCollision::Sphere getBoundingSphere() const;
+
+
 	/*	Returns a pointer to the scene this entity is currently in, or null if it's not
 		in a scene.
 	*/
@@ -98,12 +101,28 @@ public:
 	void addedToScene(bsScene& scene, unsigned int id);
 	void removedFromScene(bsScene& scene);
 
+	
+
+	/*	Recalculates the bounding sphere from all attached graphical components.
+		This is called when a graphical component has been detatched, or when an attached
+		graphical component has been modified.
+	*/
+	void recalculateBoundingSphere();
 
 private:
+	/*	Updates own bounding sphere to include a new bounding sphere.
+		This function is called after a graphical component has been attached.
+	*/
+	void updateBoundingSphere(const bsCollision::Sphere& newSphereToInclude);
+
 	//This entity's unique ID for this scene.
 	unsigned int	mSceneID;
 	bsTransform		mTransform;
 
+	/*	This bounding sphere encapsulates every component's graphical representation
+		(assuming they provide correct bounding spheres). The sphere's position is in
+		local space.
+	*/
 	bsCollision::Sphere		mBoundingSphere;
 
 	bsSharedMesh			mMesh;
