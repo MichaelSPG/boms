@@ -39,6 +39,16 @@ public:
 		LT_SPOT
 	};
 
+	inline void* operator new(size_t)
+	{
+		return _aligned_malloc(sizeof(bsLight), 16);
+	}
+	inline void operator delete(void* p)
+	{
+		_aligned_free(p);
+	}
+
+
 	bsLight(LightType lightType, bsMeshCache* meshCache,
 		const bsPointLightCInfo& cInfo);
 
@@ -48,12 +58,18 @@ public:
 	void draw(bsDx11Renderer* dx11Renderer) const;
 
 	void drawInstanced(ID3D11DeviceContext& deviceContext, ID3D11Buffer* instanceBuffer,
-		unsigned int instanceCount);
+		unsigned int instanceCount) const;
 
 	inline float getRadius() const
 	{
 		return mRadius;
 	}
+
+	inline const bsCollision::Sphere& getBoundingSphere() const
+	{
+		return mBoundingSphere;
+	}
+
 
 protected:
 	std::shared_ptr<bsMesh>	mMesh;
@@ -68,4 +84,6 @@ private:
 	//Radius for point lights only
 	float		mRadius;
 	float		mIntensity;
+
+	bsCollision::Sphere mBoundingSphere;
 };

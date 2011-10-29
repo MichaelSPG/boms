@@ -1,9 +1,9 @@
 #include "StdAfx.h"
 
-#include "bsLight.h"
+#include <d3d11.h>
 
+#include "bsLight.h"
 #include "bsMeshCache.h"
-#include "bsDx11Renderer.h"
 #include "bsAssert.h"
 #include "bsConstantBuffers.h"
 
@@ -20,14 +20,8 @@ bsLight::bsLight(LightType lightType, bsMeshCache* meshCache,
 
 	BS_ASSERT2(lightType == LT_POINT, "Only points lights are functional");
 
-	const float halfRadius = mRadius * 0.5f;
-	mAabb.m_min.setAll(-halfRadius);
-	mAabb.m_max.setAll(halfRadius);
-}
-
-bsLight::~bsLight()
-{
-	
+	mBoundingSphere.positionAndRadius = XMVectorReplicate(0.0f);
+	mBoundingSphere.setRadius(mRadius);
 }
 
 void bsLight::draw(bsDx11Renderer* dx11Renderer) const
@@ -36,7 +30,7 @@ void bsLight::draw(bsDx11Renderer* dx11Renderer) const
 }
 
 void bsLight::drawInstanced(ID3D11DeviceContext& deviceContext,
-	ID3D11Buffer* instanceBuffer, unsigned int instanceCount)
+	ID3D11Buffer* instanceBuffer, unsigned int instanceCount) const
 {
 	if (!mMesh->hasFinishedLoading())
 	{
