@@ -7,7 +7,6 @@
 
 #include <d3d11.h>
 
-#include "bsRenderSystem.h"
 #include "bsFxaaPass.h"
 
 class bsDx11Renderer;
@@ -26,7 +25,7 @@ struct bsFrameStatistics;
 	Renders the geometry of a scene into a G buffers which is then used by other shaders
 	to construct the final image.
 */
-class bsDeferredRenderer : public bsRenderSystem
+class bsDeferredRenderer
 {
 public:
 	struct GBuffer
@@ -40,12 +39,12 @@ public:
 	bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* camera,
 		bsShaderManager* shaderManager, bsWindow* window, bsRenderQueue* renderQueue);
 
-	virtual ~bsDeferredRenderer();
+	~bsDeferredRenderer();
 
 	/*	Renders a single frame, and executes all registered end-of-render callback
 		functions just before the frame is presented.
 	*/
-	virtual void renderOneFrame(bsFrameStatistics& frameStatistics);
+	void renderOneFrame(bsFrameStatistics& frameStatistics);
 
 	/*	All functions registered here will be called after rendering is done, but before
 		present is called, making it possible to draw UI elements and similar on top of
