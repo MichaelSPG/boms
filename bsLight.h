@@ -5,9 +5,7 @@
 #include <Windows.h>
 #include <xnamath.h>
 
-#include <Common/Base/hkBase.h>
-
-#include "bsRenderable.h"
+#include "bsCollision.h"
 
 class bsMesh;
 class bsMeshCache;
@@ -29,7 +27,7 @@ struct bsPointLightCInfo
 	
 	This class currently lacks functionality and will be extended in the future.
 */
-class bsLight : public bsRenderable
+__declspec(align(16)) class bsLight
 {
 	friend class bsRenderQueue;
 
@@ -44,19 +42,6 @@ public:
 	bsLight(LightType lightType, bsMeshCache* meshCache,
 		const bsPointLightCInfo& cInfo);
 
-	~bsLight();
-
-	/*	Returns LIGHT.
-	*/
-	inline RenderableType getRenderableType() const
-	{
-		return LIGHT;
-	}
-
-	virtual bool hasFinishedLoading() const
-	{
-		return true;
-	}
 
 	/*	Draws the mesh this light uses to represent itself.
 	*/

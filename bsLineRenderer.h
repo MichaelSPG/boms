@@ -5,7 +5,7 @@
 #include <d3d11.h>
 #include <xnamath.h>
 
-#include "bsRenderable.h"
+#include "bsCollision.h"
 
 struct ID3D11Buffer;
 struct ID3D11Buffer;
@@ -17,7 +17,7 @@ class bsDx11Renderer;
 
 	Lines ignore scale.
 */
-class bsLineRenderer : public bsRenderable
+class bsLineRenderer
 {
 	friend class bsRenderQueue;
 
@@ -26,16 +26,12 @@ public:
 
 	~bsLineRenderer();
 
-	inline RenderableType getRenderableType() const
+	/*	Returns true if there are are least 2 points in the list of points, there are an
+		even number of points, and the lines has been built.
+	*/
+	inline bool hasBeenBuilt() const
 	{
-		return LINE;
-	}
-
-	//Returns true if there are are least 2 points and an even number of points.
-	//TODO: Rename this function.
-	inline bool hasFinishedLoading() const
-	{
-		return mPoints.size() && ((mPoints.size() & 1) == 0);
+		return mPoints.size() && ((mPoints.size() & 1) == 0) && mFinished;
 	}
 
 
