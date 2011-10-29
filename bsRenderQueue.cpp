@@ -2,12 +2,10 @@
 
 #include "bsRenderQueue.h"
 
-#include <unordered_map>
 #include <algorithm>
 
 #include "bsCamera.h"
 #include "bsEntity.h"
-#include "bsRenderable.h"
 #include "bsMesh.h"
 #include "bsLineRenderer.h"
 #include "bsLight.h"
@@ -21,16 +19,15 @@
 #include "bsAssert.h"
 #include "bsText3D.h"
 
-#include "bsMath.h"
 #include "bsConstantBuffers.h"
+#include "bsFrustum.h"
 
 #include "bsAlignedAllocator.h"
-
-#include <Common/Base/hkBase.h>
 
 
 bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shaderManager)
 	: mCamera(nullptr)
+	, mScene(nullptr)
 	, mDx11Renderer(dx11Renderer)
 	, mShaderManager(shaderManager)
 	, mUseInstancing(false)
@@ -53,11 +50,13 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	BS_ASSERT2(SUCCEEDED(hres), "bsRenderQueue::bsRenderQueue failed to create world buffer");
 
 	bufferDescription.ByteWidth = sizeof(CBWireFrame);
-	hres = mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr, &mWireframeWorldBuffer);
+	hres = mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr,
+		&mWireframeWorldBuffer);
 	BS_ASSERT(SUCCEEDED(hres));
 
 	bufferDescription.ByteWidth = sizeof(CBLight);
-	hres = mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr, &mLightBuffer);
+	hres = mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr,
+		&mLightBuffer);
 	BS_ASSERT(SUCCEEDED(hres));
 
 	//Shaders
@@ -74,7 +73,8 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	inputElementDesc.InstanceDataStepRate = 0;
 	inputLayout.push_back(inputElementDesc);
 
-	mWireframeVertexShader = mShaderManager->getVertexShader("Wireframe.fx", inputLayout.data(), inputLayout.size());
+	mWireframeVertexShader = mShaderManager->getVertexShader("Wireframe.fx",
+		inputLayout.data(), inputLayout.size());
 	mWireframePixelShader = mShaderManager->getPixelShader("Wireframe.fx");
 
 
@@ -115,7 +115,8 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	inputElementDesc.AlignedByteOffset = 0;
 	inputLayout.push_back(inputElementDesc);
 
-	mLightVertexShader = mShaderManager->getVertexShader("Light.fx", inputLayout.data(), inputLayout.size());
+	mLightVertexShader = mShaderManager->getVertexShader("Light.fx", inputLayout.data(),
+		inputLayout.size());
 	mLightPixelShader = mShaderManager->getPixelShader("Light.fx");
 
 	D3D11_INPUT_ELEMENT_DESC lightInstanced[7] =
@@ -133,7 +134,8 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 		{ "TEXCOORD", 5, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 80, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
 	};
 
-	mLightInstancedVertexShader = mShaderManager->getVertexShader("LightInstanced.fx", lightInstanced, 7);
+	mLightInstancedVertexShader = mShaderManager->getVertexShader("LightInstanced.fx",
+		lightInstanced, 7);
 	mLightInstancedPixelShader = mShaderManager->getPixelShader("LightInstanced.fx");
 }
 
@@ -154,14 +156,42 @@ void bsRenderQueue::reset()
 	mText3dToDraw.clear();
 }
 
+void bsRenderQueue::startFrame()
+{
+	BS_ASSERT2(mScene != nullptr, "startFrame called, but no scene has been registered");
+
+	const std::vector<bsEntity*>& entities = mScene->getEntities();
+	std::vector<const bsEntity*> entities2(entities.begin(), entities.end());
+
+	addAndCullObjects(entities2.data(), entities2.size(), mScene->getCamera()->getTransformedFrustum());
+}
+
+void bsRenderQueue::addAndCullObjects(const bsEntity** entities, unsigned int entityCount,
+	const bsFrustum& frustum)
+{
+	std::vector<const bsEntity*> visibleEntities;
+	visibleEntities.reserve(entityCount / 4);
+
+	//Add entities that are inside/intersecting the frustum to the list of visible entities.
+	for (unsigned int i = 0; i < entityCount; ++i)
+	{
+		const bsEntity& entity = *entities[i];
+		if (bsCollision::intersectSphereFrustum(entity.getBoundingSphere(),
+			entity.getTransform().getPosition(), frustum)
+			!= bsCollision::OUTSIDE)
+		{
+			visibleEntities.push_back(&entity);
+		}
+	}
+
+	sortRenderables(visibleEntities.data(), visibleEntities.size());
+}
+
 void bsRenderQueue::drawGeometry()
 {
-	mFrameStats.reset();
-
 	unbindGeometryShader();
 
-	sortRenderables();
-	sortLights();
+	//sortLights();
 
 	//Render all the geometric renderable types
 	if (mUseInstancing)
@@ -211,19 +241,20 @@ void bsRenderQueue::setLightConstantBuffer(const CBLight& cbLight)
 	context->UpdateSubresource(mLightBuffer, 0, nullptr, &cbLight, 0, 0);
 }
 
-void bsRenderQueue::sortRenderables()
+void bsRenderQueue::sortRenderables(const bsEntity** entities, unsigned int entityCount)
 {
-	BS_ASSERT2(mCamera, "Camera must be set before attempting to render a frame");
+	//BS_ASSERT2(mCamera, "Camera must be set before attempting to render a frame");
 
-	std::vector<bsEntity*> entities = mCamera->getVisibleEntities();
+	//std::vector<bsEntity*> entities = mCamera->getVisibleEntities();
 
-	mFrameStats.visibleEntityCount = entities.size();
+	//mFrameStats.visibleEntityCount = entities.size();
+	mFrameStats.visibleEntityCount += entityCount;
 	
 
 	//Gather all the renderables from the visible meshEntities.
-	for (unsigned int i = 0, count = entities.size(); i < count; ++i)
+	for (unsigned int i = 0, count = entityCount; i < count; ++i)
 	{
-		bsEntity& entity = *entities[i];
+		const bsEntity& entity = *entities[i];
 
 		const bsSharedMesh& mesh = entity.getMesh();
 		if (mesh)
@@ -233,7 +264,7 @@ void bsRenderQueue::sortRenderables()
 			if (finder == mMeshesToDraw.end())
 			{
 				//Not found, create it
-				std::vector<bsEntity*> meshEntities(1);
+				std::vector<const bsEntity*> meshEntities(1);
 				meshEntities[0] = &entity;
 				mMeshesToDraw.insert(std::make_pair(mesh.get(), meshEntities));
 			}
@@ -244,7 +275,7 @@ void bsRenderQueue::sortRenderables()
 			}
 		}
 
-		bsLineRenderer* line = entity.getLineRenderer();
+		const bsLineRenderer* line = entity.getLineRenderer();
 		if (line != nullptr)
 		{
 			auto finder = mLinesToDraw.find(line);
@@ -252,7 +283,7 @@ void bsRenderQueue::sortRenderables()
 			if (finder == mLinesToDraw.end())
 			{
 				//Not found, create it
-				std::vector<bsEntity*> lineEntities(1);
+				std::vector<const bsEntity*> lineEntities(1);
 				lineEntities[0] = &entity;
 				mLinesToDraw.insert(std::make_pair(line, lineEntities));
 			}
@@ -263,7 +294,7 @@ void bsRenderQueue::sortRenderables()
 			}
 		}
 
-		bsLight* light = entity.getLight();
+		const bsLight* light = entity.getLight();
 		if (light != nullptr)
 		{
 			XMFLOAT3 position;
@@ -271,7 +302,7 @@ void bsRenderQueue::sortRenderables()
 			mLightPositionPairs.push_back(std::make_pair(light, position));
 		}
 
-		bsText3D* text = entity.getTextRenderer();
+		const bsText3D* text = entity.getTextRenderer();
 		if (text != nullptr)
 		{
 			mText3dToDraw.push_back(std::make_pair(&entity, text));
@@ -299,12 +330,12 @@ void bsRenderQueue::drawMeshes()
 
 	for (auto itr = mMeshesToDraw.begin(), end = mMeshesToDraw.end(); itr != end; ++itr)
 	{
-		bsMesh* mesh = itr->first;
+		const bsMesh* mesh = itr->first;
 		if (!mesh->hasFinishedLoading())
 		{
 			continue;
 		}
-		const std::vector<bsEntity*>& entities = itr->second;
+		const std::vector<const bsEntity*>& entities = itr->second;
 
 		mFrameStats.totalMeshesDrawn += entities.size();
 
@@ -375,7 +406,7 @@ void bsRenderQueue::drawMeshesInstanced()
 			continue;
 		}
 
-		const std::vector<bsEntity*>& entities = itr->second;
+		const std::vector<const bsEntity*>& entities = itr->second;
 		mFrameStats.totalMeshesDrawn += entities.size();
 		mFrameStats.totalTrianglesDrawn += mesh.getTriangleCount();
 		mFrameStats.totalTrianglesDrawnNotInstanced += mesh.getTriangleCount() * entities.size();
@@ -430,8 +461,8 @@ void bsRenderQueue::drawLines()
 
 	for (auto itr = mLinesToDraw.begin(), end = mLinesToDraw.end(); itr != end; ++itr)
 	{
-		bsLineRenderer* currentLine = itr->first;
-		const std::vector<bsEntity*>& entities = itr->second;
+		const bsLineRenderer* currentLine = itr->first;
+		const std::vector<const bsEntity*>& entities = itr->second;
 
 		mFrameStats.linesDrawn += entities.size();
 
@@ -475,7 +506,7 @@ void bsRenderQueue::drawLights()
 	}
 }
 
-void drawInstancedLight(const bsDx11Renderer& renderer, bsLight& light,
+void drawInstancedLight(const bsDx11Renderer& renderer, const bsLight& light,
 	const LightInstanceData* lightInstanceData, unsigned int instanceCount)
 {
 	D3D11_BUFFER_DESC instanceBufferDesc = { 0 };
@@ -675,7 +706,7 @@ void bsRenderQueue::drawTexts()
 	const XMMATRIX viewProjection = mCamera->getViewProjection();
 
 	std::for_each(std::begin(mText3dToDraw), std::end(mText3dToDraw),
-		[&](const std::pair<bsEntity*, bsText3D*>& text)
+		[&](const std::pair<const bsEntity*, const bsText3D*>& text)
 	{
 		const XMMATRIX& entityTransform = text.first->getTransform().getTransform();
 		const XMMATRIX worldTransform = XMMatrixMultiply(

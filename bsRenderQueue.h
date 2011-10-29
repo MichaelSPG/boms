@@ -23,7 +23,9 @@ class bsCamera;
 class bsLineRenderer;
 class bsLight;
 class bsText3D;
+class bsScene;
 struct CBLight;
+struct bsFrustum;
 
 struct ID3D11DeviceContext;
 struct ID3D11Buffer;
@@ -106,6 +108,8 @@ public:
 	//Clears all current collections of renderables.
 	void reset();
 
+	void startFrame();
+
 	//Draws the geometry
 	void drawGeometry();
 
@@ -124,6 +128,15 @@ public:
 		mCamera = camera;
 	}
 
+	/*	Register a scene with the render queue.
+		This results in the registered scene being drawn on the screen.
+		Only one scene can be registered at a time.
+	*/
+	inline void registerScene(const bsScene& scene)
+	{
+		mScene = &scene;
+	}
+
 	/*	Gets the current frame stats.
 		If called between the start and end of all the draw functions,
 		the stats may be incomplete.
@@ -139,10 +152,16 @@ public:
 	}
 
 private:
+	/*	Add a batch of entities (or all entities) and cull the ones that are not visible
+		to the specified frustum.
+	*/
+	void addAndCullObjects(const bsEntity** entities, unsigned int entityCount,
+		const bsFrustum& frustum);
+
 	/*	Gets the renderables from the entities and groups them based on what kind of
 		renderable they are
 	*/
-	void sortRenderables();
+	void sortRenderables(const bsEntity** entities, unsigned int entityCount);
 
 	void sortLights();
 
@@ -165,6 +184,9 @@ private:
 	bool mUseInstancing;
 
 	bsCamera*		mCamera;
+
+	//The currently registered scene which will be rendered.
+	const bsScene* mScene;
 	
 	bsDx11Renderer*		mDx11Renderer;
 	bsShaderManager*	mShaderManager;
@@ -188,9 +210,9 @@ private:
 
 	bsFrameStats		mFrameStats;
 
-	std::unordered_map<bsMesh*, std::vector<bsEntity*>>		mMeshesToDraw;
-	std::unordered_map<bsLineRenderer*, std::vector<bsEntity*>>	mLinesToDraw;
-	std::vector<std::pair<bsLight*, XMFLOAT3>>	mLightPositionPairs;
+	std::unordered_map<const bsMesh*, std::vector<const bsEntity*>>		mMeshesToDraw;
+	std::unordered_map<const bsLineRenderer*, std::vector<const bsEntity*>>	mLinesToDraw;
+	std::vector<std::pair<const bsLight*, XMFLOAT3>>	mLightPositionPairs;
 
-	std::vector<std::pair<bsEntity*, bsText3D*>> mText3dToDraw;
+	std::vector<std::pair<const bsEntity*, const bsText3D*>> mText3dToDraw;
 };
