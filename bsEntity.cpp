@@ -24,7 +24,6 @@
 
 bsEntity::bsEntity()
 	: mTransform(this)
-	, mBaseRadius(FLT_MIN)
 	, mLineRenderer(nullptr)
 	, mLight(nullptr)
 	, mCamera(nullptr)
