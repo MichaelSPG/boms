@@ -76,13 +76,6 @@ bsFrustum bsComputeFrustumFromProjection(const XMMATRIX& projection)
 	frustum.planes[4] = XMPlaneNormalize(frustum.planes[4]);
 	frustum.planes[5] = XMPlaneNormalize(frustum.planes[5]);
 
-	frustum.rightSlope = rightSlope;
-	frustum.leftSlope = leftSlope;
-	frustum.topSlope = topSlope;
-	frustum.bottomSlope = bottomSlope;
-	frustum.nearClip = nearClip;
-	frustum.farClip = farClip;
-
 	return frustum;
 }
 
@@ -98,30 +91,20 @@ bsFrustum bsTransformFrustum(const bsFrustum& frustum, const XMVECTOR& rotation,
 	const XMVECTOR& translation)
 {
 	bsFrustum transformedFrustum;
-	for (unsigned int i = 0; i < 6; ++i)
-	{
-		transformedFrustum.planes[i] =
-			transformPlane(frustum.planes[i], rotation, translation);
-	}
-	for (unsigned int i = 0; i < 6; ++i)
-	{
-		transformedFrustum.planes[i] = XMPlaneNormalize(transformedFrustum.planes[i]);
-	}
+	
+	transformedFrustum.planes[0] = transformPlane(frustum.planes[0], rotation, translation);
+	transformedFrustum.planes[1] = transformPlane(frustum.planes[1], rotation, translation);
+	transformedFrustum.planes[2] = transformPlane(frustum.planes[2], rotation, translation);
+	transformedFrustum.planes[3] = transformPlane(frustum.planes[3], rotation, translation);
+	transformedFrustum.planes[4] = transformPlane(frustum.planes[4], rotation, translation);
+	transformedFrustum.planes[5] = transformPlane(frustum.planes[5], rotation, translation);
 
-	transformedFrustum.rightSlope = frustum.rightSlope;
-	transformedFrustum.leftSlope = frustum.leftSlope;
-	transformedFrustum.topSlope = frustum.topSlope;
-	transformedFrustum.bottomSlope = frustum.bottomSlope;
-	transformedFrustum.nearClip = frustum.nearClip;
-	transformedFrustum.farClip = frustum.farClip;
+	transformedFrustum.planes[0] = XMPlaneNormalize(transformedFrustum.planes[0]);
+	transformedFrustum.planes[1] = XMPlaneNormalize(transformedFrustum.planes[1]);
+	transformedFrustum.planes[2] = XMPlaneNormalize(transformedFrustum.planes[2]);
+	transformedFrustum.planes[3] = XMPlaneNormalize(transformedFrustum.planes[3]);
+	transformedFrustum.planes[4] = XMPlaneNormalize(transformedFrustum.planes[4]);
+	transformedFrustum.planes[5] = XMPlaneNormalize(transformedFrustum.planes[5]);
 
-	/*
-	const XMMATRIX m = XMMatrixMultiply(XMMatrixTranslationFromVector(translation),
-		XMMatrixRotationQuaternion(rotation));
-
-	XMPlaneTransformStream(reinterpret_cast<XMFLOAT4*>(transformedFrustum.planes),
-		sizeof(XMVECTOR), reinterpret_cast<const XMFLOAT4*>(frustum.planes),
-		sizeof(XMVECTOR), 6, m);
-	*/
 	return transformedFrustum;
 }
