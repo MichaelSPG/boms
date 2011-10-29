@@ -4,6 +4,8 @@
 
 #include <xnamath.h>
 
+#include "bsCollision.h"
+
 struct ID3D11DeviceContext;
 struct ID3D11Device;
 struct IFW1FontWrapper;
@@ -22,7 +24,10 @@ public:
 		mText = text;
 	}
 
-	void draw(const XMMATRIX& transform);
+	void draw(const XMMATRIX& transform) const;
+
+	bsCollision::Sphere getBoundingSphere() const;
+
 
 private:
 	IFW1FontWrapper*		mFontWrapper;
