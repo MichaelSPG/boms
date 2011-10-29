@@ -107,66 +107,73 @@ void createLinesFromSphere(const XMFLOAT3& sphereCenter, float radius,
 
 	/// Generate circle around X axis.
 	//The first point needs to be stored so that the last line can connect to it.
-	XMFLOAT3 firstPoint(sphereCenter.x * radius, (sin(currentDelta) + sphereCenter.y) * radius,
-		(-cos(currentDelta) + sphereCenter.z) * radius);
+	XMFLOAT3 firstPoint(sphereCenter.x,
+		(sin(currentDelta) * radius) + sphereCenter.y,
+		(-cos(currentDelta) * radius) + sphereCenter.z);
 	//Point being used in the loop to generate interpolated points.
 	XMFLOAT3 point;
 
-	points.push_back(firstPoint);
-	currentDelta += delta;
-
-	for (unsigned int i = 1; i < linesPerAxis; ++i, currentDelta += delta)
 	{
-		point.x = sphereCenter.x * radius;
-		point.y = (sin(currentDelta) + sphereCenter.y) * radius;
-		point.z = (-cos(currentDelta) + sphereCenter.z) * radius;
+		points.push_back(firstPoint);
+		currentDelta += delta;
 
-		points.push_back(point);
-		points.push_back(point);
+		for (unsigned int i = 1; i < linesPerAxis; ++i, currentDelta += delta)
+		{
+			point.x = sphereCenter.x;
+			point.y = (sin(currentDelta) * radius) + sphereCenter.y;
+			point.z = (-cos(currentDelta) * radius) + sphereCenter.z;
+
+			points.push_back(point);
+			points.push_back(point);
+		}
+		points.push_back(firstPoint);
 	}
-	points.push_back(firstPoint);
 
 
 	/// Generate circle around Y axis.
-	currentDelta = 0.0f;
-
-	firstPoint.x = (sin(currentDelta) + sphereCenter.x) * radius;
-	firstPoint.y = sphereCenter.y * radius;
-	firstPoint.z = (-cos(currentDelta) + sphereCenter.z) * radius;
-	points.push_back(firstPoint);
-	currentDelta += delta;
-
-	for (unsigned int i = 1; i < linesPerAxis; ++i, currentDelta += delta)
 	{
-		point.x = (sin(currentDelta) + sphereCenter.x) * radius;
-		point.y = sphereCenter.y * radius;
-		point.z = (-cos(currentDelta) + sphereCenter.z) * radius;
+		currentDelta = 0.0f;
 
-		points.push_back(point);
-		points.push_back(point);
+		firstPoint.x = (sin(currentDelta) * radius) + sphereCenter.x;
+		firstPoint.y = sphereCenter.y;
+		firstPoint.z = (-cos(currentDelta) * radius) + sphereCenter.z;
+		points.push_back(firstPoint);
+		currentDelta += delta;
+
+		for (unsigned int i = 1; i < linesPerAxis; ++i, currentDelta += delta)
+		{
+			point.x = (sin(currentDelta) * radius) + sphereCenter.x;
+			point.y = sphereCenter.y;
+			point.z = (-cos(currentDelta) * radius) + sphereCenter.z;
+
+			points.push_back(point);
+			points.push_back(point);
+		}
+		points.push_back(firstPoint);
 	}
-	points.push_back(firstPoint);
 
 
 	/// Generate circle around Z axis.
-	currentDelta = 0.0f;
-
-	firstPoint.x = (sin(currentDelta) + sphereCenter.x) * radius;
-	firstPoint.y = (-cos(currentDelta) + sphereCenter.y) * radius;
-	firstPoint.z = sphereCenter.z * radius;
-	points.push_back(firstPoint);
-	currentDelta += delta;
-
-	for (unsigned int i = 1; i < linesPerAxis; ++i, currentDelta += delta)
 	{
-		point.x = (sin(currentDelta) + sphereCenter.x) * radius;
-		point.y = (-cos(currentDelta) + sphereCenter.y) * radius;
-		point.z = sphereCenter.z * radius;
+		currentDelta = 0.0f;
 
-		points.push_back(point);
-		points.push_back(point);
+		firstPoint.x = (sin(currentDelta) * radius) + sphereCenter.x;
+		firstPoint.y = (-cos(currentDelta) * radius) + sphereCenter.y;
+		firstPoint.z = sphereCenter.z;
+		points.push_back(firstPoint);
+		currentDelta += delta;
+
+		for (unsigned int i = 1; i < linesPerAxis; ++i, currentDelta += delta)
+		{
+			point.x = (sin(currentDelta) * radius) + sphereCenter.x;
+			point.y = (-cos(currentDelta) * radius) + sphereCenter.y;
+			point.z = sphereCenter.z;
+
+			points.push_back(point);
+			points.push_back(point);
+		}
+		points.push_back(firstPoint);
 	}
-	points.push_back(firstPoint);
 
 
 	lineRendererOut->addPoints(points.data(), points.size());
