@@ -13,7 +13,7 @@
 #include "bsVertexShader.h"
 #include "bsPixelShader.h"
 
-class bsResourceManager;
+class bsFileSystem;
 class bsDx11Renderer;
 
 
@@ -22,20 +22,11 @@ class bsDx11Renderer;
 */
 class bsShaderManager
 {
-	friend class bsResourceManager;
-
-	bsShaderManager(bsDx11Renderer* dx11Renderer, bsResourceManager* resourceManager);
-
-	~bsShaderManager();
-
 public:
-	//Get a shader, or create it if it isn't already loaded.
-	std::shared_ptr<bsVertexShader> getVertexShader(const std::string& fileName,
-		const D3D11_INPUT_ELEMENT_DESC* inputDescs, unsigned int inputDescCount) const;
+	bsShaderManager(bsDx11Renderer& dx11Renderer, const bsFileSystem& fileSystem,
+		const std::string& precompiledShaderDirectory);
 
-	//Get a shader, or create it if it isn't already loaded.
-	std::shared_ptr<bsPixelShader> getPixelShader(const std::string& fileName) const;
-
+	
 	/*	Set a vertex shader.
 		Will also set the input layout.
 	*/
@@ -45,13 +36,58 @@ public:
 	void setPixelShader(const std::shared_ptr<bsPixelShader>& pixelShader);
 
 
+	//Get a shader, or create it if it isn't already loaded.
+	std::shared_ptr<bsVertexShader> getVertexShader(const std::string& fileName,
+		const D3D11_INPUT_ELEMENT_DESC* inputDescs, unsigned int inputDescCount) const;
+
+	//Get a shader, or create it if it isn't already loaded.
+	std::shared_ptr<bsPixelShader> getPixelShader(const std::string& fileName) const;
+
+
 private:
 	//Create/compile vertex shader
 	std::shared_ptr<bsVertexShader> createVertexShader(const std::string& fileName,
 		const D3D11_INPUT_ELEMENT_DESC* inputDescs, unsigned int inputDescCount);
 
-	//Create/compile pixel shader
+	bool compileVertexShaderBlobFromFile(ID3DBlob** blobOut, const std::string& fileName,
+		const D3D11_INPUT_ELEMENT_DESC* inputDescs, unsigned int inputDescCount);
+
+	/*	Create vertex shader from a shader blob.
+		The fileName parameter is only used for debugging and logging.
+	*/
+	std::shared_ptr<bsVertexShader> createVertexShaderFromBlob(ID3DBlob* blob,
+		const std::string& fileName, const D3D11_INPUT_ELEMENT_DESC* inputDescs,
+		unsigned int inputDescCount);
+
+
+
 	std::shared_ptr<bsPixelShader> createPixelShader(const std::string& fileName);
+
+	bool compilePixelShaderBlobFromFile(ID3DBlob** blobOut, const std::string& fileName);
+
+	/*	Create pixel shader from a shader blob.
+		The fileName parameter is only used for debugging and logging.
+	*/
+	std::shared_ptr<bsPixelShader> createPixelShaderFromBlob(ID3DBlob* blob,
+		const std::string& fileName);
+
+
+	/*	Returns the path for the precompiled version of the shader specified by fileName.
+		This function does not append a file name, use the two functions below this one.
+	*/
+	inline std::string getPrecompiledShaderPath(const std::string& filePath) const;
+
+	
+	std::string getPrecompiledVertexShaderPath(const std::string& filePath) const;
+	std::string getPrecompiledPixelShaderPath(const std::string& filePath) const;
+
+
+	bool saveCompiledShaderToFile(const char* fileName, ID3DBlob& shaderBlobToSave) const;
+
+	/*	Loads a shader blob from file. The shaderBlobOut should be null. If the function
+		succeeds, the shaderBlobOut will be modified, if the function fails it will be null.
+	*/
+	void loadCompiledShaderFromFile(const char* fileName, ID3DBlob*& shaderBlobOut) const;
 
 
 	//Increments number of created shaders and returns it.
@@ -61,10 +97,12 @@ private:
 	}
 
 
+	//Mappings of file names to shaders.
 	std::unordered_map<std::string, std::shared_ptr<bsVertexShader>>	mVertexShaders;
 	std::unordered_map<std::string, std::shared_ptr<bsPixelShader>>		mPixelShaders;
 
-	bsResourceManager*	mResourceManager;
+	const bsFileSystem&	mFileSystem;
 	bsDx11Renderer*		mDx11Renderer;
 	unsigned int		mNumCreatedShaders;
+	std::string			mPrecompiledShaderDirectory;
 };

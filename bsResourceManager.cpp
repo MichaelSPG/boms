@@ -58,7 +58,12 @@ void bsResourceManager::initShaderManager(bsDx11Renderer* dx11Renderer)
 	BS_ASSERT2(!mShaderManager, "Attempting to initialize shader manager multiple times, "
 		"memory will leak and other problems may arise");
 
-	mShaderManager = new bsShaderManager(dx11Renderer, this);
+	BS_ASSERT2(mFileSystem != nullptr, "File system must be initialized before shader manager");
+
+	std::string shaderCachePath(mFileSystem->getBasePath());
+	shaderCachePath.append("shaders\\precompiled");
+
+	mShaderManager = new bsShaderManager(*dx11Renderer, *mFileSystem, shaderCachePath);
 }
 
 void bsResourceManager::initMeshCache(bsDx11Renderer* dx11Renderer, bsFileIoManager& fileIoManager)
