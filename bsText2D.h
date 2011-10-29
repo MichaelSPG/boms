@@ -76,7 +76,7 @@ public:
 		mFontSize = size;
 	}
 
-	inline unsigned int getColor()
+	inline unsigned int getColor() const
 	{
 		return mColorAbgr;
 	}
