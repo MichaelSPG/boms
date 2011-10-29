@@ -109,6 +109,7 @@ public:
 	/*	Updates and uploads view/projection matrices to the GPU.
 		This should be called at least every time the camera's transform/projection has
 		changed.
+		The camera must be attached to an entity before calling this function.
 	*/
 	void update();
 
@@ -141,10 +142,15 @@ public:
 	hkpWorldRayCastOutput screenPointToWorldRay(const XMFLOAT2& screenPoint,
 		float rayLength, XMVECTOR& destinationOut, XMVECTOR& originOut) const;
 
-	inline const bsFrustum& getFrustum() const
-	{
-		return mFrustum;
-	}
+	/*	Returns the frustum with planes in local space.
+	*/
+	const bsFrustum& getFrustum() const;
+
+	/*	Returns a frustum with planes in world space.
+		The planes are calculated every time this function is called.
+		The camera must be attached to an entity before calling this function.
+	*/
+	bsFrustum getTransformedFrustum() const;
 
 private:
 	/*	Updates projection matrix with current projection info. Called whenever projection

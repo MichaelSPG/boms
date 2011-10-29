@@ -10,7 +10,6 @@
 #include "bsFxaaPass.h"
 
 class bsDx11Renderer;
-class bsCamera;
 class bsRenderQueue;
 class bsShaderManager;
 class bsRenderTarget;
@@ -36,8 +35,8 @@ public:
 	};
 
 
-	bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsCamera* camera,
-		bsShaderManager* shaderManager, bsWindow* window, bsRenderQueue* renderQueue);
+	bsDeferredRenderer(bsDx11Renderer* dx11Renderer, bsShaderManager* shaderManager,
+		bsWindow* window, bsRenderQueue* renderQueue);
 
 	~bsDeferredRenderer();
 
@@ -55,7 +54,7 @@ public:
 		mEndOfRenderCallbacks.push_back(func);
 	}
 
-	inline const bsRenderQueue* getRenderQueue() const
+	inline bsRenderQueue* getRenderQueue()
 	{
 		return mRenderQueue;
 	}
@@ -71,7 +70,6 @@ private:
 
 
 	bsDx11Renderer*		mDx11Renderer;
-	bsCamera*			mCamera;
 	bsRenderQueue*		mRenderQueue;
 	bsShaderManager*	mShaderManager;
 

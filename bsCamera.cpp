@@ -20,6 +20,7 @@
 bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsDx11Renderer* dx11Renderer)
 	: mProjectionInfo(projectionInfo)
 	, mScene(nullptr)
+	, mEntity(nullptr)
 	, mDeviceContext(dx11Renderer->getDeviceContext())
 {
 	//Create view projection buffer
@@ -48,6 +49,9 @@ bsCamera::~bsCamera()
 
 void bsCamera::update()
 {
+	BS_ASSERT2(mEntity != nullptr, "Camera must be attached to an entity before calling"
+		" update");
+
 	updateViewProjection();
 }
 
@@ -55,7 +59,7 @@ void bsCamera::updateProjection()
 {
 	//Create a projection matrix based on the current projection info.
 
-	mProjection = XMMatrixPerspectiveFovLH(mProjectionInfo.mFieldOfView,
+	mProjection = XMMatrixPerspectiveFovLH(XMConvertToRadians(mProjectionInfo.mFieldOfView),
 		mProjectionInfo.mAspectRatio, mProjectionInfo.mNearClip, mProjectionInfo.mFarClip);
 
 	mFrustum = bsComputeFrustumFromProjection(mProjection);
@@ -137,4 +141,21 @@ hkpWorldRayCastOutput bsCamera::screenPointToWorldRay(const XMFLOAT2& screenPoin
 	originOut = screenPointObjectSpace;
 	destinationOut = rayDestination;
 	return output;
+}
+
+const bsFrustum& bsCamera::getFrustum() const
+{
+	return mFrustum;
+}
+
+bsFrustum bsCamera::getTransformedFrustum() const
+{
+	BS_ASSERT2(mEntity != nullptr, "Camera must be attached to an entity before calling"
+		" getTransformedFrustum");
+
+	//Transform local space frustum by the entity the camera is attached to's inverse
+	//rotation and position.
+	return bsTransformFrustum(mFrustum,
+		XMQuaternionInverse(mEntity->getTransform().getRotation()),
+		mEntity->getTransform().getPosition());
 }
