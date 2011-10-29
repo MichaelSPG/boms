@@ -11,6 +11,7 @@
 #include "bsLog.h"
 #include "bsAssert.h"
 #include "bsConvert.h"
+#include "bsEntity.h"
 
 
 bsLineRenderer::bsLineRenderer(const XMFLOAT4& colorRgba)
@@ -18,7 +19,9 @@ bsLineRenderer::bsLineRenderer(const XMFLOAT4& colorRgba)
 	, mColor(colorRgba)
 	, mVertexBuffer(nullptr)
 	, mIndexBuffer(nullptr)
+	, mEntity(nullptr)
 {
+	mBoundingSphere.positionAndRadius = XMVectorSet(0.0f, 0.0f, 0.0f, FLT_MIN);
 }
 
 bsLineRenderer::~bsLineRenderer()
@@ -60,13 +63,11 @@ bool bsLineRenderer::build(bsDx11Renderer* dx11Renderer)
 		mIndexBuffer->Release();
 	}
 
-
-	BS_ASSERT2(hasFinishedLoading(), "Tried to build line while the data was in a non-good state");
-
 	const unsigned int pointCount = mPoints.size();
 
-	BS_ASSERT2(pointCount, "No points defined");
-	BS_ASSERT2((pointCount & 1) == 0, "Attempted to build bsLineRenderer with an odd amount of points");
+	BS_ASSERT2(mPoints.size(), "Tried to build line renderer, but no points have been added");
+	BS_ASSERT2((mPoints.size() & 1) == 0, "Tried to build line renderer, but an odd amount"
+		" of points have been added. Only even numbers of points are supported");
 
 	//Vertex buffer
 	D3D11_BUFFER_DESC bufferDescription;
@@ -122,12 +123,19 @@ bool bsLineRenderer::build(bsDx11Renderer* dx11Renderer)
 		indexBufferName.c_str());
 #endif // BS_DEBUG
 
+	mBoundingSphere = bsCollision::createSphereFromPoints(mPoints.data(), mPoints.size());
+
+	if (mEntity != nullptr)
+	{
+		mEntity->recalculateBoundingSphere();
+	}
+
 	mFinished = true;
 
 	return true;
 }
 
-void bsLineRenderer::draw(bsDx11Renderer* dx11Renderer)
+void bsLineRenderer::draw(bsDx11Renderer* dx11Renderer) const
 {
 	//TODO: Don't allow this function to be run when the following is true.
 	if (mPoints.empty())
@@ -148,6 +156,7 @@ void bsLineRenderer::draw(bsDx11Renderer* dx11Renderer)
 
 	context->DrawIndexed(mPoints.size(), 0, 0);
 
+	/*
 	hkVector4 start, end;
 
 	for (size_t i = 0; i < mPoints.size(); i += 2)
@@ -157,4 +166,26 @@ void bsLineRenderer::draw(bsDx11Renderer* dx11Renderer)
 
 		HK_DISPLAY_LINE(start, end, 0xffffffff);
 	}
+	*/
+}
+
+void bsLineRenderer::clear()
+{
+	mPoints.clear();
+
+	if (mVertexBuffer)
+	{
+		mVertexBuffer->Release();
+		mVertexBuffer = nullptr;
+	}
+	if (mIndexBuffer)
+	{
+		mIndexBuffer->Release();
+		mIndexBuffer = nullptr;
+	}
+}
+
+void bsLineRenderer::attachedToEntity(bsEntity& entity)
+{
+	mEntity = &entity;
 }

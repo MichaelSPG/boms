@@ -10,6 +10,7 @@
 struct ID3D11Buffer;
 struct ID3D11Buffer;
 class bsDx11Renderer;
+class bsEntity;
 
 
 /*	This class can be used for drawing line lists, meaning each line consists of 2 unique
@@ -22,6 +23,17 @@ class bsLineRenderer
 	friend class bsRenderQueue;
 
 public:
+	inline void* operator new(size_t)
+	{
+		return _aligned_malloc(sizeof(bsLineRenderer), 16);
+	}
+	inline void operator delete(void* p)
+	{
+		_aligned_free(p);
+	}
+
+
+
 	bsLineRenderer(const XMFLOAT4& colorRgba);
 
 	~bsLineRenderer();
@@ -40,7 +52,8 @@ public:
 	*/
 	void addPoint(const XMFLOAT3& position);
 
-	/*	Adds an array of points to the collection.
+	/*	Adds an array of points to the collection. This is more efficient than adding
+		points one by one.
 	*/
 	void addPoints(const XMFLOAT3* points, unsigned int pointCount);
 
@@ -68,30 +81,28 @@ public:
 
 	/*	Clears all previously entered points.
 	*/
-	inline void clear()
-	{
-		mPoints.clear();
+	void clear();
 
-		if (mVertexBuffer)
-		{
-			mVertexBuffer->Release();
-			mVertexBuffer = nullptr;
-		}
-		if (mIndexBuffer)
-		{
-			mIndexBuffer->Release();
-			mIndexBuffer = nullptr;
-		}
+	inline const bsCollision::Sphere& getBoundingSphere() const
+	{
+		return mBoundingSphere;
 	}
 
+	void attachedToEntity(bsEntity& entity);
+
+
 private:
-	void draw(bsDx11Renderer* dx11Renderer);
+	void draw(bsDx11Renderer* dx11Renderer) const;
 
 	bool		mFinished;
 	XMFLOAT4	mColor;
 
 	std::vector<XMFLOAT3>	mPoints;
 
-	ID3D11Buffer*		mVertexBuffer;
-	ID3D11Buffer*		mIndexBuffer;
+	ID3D11Buffer*	mVertexBuffer;
+	ID3D11Buffer*	mIndexBuffer;
+
+	bsCollision::Sphere mBoundingSphere;
+
+	bsEntity* mEntity;
 };
