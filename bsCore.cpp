@@ -14,14 +14,13 @@
 #include "bsLog.h"
 #include "bsAssert.h"
 #include "bsRenderQueue.h"
-#include "bsRenderSystem.h"
+#include "bsDeferredRenderer.h"
 #include "bsTimer.h"
 #include "bsFrameStatistics.h"
 
 
 bsCore::bsCore(const bsCoreCInfo& cInfo)
 	: mCInfo(cInfo)
-	, mRenderSystem(nullptr)
 {
 	bsLog::init(bsLog::SEV_DEBUG);
 
@@ -41,6 +40,9 @@ bsCore::bsCore(const bsCoreCInfo& cInfo)
 
 	mRenderQueue = new bsRenderQueue(mDx11Renderer, mResourceManager->getShaderManager());
 
+	mRenderSystem = new bsDeferredRenderer(mDx11Renderer,
+		mResourceManager->getShaderManager(), mWindow, mRenderQueue);
+
 	mFileIoThread = new tbb::tbb_thread(std::bind(&bsFileIoManager::threadLoop, &mFileIoManager));
 	bsWindowsUtils::setThreadName(GetThreadId(mFileIoThread->native_handle()), "Background File Loader");
 
@@ -55,6 +57,7 @@ bsCore::~bsCore()
 	mFileIoThread->join();
 	delete mFileIoThread;
 
+	delete mRenderSystem;
 	delete mRenderQueue;
 
 	delete mHavokManager;
@@ -73,8 +76,6 @@ bsCore::~bsCore()
 
 bool bsCore::update(float deltaTimeMs, bsFrameStatistics& framStatistics)
 {
-	BS_ASSERT2(mRenderSystem, "A render system must be set before calling bsCore::update");
-
 	if (!mWindow->checkForMessages())
 	{
 		return false;

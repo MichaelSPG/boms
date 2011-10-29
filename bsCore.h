@@ -12,7 +12,7 @@ class bsResourceManager;
 class bsHavokManager;
 class bsWindow;
 class bsRenderQueue;
-class bsRenderSystem;
+class bsDeferredRenderer;
 struct bsFrameStatistics;
 
 
@@ -62,19 +62,9 @@ public:
 		return mRenderQueue;
 	}
 
-	inline bsRenderSystem* getRenderSystem() const
+	inline bsDeferredRenderer* getRenderSystem() const
 	{
 		return mRenderSystem;
-	}
-
-	/*	Sets the render system which should be used for rendering the scene.
-		This must be set before calling update().
-	*/
-	inline void setRenderSystem(bsRenderSystem* renderSystem)
-	{
-		BS_ASSERT(renderSystem);
-
-		mRenderSystem = renderSystem;
 	}
 
 private:
@@ -89,7 +79,7 @@ private:
 	bsHavokManager*		mHavokManager;
 	bsRenderQueue*		mRenderQueue;
 
-	bsRenderSystem*		mRenderSystem;
+	bsDeferredRenderer*	mRenderSystem;
 
 	bsCoreCInfo			mCInfo;
 
