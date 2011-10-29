@@ -89,7 +89,9 @@ public:
 	bsCamera* getCamera();
 	bsText3D* getTextRenderer();
 
-
+	/*	Computes this entity's local space bounding sphere and returns the result.
+		The bounding sphere's center is in local space.
+	*/
 	bsCollision::Sphere getBoundingSphere() const;
 
 
@@ -107,7 +109,7 @@ public:
 		This is called when a graphical component has been detatched, or when an attached
 		graphical component has been modified.
 	*/
-	void recalculateBoundingSphere();
+	void calculateLocalBoundingSphere();
 
 private:
 	/*	Updates own bounding sphere to include a new bounding sphere.
@@ -120,8 +122,8 @@ private:
 	bsTransform		mTransform;
 
 	/*	This bounding sphere encapsulates every component's graphical representation
-		(assuming they provide correct bounding spheres). The sphere's position is in
-		local space.
+		(assuming they provide correct bounding spheres).
+		This sphere does not include any rotation/translation/scale.
 	*/
 	bsCollision::Sphere		mBoundingSphere;
 

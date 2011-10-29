@@ -154,7 +154,7 @@ void bsEntity::detachMesh()
 
 	mMesh.reset();
 
-	recalculateBoundingSphere();
+	calculateLocalBoundingSphere();
 }
 
 void bsEntity::detachLight()
@@ -164,7 +164,7 @@ void bsEntity::detachLight()
 	delete mLight;
 	mLight = nullptr;
 
-	recalculateBoundingSphere();
+	calculateLocalBoundingSphere();
 }
 
 void bsEntity::detachLineRenderer()
@@ -175,7 +175,7 @@ void bsEntity::detachLineRenderer()
 	delete mLineRenderer;
 	mLineRenderer = nullptr;
 
-	recalculateBoundingSphere();
+	calculateLocalBoundingSphere();
 }
 
 void bsEntity::detachCamera()
@@ -194,7 +194,7 @@ void bsEntity::detachTextRenderer()
 	delete mTextRenderer;
 	mTextRenderer = nullptr;
 
-	recalculateBoundingSphere();
+	calculateLocalBoundingSphere();
 }
 
 
@@ -308,7 +308,7 @@ void bsEntity::updateBoundingSphere(const bsCollision::Sphere& newSphereToInclud
 	}
 }
 
-void bsEntity::recalculateBoundingSphere()
+void bsEntity::calculateLocalBoundingSphere()
 {
 	bsCollision::Sphere newBoundingSphere;
 	newBoundingSphere.positionAndRadius = XMVectorSet(0.0f, 0.0f, 0.0f, FLT_MIN);
@@ -341,13 +341,21 @@ bsCollision::Sphere bsEntity::getBoundingSphere() const
 {
 	bsCollision::Sphere scaledBoundingSphere = mBoundingSphere;
 
+	//Find the largest scaled axis. Only the single largest axis is interesting when
+	//dealing with spheres.
 	XMFLOAT4A scale;
 	XMStoreFloat4A(&scale, mTransform.getScale());
-	
-	//Find the max scaled axis and scale the bounding sphere's radius by this value.
-	//This ensures that the bounding sphere will always contain scaled objects.
 	const float maxScale = std::max(std::max(scale.x, scale.y), scale.z);
-	scaledBoundingSphere.setRadius(scaledBoundingSphere.getRadius() * maxScale);
+
+	//The bounding sphere's center needs to be modified by the current rotation and scale.
+	scaledBoundingSphere.positionAndRadius =
+		XMVector3Rotate(scaledBoundingSphere.positionAndRadius, mTransform.getRotation());
+	scaledBoundingSphere.positionAndRadius =
+		XMVectorScale(scaledBoundingSphere.positionAndRadius, maxScale);
+
+	//Scale the bounding sphere's radius by the largest scaled axis.
+	//This ensures that the bounding sphere will always contain scaled objects.
+	scaledBoundingSphere.setRadius(mBoundingSphere.getRadius() * maxScale);
 
 	return scaledBoundingSphere;
 }

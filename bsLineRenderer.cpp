@@ -127,7 +127,7 @@ bool bsLineRenderer::build(bsDx11Renderer* dx11Renderer)
 
 	if (mEntity != nullptr)
 	{
-		mEntity->recalculateBoundingSphere();
+		mEntity->calculateLocalBoundingSphere();
 	}
 
 	mFinished = true;
