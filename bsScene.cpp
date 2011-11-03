@@ -104,7 +104,10 @@ void bsScene::removeEntity(bsEntity& entityToRemove)
 
 	//Remove the entity's rigid body (if one is present) to the physics simulation.
 	hkpRigidBody* rigidBody = entityToRemove.getRigidBody();
-	if (rigidBody != nullptr)
+
+	//Need to check that the world is not null in case the rigid body fell out of the
+	//broadphase and was removed from it by Havok.
+	if (rigidBody != nullptr && rigidBody->getWorld() != nullptr)
 	{
 		mPhysicsWorld->markForWrite();
 
