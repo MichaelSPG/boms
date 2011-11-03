@@ -11,6 +11,7 @@
 #include "bsCollision.h"
 
 class bsDx11Renderer;
+class bsEntity;
 
 
 /*	Class containing a single mesh.
@@ -65,6 +66,8 @@ public:
 		return mLoadingFinished;
 	}
 
+	void attachedToEntity(bsEntity& entity);
+
 	/*	Returns the total amount of triangles in this mesh.
 	*/
 	inline unsigned int getTriangleCount() const
@@ -108,7 +111,10 @@ private:
 
 	unsigned int	mID;
 
-	bool			mLoadingFinished;
+	//0 if loading is not finished, positive value otherwise.
+	volatile unsigned int	mLoadingFinished;
+
+	std::vector<bsEntity*>	mEntities;
 };
 
 typedef std::shared_ptr<bsMesh> bsSharedMesh;

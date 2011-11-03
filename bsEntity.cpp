@@ -94,6 +94,7 @@ void bsEntity::attachMesh(const bsSharedMesh& mesh)
 	BS_ASSERT2(!mMesh, "Trying to attach a mesh, but a mesh is already attached");
 
 	mMesh = mesh;
+	mMesh->attachedToEntity(*this);
 
 	updateBoundingSphere(mesh->getBoundingSphere());
 }

@@ -12,6 +12,7 @@
 #include "bsVertexTypes.h"
 #include "bsDx11Renderer.h"
 #include "bsAssert.h"
+#include "bsEntity.h"
 
 
 bsMesh::bsMesh(unsigned int id, std::vector<ID3D11Buffer*>&& vertexBuffers,
@@ -67,7 +68,16 @@ bsMesh& bsMesh::operator=(bsMesh&& other)
 	//Set finished flag last so that when it is set, all other data has been set, making
 	//it safe to read that data without a mutex/lock.
 	//TODO: Verify that this is not stupid.
-	mLoadingFinished = other.mLoadingFinished;
+	//mLoadingFinished = other.mLoadingFinished;
+	if (other.mLoadingFinished)
+	{
+		InterlockedIncrementRelease(&mLoadingFinished);
+	}
+
+	for (unsigned int i = 0; i < mEntities.size(); ++i)
+	{
+		mEntities[i]->calculateLocalBoundingSphere();
+	}
 
 	return *this;
 }
@@ -123,4 +133,9 @@ void bsMesh::drawInstanced(ID3D11DeviceContext& deviceContext, ID3D11Buffer* ins
 
 		deviceContext.DrawIndexedInstanced(mIndexCounts[i], instanceCount, 0, 0, 0);
 	}
+}
+
+void bsMesh::attachedToEntity(bsEntity& entity)
+{
+	mEntities.push_back(&entity);
 }
