@@ -57,6 +57,8 @@ inline void bsTransform::setLocalPosition(const XMVECTOR& newPosition)
 	mLocalPosition = newPosition;	
 
 	updateDerivedTransform();
+
+	updateRigidBodyPosition();
 }
 
 inline void bsTransform::translate(const XMVECTOR& translation)
