@@ -15,6 +15,7 @@ bsFileLoader::bsFileLoader(const std::string& fileName, LoadingMethod loadingMet
 	, mLoadingMethod(loadingMethod)
 	, mFileHandle(nullptr)
 	, mDataSize(0)
+	, mData(nullptr)
 	, mFileName(fileName)
 	, mCompletionCallback(completionCallback)
 {
