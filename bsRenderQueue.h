@@ -13,7 +13,7 @@
 
 class bsEntity;
 class bsRenderable;
-class bsMesh;
+class bsMeshRenderer;
 class bsPrimitive;
 class bsDx11Renderer;
 class bsShaderManager;
@@ -210,7 +210,7 @@ private:
 
 	bsFrameStats		mFrameStats;
 
-	std::unordered_map<const bsMesh*, std::vector<const bsEntity*>>		mMeshesToDraw;
+	std::unordered_map<const bsMeshRenderer*, std::vector<const bsEntity*>>		mMeshesToDraw;
 	std::unordered_map<const bsLineRenderer*, std::vector<const bsEntity*>>	mLinesToDraw;
 	std::vector<std::pair<const bsLight*, XMFLOAT3>>	mLightPositionPairs;
 

@@ -17,8 +17,9 @@ class bsLight;
 class bsCamera;
 class bsText3D;
 class bsScene;
+class bsMeshRenderer;
 
-typedef std::shared_ptr<bsMesh> bsSharedMesh;
+//typedef std::shared_ptr<bsMesh> bsSharedMesh;
 
 
 /*	Entities are used to represent an object in 3D space which can have multiple components
@@ -52,7 +53,7 @@ public:
 	/*	Attaches a component to this entity.
 	*/
 	void attachRigidBody(hkpRigidBody& rigidBody);
-	void attachMesh(const bsSharedMesh& mesh);
+	void attachMeshRenderer(bsMeshRenderer& mesh);
 	void attachLight(bsLight& light);
 	void attachLineRenderer(bsLineRenderer& lineRenderer);
 	void attachCamera(bsCamera& camera);
@@ -61,7 +62,7 @@ public:
 	/*	Detatches a component from this entity. This deletes the component.
 	*/
 	void detachRigidBody();
-	void detachMesh();
+	void detachMeshRenderer();
 	void detachLight();
 	void detachLineRenderer();
 	void detachCamera();
@@ -72,7 +73,7 @@ public:
 	*/
 	const bsTransform& getTransform() const;
 	const hkpRigidBody* getRigidBody() const;
-	const bsSharedMesh& getMesh() const;
+	const bsMeshRenderer* getMeshRenderer() const;
 	const bsLight* getLight() const;
 	const bsLineRenderer* getLineRenderer() const;
 	const bsCamera* getCamera() const;
@@ -83,7 +84,7 @@ public:
 	*/
 	bsTransform& getTransform();
 	hkpRigidBody* getRigidBody();
-	bsSharedMesh& getMesh();
+	bsMeshRenderer* getMeshRenderer();
 	bsLight* getLight();
 	bsLineRenderer* getLineRenderer();
 	bsCamera* getCamera();
@@ -99,6 +100,7 @@ public:
 		in a scene.
 	*/
 	const bsScene* getScene() const;
+	bsScene* getScene();
 
 	void addedToScene(bsScene& scene, unsigned int id);
 	void removedFromScene(bsScene& scene);
@@ -127,7 +129,7 @@ private:
 	*/
 	bsCollision::Sphere		mBoundingSphere;
 
-	bsSharedMesh			mMesh;
+	bsMeshRenderer*			mMeshRenderer;
 	bsLineRenderer*			mLineRenderer;
 	bsLight*				mLight;
 	bsCamera*				mCamera;

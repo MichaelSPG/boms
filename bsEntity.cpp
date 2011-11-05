@@ -15,6 +15,7 @@
 #include "bsConvert.h"
 #include "bsScene.h"
 #include "bsMesh.h"
+#include "bsMeshRenderer.h"
 
 
 #pragma warning(push)
@@ -24,6 +25,7 @@
 
 bsEntity::bsEntity()
 	: mTransform(this)
+	, mMeshRenderer(nullptr)
 	, mLineRenderer(nullptr)
 	, mLight(nullptr)
 	, mCamera(nullptr)
@@ -91,12 +93,13 @@ void bsEntity::attachRigidBody(hkpRigidBody& rigidBody)
 
 void bsEntity::attachMesh(const bsSharedMesh& mesh)
 {
-	BS_ASSERT2(!mMesh, "Trying to attach a mesh, but a mesh is already attached");
+	BS_ASSERT2(!mMeshRenderer, "Trying to attach a mesh renderer, but a mesh renderer is"
+		" already attached");
 
-	mMesh = mesh;
-	mMesh->attachedToEntity(*this);
+	mMeshRenderer = &meshRenderer;
+	mMeshRenderer->getMesh()->attachedToEntity(*this);
 
-	updateBoundingSphere(mesh->getBoundingSphere());
+	updateBoundingSphere(meshRenderer.getMesh()->getBoundingSphere());
 }
 
 void bsEntity::attachLight(bsLight& light)
@@ -149,11 +152,11 @@ void bsEntity::detachRigidBody()
 	mRigidBody = nullptr;
 }
 
-void bsEntity::detachMesh()
+void bsEntity::detachMeshRenderer()
 {
-	BS_ASSERT2(mMesh, "Trying to detach a mesh, but no mesh is attached");
+	BS_ASSERT2(mMeshRenderer, "Trying to detach a mesh renderer, but no mesh renderer is attached");
 
-	mMesh.reset();
+	delete mMeshRenderer;
 
 	calculateLocalBoundingSphere();
 }
@@ -221,14 +224,14 @@ const hkpRigidBody* bsEntity::getRigidBody() const
 	return mRigidBody;
 }
 
-bsSharedMesh& bsEntity::getMesh()
+bsMeshRenderer* bsEntity::getMeshRenderer()
 {
-	return mMesh;
+	return mMeshRenderer;
 }
 
-const bsSharedMesh& bsEntity::getMesh() const
+const bsMeshRenderer* bsEntity::getMeshRenderer() const
 {
-	return mMesh;
+	return mMeshRenderer;
 }
 
 bsLight* bsEntity::getLight()
@@ -297,6 +300,11 @@ const bsScene* bsEntity::getScene() const
 	return mScene;
 }
 
+bsScene* bsEntity::getScene()
+{
+	return mScene;
+}
+
 void bsEntity::updateBoundingSphere(const bsCollision::Sphere& newSphereToInclude)
 {
 	//If the new sphere is completely contained by the current bounding sphere, it does
@@ -314,10 +322,10 @@ void bsEntity::calculateLocalBoundingSphere()
 	bsCollision::Sphere newBoundingSphere;
 	newBoundingSphere.positionAndRadius = XMVectorSet(0.0f, 0.0f, 0.0f, FLT_MIN);
 
-	if (mMesh)
+	if (mMeshRenderer)
 	{
 		newBoundingSphere = bsCollision::mergeSpheres(newBoundingSphere,
-			mMesh->getBoundingSphere());
+			mMeshRenderer->getMesh()->getBoundingSphere());
 	}
 	if (mLight)
 	{

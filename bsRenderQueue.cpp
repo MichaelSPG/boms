@@ -7,6 +7,7 @@
 #include "bsCamera.h"
 #include "bsEntity.h"
 #include "bsMesh.h"
+#include "bsMeshRenderer.h"
 #include "bsLineRenderer.h"
 #include "bsLight.h"
 
@@ -256,17 +257,17 @@ void bsRenderQueue::sortRenderables(const bsEntity** entities, unsigned int enti
 	{
 		const bsEntity& entity = *entities[i];
 
-		const bsSharedMesh& mesh = entity.getMesh();
-		if (mesh)
+		const bsMeshRenderer* meshRenderer = entity.getMeshRenderer();
+		if (meshRenderer)
 		{
-			auto finder = mMeshesToDraw.find(mesh.get());
+			auto finder = mMeshesToDraw.find(meshRenderer);
 
 			if (finder == mMeshesToDraw.end())
 			{
 				//Not found, create it
 				std::vector<const bsEntity*> meshEntities(1);
 				meshEntities[0] = &entity;
-				mMeshesToDraw.insert(std::make_pair(mesh.get(), meshEntities));
+				mMeshesToDraw.insert(std::make_pair(meshRenderer, meshEntities));
 			}
 			else
 			{
@@ -330,8 +331,8 @@ void bsRenderQueue::drawMeshes()
 
 	for (auto itr = mMeshesToDraw.begin(), end = mMeshesToDraw.end(); itr != end; ++itr)
 	{
-		const bsMesh* mesh = itr->first;
-		if (!mesh->hasFinishedLoading())
+		const bsMeshRenderer* meshRenderer = itr->first;
+		if (!meshRenderer->hasFinishedLoading())
 		{
 			continue;
 		}
@@ -351,7 +352,7 @@ void bsRenderQueue::drawMeshes()
 			bsMath::XMFloat4x4Transpose(xmf4x4);
 			setWorldConstantBuffer(xmf4x4);
 
-			mesh->draw(mDx11Renderer);
+			meshRenderer->draw(mDx11Renderer);
 			*/
 
 
@@ -373,16 +374,16 @@ void bsRenderQueue::drawMeshes()
 			//XMStoreFloat4x4(&xmf4x4, );
 			setWorldConstantBuffer(entities[i]->getTransform().getTransposedTransform());
 
-			mesh->draw(mDx11Renderer);
+			meshRenderer->draw(mDx11Renderer);
 
-			const unsigned int triangleCount = mesh->getTriangleCount();
+			const unsigned int triangleCount = meshRenderer->getTriangleCount();
 			mFrameStats.totalTrianglesDrawn += triangleCount;
 			mFrameStats.totalTrianglesDrawnNotInstanced += triangleCount;
 		}
 	}
 }
 
-void drawMeshInstanced(const bsDx11Renderer& renderer, const bsMesh& mesh,
+void drawMeshInstanced(const bsDx11Renderer& renderer, const bsMeshRenderer& meshRenderer,
 	const XMMATRIX* transforms, unsigned int transformCount);
 
 void bsRenderQueue::drawMeshesInstanced()
@@ -400,16 +401,16 @@ void bsRenderQueue::drawMeshesInstanced()
 
 	for (auto itr = mMeshesToDraw.begin(), end = mMeshesToDraw.end(); itr != end; ++itr)
 	{
-		const bsMesh& mesh = *itr->first;
-		if (!mesh.hasFinishedLoading())
+		const bsMeshRenderer& meshRenderer = *itr->first;
+		if (!meshRenderer.hasFinishedLoading())
 		{
 			continue;
 		}
 
 		const std::vector<const bsEntity*>& entities = itr->second;
 		mFrameStats.totalMeshesDrawn += entities.size();
-		mFrameStats.totalTrianglesDrawn += mesh.getTriangleCount();
-		mFrameStats.totalTrianglesDrawnNotInstanced += mesh.getTriangleCount() * entities.size();
+		mFrameStats.totalTrianglesDrawn += meshRenderer.getTriangleCount();
+		mFrameStats.totalTrianglesDrawnNotInstanced += meshRenderer.getTriangleCount() * entities.size();
 
 		transforms.clear();
 		transforms.reserve(entities.size());
@@ -422,7 +423,7 @@ void bsRenderQueue::drawMeshesInstanced()
 	}
 }
 
-void drawMeshInstanced(const bsDx11Renderer& renderer, const bsMesh& mesh,
+void drawMeshInstanced(const bsDx11Renderer& renderer, const bsMeshRenderer& meshRenderer,
 	const XMMATRIX* transforms, unsigned int transformCount)
 {
 	D3D11_BUFFER_DESC instanceBufferDesc = { 0 };
@@ -437,7 +438,7 @@ void drawMeshInstanced(const bsDx11Renderer& renderer, const bsMesh& mesh,
 	HRESULT hr = renderer.getDevice()->CreateBuffer(&instanceBufferDesc, &instanceData, &instanceBuffer);
 	BS_ASSERT(SUCCEEDED(hr));
 
-	mesh.drawInstanced(*renderer.getDeviceContext(), instanceBuffer, transformCount);
+	meshRenderer.drawInstanced(*renderer.getDeviceContext(), instanceBuffer, transformCount);
 
 
 	instanceBuffer->Release();
@@ -529,6 +530,11 @@ void drawInstancedLight(const bsDx11Renderer& renderer, const bsLight& light,
 
 void bsRenderQueue::drawLightsInstanced()
 {
+	if (mLightPositionPairs.empty())
+	{
+		return;
+	}
+
 	mShaderManager->setPixelShader(mLightInstancedPixelShader);
 	mShaderManager->setVertexShader(mLightInstancedVertexShader);
 

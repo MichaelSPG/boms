@@ -12,6 +12,7 @@
 #include "bsEntity.h"
 #include "bsMeshCache.h"
 #include "bsMath.h"
+#include "bsMeshRenderer.h"
 
 
 bsEntity* bsPrimitiveCreator::createSphere(float radius)
