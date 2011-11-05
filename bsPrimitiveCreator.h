@@ -4,17 +4,20 @@
 
 class bsEntity;
 class bsMeshCache;
+class bsTextureCache;
 
 
 class bsPrimitiveCreator
 {
 public:
-	bsPrimitiveCreator(bsMeshCache& meshCache)
+	bsPrimitiveCreator(bsMeshCache& meshCache, bsTextureCache& textureCache)
 		: mMeshCache(meshCache)
+		, mTextureCache(textureCache)
 	{}
 
 	bsPrimitiveCreator(const bsPrimitiveCreator& other)
 		: mMeshCache(other.mMeshCache)
+		, mTextureCache(other.mTextureCache)
 	{}
 
 	/*	Creates an entity with a sphere mesh and rigid body with radius equal to input.
@@ -40,5 +43,6 @@ public:
 private:
 	bsPrimitiveCreator& operator=(const bsPrimitiveCreator&);
 
-	bsMeshCache& mMeshCache;
+	bsMeshCache&	mMeshCache;
+	bsTextureCache&	mTextureCache;
 };

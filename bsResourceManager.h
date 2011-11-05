@@ -8,6 +8,7 @@
 
 class bsDx11Renderer;
 class bsFileIoManager;
+class bsTextureCache;
 
 
 /*	Contains all the resource managers used by the engine.
@@ -34,6 +35,8 @@ public:
 
 	void initTextManager(bsDx11Renderer* dx11Renderer);
 
+	void initTextureCache(ID3D11Device& device, bsFileIoManager& fileIoManager);
+
 	inline bsFileSystem* getFileSystem() const
 	{
 		return mFileSystem;
@@ -53,10 +56,17 @@ public:
 	{
 		return mTextManager;
 	}
+
+	inline bsTextureCache* getTextureCache() const
+	{
+		return mTextureCache;
+	}
+
 	
 private:
 	bsFileSystem*		mFileSystem;
 	bsShaderManager*	mShaderManager;
 	bsMeshCache*		mMeshCache;
 	bsTextManager*		mTextManager;
+	bsTextureCache*		mTextureCache;
 };

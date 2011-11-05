@@ -203,6 +203,8 @@ private:
 	std::shared_ptr<bsPixelShader>	mMeshPixelShader;
 	std::shared_ptr<bsVertexShader>	mMeshVertexShader;
 
+	std::shared_ptr<bsPixelShader>	mInstancedTexturedMeshPixelShader;
+
 	std::shared_ptr<bsPixelShader>	mLightPixelShader;
 	std::shared_ptr<bsVertexShader>	mLightVertexShader;
 	std::shared_ptr<bsPixelShader>	mLightInstancedPixelShader;

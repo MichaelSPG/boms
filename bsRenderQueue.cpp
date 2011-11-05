@@ -95,6 +95,7 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 
 	mMeshInstancedVertexShader = mShaderManager->getVertexShader("MeshInstanced.fx", layout, 7);
 	mMeshInstancedPixelShader = mShaderManager->getPixelShader("MeshInstanced.fx");
+	mInstancedTexturedMeshPixelShader = mShaderManager->getPixelShader("MeshInstancedTextured.fx");
 
 	{
 		D3D11_INPUT_ELEMENT_DESC layoutNotInstanced[3] =
@@ -419,7 +420,16 @@ void bsRenderQueue::drawMeshesInstanced()
 			transforms.push_back(entities[i]->getTransform().getTransposedTransform());
 		}
 
-		drawMeshInstanced(*mDx11Renderer, mesh, transforms.data(), transforms.size());
+		if (meshRenderer.getMaterial().diffuse)
+		{
+			mShaderManager->setPixelShader(mInstancedTexturedMeshPixelShader);
+		}
+		else
+		{
+			mShaderManager->setPixelShader(mMeshInstancedPixelShader);
+		}
+
+		drawMeshInstanced(*mDx11Renderer, meshRenderer, transforms.data(), transforms.size());
 	}
 }
 

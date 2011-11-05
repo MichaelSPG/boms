@@ -4,6 +4,8 @@
 
 #include "bsLog.h"
 #include "bsAssert.h"
+#include "bsTextureCache.h"
+#include "bsDx11Renderer.h"
 
 
 bsResourceManager::bsResourceManager()
@@ -11,6 +13,7 @@ bsResourceManager::bsResourceManager()
 	, mShaderManager(nullptr)
 	, mMeshCache(nullptr)
 	, mTextManager(nullptr)
+	, mTextureCache(nullptr)
 {
 }
 
@@ -32,6 +35,10 @@ bsResourceManager::~bsResourceManager()
 	{
 		delete mTextManager;
 	}
+	if (mTextureCache)
+	{
+		delete mTextureCache;
+	}
 }
 
 void bsResourceManager::initAll(const std::string& fileSystemBasePath,
@@ -41,6 +48,7 @@ void bsResourceManager::initAll(const std::string& fileSystemBasePath,
 	initShaderManager(dx11Renderer);
 	initMeshCache(dx11Renderer, fileIoManager);
 	initTextManager(dx11Renderer);
+	initTextureCache(*dx11Renderer->getDevice(), fileIoManager);
 }
 
 void bsResourceManager::initFileSystem(const std::string& basePath)
@@ -84,4 +92,14 @@ void bsResourceManager::initTextManager(bsDx11Renderer* dx11Renderer)
 		"memory will leak and other problems may arise");
 
 	mTextManager = new bsTextManager(dx11Renderer);
+}
+
+void bsResourceManager::initTextureCache(ID3D11Device& device, bsFileIoManager& fileIoManager)
+{
+	BS_ASSERT2(!mTextureCache, "Attempting to initialize texture cache multiple times, "
+		"memory will leak and other problems may arise");
+
+	BS_ASSERT2(mFileSystem != nullptr, "File system must be initialized before texture cache");
+
+	mTextureCache = new bsTextureCache(device, *mFileSystem, fileIoManager);
 }

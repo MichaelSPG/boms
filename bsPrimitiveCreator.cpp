@@ -11,6 +11,7 @@
 
 #include "bsEntity.h"
 #include "bsMeshCache.h"
+#include "bsTextureCache.h"
 #include "bsMath.h"
 #include "bsMeshRenderer.h"
 
@@ -18,7 +19,8 @@
 bsEntity* bsPrimitiveCreator::createSphere(float radius)
 {
 	bsEntity* entity = new bsEntity();
-	entity->attachMesh(mMeshCache.getMesh("sphere_1m_d.bsm"));
+	entity->attachMeshRenderer(*new bsMeshRenderer(mMeshCache.getMesh("sphere_1m_d.bsm"),
+		mTextureCache.getDefaultTexture()));
 
 	hkpRigidBodyCinfo rbCinfo;
 	rbCinfo.m_shape = new hkpSphereShape(radius);
@@ -34,7 +36,8 @@ bsEntity* bsPrimitiveCreator::createSphere(float radius)
 bsEntity* bsPrimitiveCreator::createBox(const XMVECTOR& halfExtents)
 {
 	bsEntity* entity = new bsEntity();
-	entity->attachMesh(mMeshCache.getMesh("unit_cube.bsm"));
+	entity->attachMeshRenderer(*new bsMeshRenderer(mMeshCache.getMesh("unit_cube.bsm"),
+		mTextureCache.getDefaultTexture()));
 
 	hkVector4 halfExt(bsMath::toHK(halfExtents));
 	//Subtract convex radius from the half extents to prevent the box from
@@ -57,7 +60,8 @@ bsEntity* bsPrimitiveCreator::createBox(const XMVECTOR& halfExtents)
 bsEntity* bsPrimitiveCreator::createPlane(const XMVECTOR& halfExtents)
 {
 	bsEntity* entity = new bsEntity();
-	entity->attachMesh(mMeshCache.getMesh("plane_1m.bsm"));
+	entity->attachMeshRenderer(*new bsMeshRenderer(mMeshCache.getMesh("plane_1m.bsm"),
+		mTextureCache.getDefaultTexture()));
 
 	hkVector4 halfExt;
 	halfExt.load<4>(halfExtents.m128_f32);
