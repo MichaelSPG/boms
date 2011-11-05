@@ -139,8 +139,15 @@ public:
 		mScene = scene;
 	}
 
+	/*	Cast a ray from a point on the screen into the world.
+		screenPoint should be relative to the screen's size. If the screen resolution is
+		1024x1024, the middle of the screen is 512,512, NOT 0.5,0.5.
+
+		destinationOut and originOut are output parameters representing the start and the
+		end points of the ray.
+	*/
 	hkpWorldRayCastOutput screenPointToWorldRay(const XMFLOAT2& screenPoint,
-		float rayLength, XMVECTOR& destinationOut, XMVECTOR& originOut) const;
+		float rayLength, XMVECTOR* destinationOut, XMVECTOR* originOut) const;
 
 	/*	Returns the frustum with planes in local space.
 	*/

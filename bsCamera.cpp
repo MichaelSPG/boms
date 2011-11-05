@@ -113,7 +113,7 @@ XMMATRIX bsCamera::getView() const
 }
 
 hkpWorldRayCastOutput bsCamera::screenPointToWorldRay(const XMFLOAT2& screenPoint,
-	float rayLength, XMVECTOR& destinationOut, XMVECTOR& originOut) const
+	float rayLength, XMVECTOR* destinationOut, XMVECTOR* originOut) const
 {
 	//Build view matrix with inverted rotation.
 	const XMVECTOR& cameraPosition = mEntity->getTransform().getPosition();
@@ -138,8 +138,8 @@ hkpWorldRayCastOutput bsCamera::screenPointToWorldRay(const XMFLOAT2& screenPoin
 	bsRayCastUtil::castRay(screenPointObjectSpace, rayDirection, rayLength,
 		mScene->getPhysicsWorld(), output, rayDestination);
 
-	originOut = screenPointObjectSpace;
-	destinationOut = rayDestination;
+	*originOut = screenPointObjectSpace;
+	*destinationOut = rayDestination;
 	return output;
 }
 
