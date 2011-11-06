@@ -88,12 +88,9 @@ void bsFileLoader::createHandle()
 	{
 		//Probably invalid file/not permission to access.
 
-#ifdef BS_DEBUG
-		std::stringstream ss("Failed to create file handle for \'");
-		ss << mFileName << "\': " << bsWindowsUtils::winApiErrorCodeToString(GetLastError());
-
-		bsLog::logMessage(ss.str().c_str(), bsLog::SEV_ERROR);
-#endif
+		bsLog::logf(bsLog::SEV_ERROR, "Failed to create file handle for '%s'."
+			" Error message: %s", mFileName.c_str(),
+			bsWindowsUtils::winApiErrorCodeToString(GetLastError()).c_str());
 
 		mLoadState = FAILED;
 
@@ -138,14 +135,9 @@ void bsFileLoader::loadFileAsync()
 
 		if (readFileSuccess == 0)
 		{
-#ifdef BS_DEBUG
-			std::string ss("Failed to read file \'");
-			ss.append(mFileName);
-			ss.append("\': ");
-			ss.append(bsWindowsUtils::winApiErrorCodeToString(GetLastError()));
-
-			bsLog::logMessage(ss.c_str(), bsLog::SEV_ERROR);
-#endif
+			bsLog::logf(bsLog::SEV_ERROR, "Failed to read file '%s'. Error message: %s",
+				mFileName.c_str(),
+				bsWindowsUtils::winApiErrorCodeToString(GetLastError()).c_str());
 
 			mLoadState = FAILED;
 			mCompletionCallback(*this);
@@ -180,14 +172,9 @@ void bsFileLoader::loadFileBlocking()
 
 		if (readFileSuccess == 0)
 		{
-#ifdef BS_DEBUG
-			std::string ss("Failed to read file \'");
-			ss.append(mFileName);
-			ss.append("\': ");
-			ss.append(bsWindowsUtils::winApiErrorCodeToString(GetLastError()));
-
-			bsLog::logMessage(ss.c_str(), bsLog::SEV_ERROR);
-#endif
+			bsLog::logf(bsLog::SEV_ERROR, "Failed to read file '%s'. Error message: %s",
+				mFileName.c_str(),
+				bsWindowsUtils::winApiErrorCodeToString(GetLastError()).c_str());
 
 			mLoadState = FAILED;
 		}
@@ -213,14 +200,9 @@ void WINAPI bsFileLoader::loadingFinishedCallback(DWORD errorCode, DWORD numByte
 	{
 		//Something went wrong while loading.
 
-#ifdef BS_DEBUG
-		std::string errorMessage("An error occured while reading file \'");
-		errorMessage.append(loader.mFileName);
-		errorMessage.append("\': ");
-		errorMessage.append(bsWindowsUtils::winApiErrorCodeToString(GetLastError()));
-
-		bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
-#endif
+		bsLog::logf(bsLog::SEV_ERROR, "An error occured while reading file '%s'."
+			" Error message: %s", loader.mFileName.c_str(),
+			bsWindowsUtils::winApiErrorCodeToString(GetLastError()).c_str());
 
 		loader.mLoadState = FAILED;
 		loader.mCompletionCallback(loader);
@@ -236,14 +218,9 @@ void WINAPI bsFileLoader::loadingFinishedCallback(DWORD errorCode, DWORD numByte
 	{
 		//Overlapped operation failed.
 
-#ifdef BS_DEBUG
-		std::string errorMessage("An error occured getting overlapped result \'");
-		errorMessage.append(loader.mFileName);
-		errorMessage.append("\': ");
-		errorMessage.append(bsWindowsUtils::winApiErrorCodeToString(GetLastError()));
-
-		bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
-#endif
+		bsLog::logf(bsLog::SEV_ERROR, "An error occured getting overlapped result '%s'."
+			" Error message: %s", loader.mFileName.c_str(),
+			bsWindowsUtils::winApiErrorCodeToString(GetLastError()).c_str());
 
 		loader.mLoadState = FAILED;
 		loader.mCompletionCallback(loader);
@@ -255,10 +232,5 @@ void WINAPI bsFileLoader::loadingFinishedCallback(DWORD errorCode, DWORD numByte
 	loader.mLoadState = SUCCEEDED;
 	loader.mCompletionCallback(loader);
 
-#ifdef BS_DEBUG
-	std::string message("Successfully loaded \'");
-	message.append(loader.mFileName);
-	message.append("\'");
-	bsLog::logMessage(message.c_str(), bsLog::SEV_INFORMATIONAL);
-#endif
+	bsLog::logf(bsLog::SEV_INFO, "Successfully loaded '%s'", loader.mFileName.c_str());
 }

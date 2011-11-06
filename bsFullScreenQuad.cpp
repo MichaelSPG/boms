@@ -44,7 +44,7 @@ bsFullScreenQuad::bsFullScreenQuad(ID3D11Device* const device)
 	if (FAILED(device->CreateBuffer(&bufferDescription, &initData,
 		&mVertexBuffer)))
 	{
-		bsLog::logMessage("Failed to create vertex buffer for fullscreen quad",
+		bsLog::log("Failed to create vertex buffer for fullscreen quad",
 			bsLog::SEV_ERROR);
 	}
 
@@ -56,7 +56,7 @@ bsFullScreenQuad::bsFullScreenQuad(ID3D11Device* const device)
 	if (FAILED(device->CreateBuffer(&bufferDescription, &initData,
 		&mIndexBuffer)))
 	{
-		bsLog::logMessage("Failed to create index buffer for fullscreen quad",
+		bsLog::log("Failed to create index buffer for fullscreen quad",
 			bsLog::SEV_ERROR);
 	}
 
@@ -73,7 +73,7 @@ bsFullScreenQuad::bsFullScreenQuad(ID3D11Device* const device)
 	
 	if (FAILED(device->CreateSamplerState(&samplerDesc, &mSamplerState)))
 	{
-		bsLog::logMessage("Failed to create sampler state for fullscreen quad",
+		bsLog::log("Failed to create sampler state for fullscreen quad",
 			bsLog::SEV_ERROR);
 	}
 

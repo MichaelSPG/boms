@@ -93,37 +93,21 @@ public:
 		{
 		case MESSAGE_ERROR:
 		case MESSAGE_ASSERT:
-			bsLog::logMessage(correctedMessage.c_str(), bsLog::SEV_ERROR);
+			bsLog::log(correctedMessage.c_str(), bsLog::SEV_ERROR);
 			return 1;
 
 		case MESSAGE_WARNING:
-			bsLog::logMessage(correctedMessage.c_str(), bsLog::SEV_WARNING);
+			bsLog::log(correctedMessage.c_str(), bsLog::SEV_WARNING);
 			break;
 
 		case MESSAGE_REPORT:
-			bsLog::logMessage(correctedMessage.c_str(), bsLog::SEV_NOTICE);
+			bsLog::log(correctedMessage.c_str(), bsLog::SEV_INFO);
 			break;
 		}
 
 		return 0;
 	}
 };
-
-/*
-static void HK_CALL errorReport(const char* message, void* userArgGivenToInit)
-{
-	//Havok likes to end its messages with \n, so we remove that here before sending it
-	//to the log.
-	std::string correctedMessage("Havok: ");
-	correctedMessage.append(message);
-
-	while (correctedMessage.back() == '\n')
-	{
-		correctedMessage.pop_back();
-	}
-	bsLog::logMessage(correctedMessage.c_str(), bsLog::SEV_WARNING);
-}
-*/
 
 bsHavokManager::bsHavokManager()
 	: mContext(nullptr)

@@ -31,8 +31,9 @@ bsShaderManager::bsShaderManager(bsDx11Renderer& dx11Renderer, const bsFileSyste
 	//failed to create a directory with the same name.
 	if (!bsFileUtil::directoryExists(mPrecompiledShaderDirectory.c_str()))
 	{
-		bsLog::logMessage("Unable to create precompiled shader directory. Please ensure"
-			" that the directory name is not used by a file", bsLog::SEV_CRITICAL);
+		bsLog::logf(bsLog::SEV_CRICICAL, "Unable to create precompiled shader directory"
+			" '%s'. Please ensure that the directory name is not used by a file",
+			mPrecompiledShaderDirectory.c_str());
 
 		BS_ASSERT2(false, "Unable to create precompiled shader directory. Please ensure"
 			" that the directory name is not used by a file");
@@ -70,14 +71,10 @@ std::shared_ptr<bsVertexShader> bsShaderManager::getVertexShader(const std::stri
 	{
 		//The path for the given mesh name was not found
 
-		std::string message("bsShaderManager: '");
-		message += fileName + "' does not exist in any known resource paths,"
-			" it will not be created";
+		bsLog::logf(bsLog::SEV_ERROR, "Shader '%s' does not exist in any known resource"
+			"paths, it will not be created", fileName.c_str());
 
-		BS_ASSERT2(false, message.c_str());
-
-		//This is useful info even if asserts are disabled, so log it again just in case.
-		bsLog::logMessage(message.c_str(), bsLog::SEV_ERROR);
+		BS_ASSERT2(false, "Failed to load shader, file not found");
 
 		return nullptr;
 	}
@@ -156,11 +153,10 @@ std::shared_ptr<bsVertexShader> bsShaderManager::createVertexShaderFromBlob(ID3D
 			blob->Release();
 		}
 
-		std::string errorMessage("Failed to create vertex shader '");
-		errorMessage + fileName + '\'';
-		bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
+		bsLog::logf(bsLog::SEV_ERROR, "Failed to create vertex shader '%s'",
+			fileName.c_str());
 
-		BS_ASSERT2(false, errorMessage.c_str());
+		BS_ASSERT2(false, "Failed to create vertex shader");
 
 		return nullptr;
 	}
@@ -204,10 +200,7 @@ std::shared_ptr<bsVertexShader> bsShaderManager::createVertexShaderFromBlob(ID3D
 
 	mVertexShaders.insert(vs);
 
-	std::string logMessage("Created vertex shader '");
-	logMessage.append(fileName);
-	logMessage.append("\'");
-	bsLog::logMessage(logMessage.c_str(), bsLog::SEV_INFORMATIONAL);
+	bsLog::logf(bsLog::SEV_INFO, "Created vertex shader '%s'", fileName.c_str());
 
 	return vs.second;
 }
@@ -254,14 +247,10 @@ std::shared_ptr<bsPixelShader> bsShaderManager::getPixelShader(const std::string
 
 	if (!filePath.length())
 	{
-		std::string message("'");
-		message += fileName + "' does not exist in any known resource paths,"
-			" it will not be created";
+		bsLog::logf(bsLog::SEV_ERROR, "'%s' does not exist in any known resource paths,"
+			" it will not be created", fileName.c_str());
 
-		BS_ASSERT2(false, message.c_str());
-
-		//This is useful info even if asserts are disabled, so log it again just in case.
-		bsLog::logMessage(message.c_str(), bsLog::SEV_ERROR);
+		BS_ASSERT2(false, "Failed to create pixel shader, file not found");
 
 		return nullptr;
 	}
@@ -356,11 +345,8 @@ std::shared_ptr<bsPixelShader> bsShaderManager::createPixelShaderFromBlob(ID3DBl
 
 	mPixelShaders.insert(ps);
 
-	std::string logMessage("Created pixel shader \'");
-	logMessage.append(fileName);
-	logMessage.append("\'");
-	bsLog::logMessage(logMessage.c_str(), bsLog::SEV_INFORMATIONAL);
-
+	bsLog::logf(bsLog::SEV_INFO, "Created pixel shader '%s'", fileName.c_str());
+	
 	return ps.second;
 }
 

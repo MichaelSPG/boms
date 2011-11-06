@@ -98,7 +98,7 @@ bool bsLoadSerializedMesh(const std::string& fileName, bsSerializedMesh& meshOut
 		errorMessage.append(fileName);
 		errorMessage.append("\'");
 #ifndef BS_MESH_SERIALIZER_EXTERNAL
-		bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
+		bsLog::log(errorMessage.c_str(), bsLog::SEV_ERROR);
 #else
 		bsMeshSerializerLogErrorMessage(errorMessage.c_str());
 #endif
@@ -113,7 +113,7 @@ bool bsLoadSerializedMesh(const std::string& fileName, bsSerializedMesh& meshOut
 		errorMessage.append(fileName);
 		errorMessage.append("\' was created with an old version of the serializer.");
 #ifndef BS_MESH_SERIALIZER_EXTERNAL
-		bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
+		bsLog::log(errorMessage.c_str(), bsLog::SEV_ERROR);
 #else
 		bsMeshSerializerLogErrorMessage(errorMessage.c_str());
 #endif
@@ -142,7 +142,7 @@ bool bsLoadSerializedMesh(const std::string& fileName, bsSerializedMesh& meshOut
 		errorMessage.append(fileName);
 		errorMessage.append("\'");
 #ifndef BS_MESH_SERIALIZER_EXTERNAL
-		bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
+		bsLog::log(errorMessage.c_str(), bsLog::SEV_ERROR);
 #else
 		bsMeshSerializerLogErrorMessage(errorMessage.c_str());
 #endif
@@ -190,7 +190,7 @@ bool bsLoadSerializedMesh(const std::string& fileName, bsSerializedMesh& meshOut
 		errorMessage.append(fileName);
 		errorMessage.append("\'");
 #ifndef BS_MESH_SERIALIZER_EXTERNAL
-		bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
+		bsLog::log(errorMessage.c_str(), bsLog::SEV_ERROR);
 #else
 		bsMeshSerializerLogErrorMessage(errorMessage.c_str());
 #endif
@@ -226,7 +226,7 @@ bool bsLoadSerializedMeshFromMemory(const char* data, unsigned int dataSize,
 	if (memcmp(header, "bsm", 3) != 0)
 	{
 #ifndef BS_MESH_SERIALIZER_EXTERNAL
-		bsLog::logMessage("Encountered a bad file header when loading mesh from memory",
+		bsLog::log("Encountered a bad file header when loading mesh from memory",
 			bsLog::SEV_ERROR);
 #else
 		bsMeshSerializerLogErrorMessage("Encountered a bad file header when loading mesh"
@@ -238,7 +238,7 @@ bool bsLoadSerializedMeshFromMemory(const char* data, unsigned int dataSize,
 	if (header[3] != kSerializerVersion)
 	{
 #ifndef BS_MESH_SERIALIZER_EXTERNAL
-		bsLog::logMessage("Tried to load a mesh which was created with an old "
+		bsLog::log("Tried to load a mesh which was created with an old "
 			"version of the mesh serializer.",
 			bsLog::SEV_ERROR);
 #else
@@ -260,7 +260,7 @@ bool bsLoadSerializedMeshFromMemory(const char* data, unsigned int dataSize,
 	if (totalDynamicMemorySize + 16 + sizeof(XMFLOAT4) != dataSize)
 	{
 #ifndef BS_MESH_SERIALIZER_EXTERNAL
-		bsLog::logMessage("Memory size mismatch when trying to load a mesh from memory",
+		bsLog::log("Memory size mismatch when trying to load a mesh from memory",
 			bsLog::SEV_ERROR);
 #else
 		bsMeshSerializerLogErrorMessage("Memory size mismatch when trying to load a mesh"
@@ -461,7 +461,7 @@ bsCreateSerializedMeshFlags bsCreateSerializedMesh(const std::string& fileName,
 		std::string errorMessage("Error loading scene: ");
 		errorMessage.append(importer.GetErrorString());
 #ifndef BS_MESH_SERIALIZER_EXTERNAL
-		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
+		bsLog::log(errorMessage.c_str(), pantheios::SEV_ERROR);
 #else
 		bsMeshSerializerLogErrorMessage(errorMessage.c_str());
 #endif
@@ -476,7 +476,7 @@ bsCreateSerializedMeshFlags bsCreateSerializedMesh(const std::string& fileName,
 		errorMessage.append(fileName);
 		errorMessage.append("\' contains no meshes");
 #ifndef BS_MESH_SERIALIZER_EXTERNAL
-		bsLog::logMessage(errorMessage.c_str(), pantheios::SEV_ERROR);
+		bsLog::log(errorMessage.c_str(), pantheios::SEV_ERROR);
 #else
 		bsMeshSerializerLogErrorMessage(errorMessage.c_str());
 #endif
@@ -645,7 +645,7 @@ bsCreateSerializedMeshFlags parseData(const aiMesh* mesh, bsVertexBuffer& vertic
 	if (verticesOut.vertexCount == 0 || indicesOut.indexCount == 0)
 	{
 #ifndef BS_MESH_SERIALIZER_EXTERNAL
-		bsLog::logMessage("A mesh contains no vertices or indices",
+		bsLog::log("A mesh contains no vertices or indices",
 			pantheios::SEV_ERROR);
 #else
 		bsMeshSerializerLogErrorMessage("A mesh contains no vertices or indices");

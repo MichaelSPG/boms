@@ -39,12 +39,10 @@ void bsFileSystem::buildFileSystem()
 			else
 			{
 				//Duplicate file name name found, which is probably not intended.
-				std::string message("Duplicate file found, file name: '");
-				message += fileName + "' with path '" + pathName
-					+ "'. Will use previously found path '" + findResult->second
-					+ "' instead";
-
-				bsLog::logMessage(message.c_str(), bsLog::SEV_WARNING);
+				
+				bsLog::logf(bsLog::SEV_WARNING, "Duplicate file found, file name: '%s'"
+					" with path '%s'. Will use previously found path '%s' instead",
+					fileName.c_str(), pathName.c_str(), findResult->second.c_str());
 			}
 		}
 	}

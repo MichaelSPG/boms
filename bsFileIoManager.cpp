@@ -72,12 +72,14 @@ void bsFileIoManager::shutdown()
 		BOOL success = CancelIo(currentHandle);
 		if (success == 0)
 		{
-			bsLog::logMessage(bsWindowsUtils::winApiErrorCodeToString(GetLastError()).c_str());
+			bsLog::logf(bsLog::SEV_ERROR, "Cancellation of async I/O failed, error message: %s",
+				bsWindowsUtils::winApiErrorCodeToString(GetLastError()).c_str());
 		}
 		success = CloseHandle(currentHandle);
 		if (success == 0)
 		{
-			bsLog::logMessage(bsWindowsUtils::winApiErrorCodeToString(GetLastError()).c_str());
+			bsLog::logf(bsLog::SEV_ERROR, "Closing of handle failed, error message: %s",
+				bsWindowsUtils::winApiErrorCodeToString(GetLastError()).c_str());
 		}
 
 		delete mAsynchronousLoaders[i];

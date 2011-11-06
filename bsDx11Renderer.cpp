@@ -19,7 +19,7 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 
 	, mVsyncEnabled(true)
 {
-	bsLog::logMessage("Starting initialization of Direct3D 11");
+	bsLog::log("Starting initialization of Direct3D 11");
 
 	mRenderTargetClearColor[0] = mRenderTargetClearColor[1] = mRenderTargetClearColor[2] = 0.3f;
 	mRenderTargetClearColor[3] = 0.0f;
@@ -53,16 +53,16 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindo
 		debugString.c_str());
 #endif
 
-	bsLog::logMessage("DirectX initialization completed successfully");
+	bsLog::log("DirectX initialization completed successfully");
 }
 
 bsDx11Renderer::~bsDx11Renderer()
 {
-	bsLog::logMessage("Uninitializing DirectX", bsLog::SEV_NOTICE);
+	bsLog::log("Uninitializing DirectX");
 
 	destroyCurrentRenderWindow();
 
-	bsLog::logMessage("DirectX successfully uninitialized");
+	bsLog::log("DirectX successfully uninitialized");
 }
 
 bool bsDx11Renderer::createRenderWindow(HWND hWnd, int renderWindowWidth,
@@ -95,7 +95,7 @@ bool bsDx11Renderer::createRenderWindow(HWND hWnd, int renderWindowWidth,
 	};
 	D3D_FEATURE_LEVEL fl = D3D_FEATURE_LEVEL_10_0;
 
-	bsLog::logMessage("Creating D3D11 device and swap chain");
+	bsLog::log("Creating D3D11 device and swap chain");
 	if (FAILED(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, deviceFlags,
 		featureLevels, ARRAYSIZE(featureLevels), D3D11_SDK_VERSION, &swapChainDesc, &mSwapChain,
 		&mDevice, &fl, &mDeviceContext)))
@@ -106,8 +106,8 @@ bool bsDx11Renderer::createRenderWindow(HWND hWnd, int renderWindowWidth,
 	}
 
 	//Back buffer
+	bsLog::log("Creating back buffer");
 	ID3D11Texture2D* backBuffer = nullptr;
-	bsLog::logMessage("Creating back buffer");
 	if (FAILED(mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer)))
 	{
 		BS_ASSERT2(false, "Failed to create back buffer");
@@ -116,7 +116,7 @@ bool bsDx11Renderer::createRenderWindow(HWND hWnd, int renderWindowWidth,
 	}
 
 	
-	bsLog::logMessage("Creating back buffer render target view");
+	bsLog::log("Creating back buffer render target view");
 	if (FAILED(mDevice->CreateRenderTargetView(backBuffer, nullptr, &mBackBufferRenderTargetView)))
 	{
 		BS_ASSERT2(false, "Failed to create back buffer render target view");
@@ -140,7 +140,7 @@ bool bsDx11Renderer::createRenderWindow(HWND hWnd, int renderWindowWidth,
 	depthDesc.CPUAccessFlags = 0;
 	depthDesc.MiscFlags = 0;
 
-	bsLog::logMessage("Creating depth stencil texture");
+	bsLog::log("Creating depth stencil texture");
 	if (FAILED(mDevice->CreateTexture2D(&depthDesc, nullptr, &mDepthStencil)))
 	{
 		BS_ASSERT2(false, "Failed to create depth stencil texture");
@@ -175,7 +175,7 @@ bool bsDx11Renderer::createRenderWindow(HWND hWnd, int renderWindowWidth,
 	depthViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	depthViewDesc.Texture2D.MipSlice = 0;
 
-	bsLog::logMessage("Creating depth stencil view");
+	bsLog::log("Creating depth stencil view");
 	if (FAILED(mDevice->CreateDepthStencilView(mDepthStencil, &depthViewDesc,
 		&mDepthStencilView)))
 	{
@@ -259,24 +259,17 @@ HRESULT bsDx11Renderer::compileShader(const char* fileName, const char* entryPoi
 	{
 		if (errorBlob != nullptr)
 		{
-			std::string errorMessage("Failed to compile shader '");
-			errorMessage += fileName;
-			errorMessage += ". Error message: ";
-			errorMessage += (char*)errorBlob->GetBufferPointer();
-			
-			bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
+			bsLog::logf(bsLog::SEV_ERROR, "Failed to compile shader '%s. Error message: %s",
+				fileName, errorBlob->GetBufferPointer());
 
 			OutputDebugStringA((char*)errorBlob->GetBufferPointer());
 
-			BS_ASSERT2(false, errorMessage.c_str());
+			BS_ASSERT2(false, "Failed to compile shader");
 		}
 		else
 		{
-			std::string errorMessage("Failed to compile shader '");
-			errorMessage += fileName;
-			errorMessage += ". Error message: ";
+			bsLog::logf(bsLog::SEV_ERROR, "Failed to compile shader '%s'", fileName);
 
-			bsLog::logMessage(errorMessage.c_str(), bsLog::SEV_ERROR);
 		}
 	}
 

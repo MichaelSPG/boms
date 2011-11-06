@@ -22,11 +22,12 @@
 bsCore::bsCore(const bsCoreCInfo& cInfo)
 	: mCInfo(cInfo)
 {
-	bsLog::init(bsLog::SEV_DEBUG);
+	bsLog::init(fopen(cInfo.logFileFileName.c_str(), "w"), bsLog::SEV_DEBUG,
+		bsLog::TIMESTAMP_MILLISECS | bsLog::SEVERITY_AS_TEXT);
 
 	BS_ASSERT2(mCInfo.isOk(), "Invalid construction info was sent to bsCore");
 
-	bsLog::logMessage("Initializing core", bsLog::SEV_NOTICE);
+	bsLog::log("Initializing core");
 
 	mWindow = new bsWindow(cInfo.windowWidth, cInfo.windowHeight, cInfo.windowName,
 		cInfo.hInstance, cInfo.showCmd);
@@ -46,7 +47,7 @@ bsCore::bsCore(const bsCoreCInfo& cInfo)
 	mFileIoThread = new tbb::tbb_thread(std::bind(&bsFileIoManager::threadLoop, &mFileIoManager));
 	bsWindowsUtils::setThreadName(GetThreadId(mFileIoThread->native_handle()), "Background File Loader");
 
-	bsLog::logMessage("Initialization of core completed successfully", bsLog::SEV_NOTICE);
+	bsLog::log("Initialization of core completed successfully");
 }
 
 bsCore::~bsCore()
@@ -70,7 +71,7 @@ bsCore::~bsCore()
 
 	delete mWindow;
 
-	bsLog::logMessage("Core shut down successfully", bsLog::SEV_NOTICE);
+	bsLog::log("Core shut down successfully");
 	bsLog::deinit();
 }
 

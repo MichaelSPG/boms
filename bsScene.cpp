@@ -48,7 +48,7 @@ bsScene::bsScene(bsDx11Renderer* renderer, bsHavokManager* havokManager,
 	cameraEntity->attachCamera(*mCamera);;
 	addEntity(*cameraEntity);
 
-	bsLog::logMessage("Scene graph initialized successfully");
+	bsLog::log("Scene graph initialized successfully");
 }
 
 bsScene::~bsScene()

@@ -12,6 +12,7 @@ struct bsCoreCInfo
 {
 	bsCoreCInfo()
 		: assetDirectory("..\\assets\\")
+		, logFileFileName("log.bsl")
 		, worldSize(1000.0f)
 		, windowWidth(1280)
 		, windowHeight(720)
@@ -25,6 +26,11 @@ struct bsCoreCInfo
 		Default: "..\assets\"
 	*/
 	std::string	assetDirectory;
+
+	/*	The file name of the log file.
+		Default: "log.bsl"
+	*/
+	std::string logFileFileName;
 
 	/*	The world size is a cube with sides equal to this many meters.
 		Default: 1000.0f

@@ -63,7 +63,7 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 	coreCInfo.showCmd = showCmd;
 	mCore = new bsCore(coreCInfo);
 
-	bsLog::logMessage("Initializing OIS");
+	bsLog::log("Initializing OIS");
 
 	//OIS initialization
 	OIS::ParamList paramList;
@@ -106,7 +106,7 @@ Application::Application(HINSTANCE hInstance, int showCmd, const int windowWidth
 
 	mPrimCreator = new bsPrimitiveCreator(*mCore->getResourceManager()->getMeshCache());
 
-	bsLog::logMessage("Initialization completed successfully", bsLog::SEV_NOTICE);
+	bsLog::log("Initialization completed successfully");
 
 	
 

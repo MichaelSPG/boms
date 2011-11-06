@@ -41,12 +41,9 @@ public:
 
 		mTexture->loadingCompleted(shaderResourceView, SUCCEEDED(hres));
 
-		char message[150];
-		sprintf_s(message, "Loading of texture '%s' finished, success: %u",
+		bsLog::logf(bsLog::SEV_INFO, "Loading of texture '%s' finished, success: %u",
 			fileLoader.getFileName().c_str(),
 			fileLoader.getCurrentLoadState() == bsFileLoader::SUCCEEDED);
-
-		bsLog::logMessage(message, bsLog::SEV_NOTICE);
 	}
 
 private:
