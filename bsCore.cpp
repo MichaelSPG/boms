@@ -21,6 +21,9 @@
 
 bsCore::bsCore(const bsCoreCInfo& cInfo)
 	: mCInfo(cInfo)
+	, mResizeQueued(false)
+	, mResizeWidth(0)
+	, mResizeHeight(0)
 {
 	bsLog::init(fopen(cInfo.logFileFileName.c_str(), "w"), bsLog::SEV_DEBUG,
 		bsLog::TIMESTAMP_MILLISECS | bsLog::SEVERITY_AS_TEXT);
@@ -29,8 +32,11 @@ bsCore::bsCore(const bsCoreCInfo& cInfo)
 
 	bsLog::log("Initializing core");
 
+	auto windowResizeCallback = std::bind(&bsCore::windowResizedCallback,
+		this, std::placeholders::_1,std::placeholders::_2, std::placeholders::_3);
+
 	mWindow = new bsWindow(cInfo.windowWidth, cInfo.windowHeight, cInfo.windowName,
-		cInfo.hInstance, cInfo.showCmd);
+		cInfo.hInstance, cInfo.showCmd, windowResizeCallback);
 
 	mDx11Renderer = new bsDx11Renderer(mWindow->getHwnd(), cInfo.windowWidth, cInfo.windowHeight);
 
@@ -82,6 +88,13 @@ bool bsCore::update(float deltaTimeMs, bsFrameStatistics& framStatistics)
 		return false;
 	}
 
+	if (mResizeQueued)
+	{
+		mDx11Renderer->resizeWindow(mWindow->getHwnd(), mResizeWidth, mResizeHeight);
+
+		mResizeQueued = false;
+	}
+
 	bsTimer timer;
 	float preRender = timer.getTimeMilliSeconds();
 
@@ -90,4 +103,12 @@ bool bsCore::update(float deltaTimeMs, bsFrameStatistics& framStatistics)
 	framStatistics.renderingInfo.totalRenderingDuration = timer.getTimeMilliSeconds() - preRender;
 
 	return true;
+}
+
+void bsCore::windowResizedCallback(unsigned int width, unsigned int height,
+	const bsWindow& window)
+{
+	mResizeQueued = true;
+	mResizeWidth = width;
+	mResizeHeight = height;
 }

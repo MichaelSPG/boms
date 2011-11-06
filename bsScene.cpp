@@ -48,6 +48,16 @@ bsScene::bsScene(bsDx11Renderer* renderer, bsHavokManager* havokManager,
 	cameraEntity->attachCamera(*mCamera);;
 	addEntity(*cameraEntity);
 
+	//Add resize listener to adjust camera's projection info when the screen is resized.
+	mDx11Renderer->addResizeListener(
+		[this](unsigned int screenWidth, unsigned int screenHeight)
+	{
+		bsProjectionInfo projectionInfo = mCamera->getProjectionInfo();
+		projectionInfo.mScreenSize.x = (float)screenWidth;
+		projectionInfo.mScreenSize.y = (float)screenHeight;
+		mCamera->setProjectionInfo(projectionInfo);
+	});
+
 	bsLog::log("Scene graph initialized successfully");
 }
 

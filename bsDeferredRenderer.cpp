@@ -22,16 +22,15 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer,
 	bsShaderManager* shaderManager, bsWindow* window, bsRenderQueue* renderQueue)
 	: mDx11Renderer(dx11Renderer)
 	, mShaderManager(shaderManager)
-	, mFxaaPass(shaderManager, dx11Renderer, (float)window->getWindowWidth(),
-		(float)window->getWindowHeight())
+	, mFxaaPass(shaderManager, dx11Renderer)
 	, mGeometryRasterizerState(nullptr)
 	, mRenderQueue(renderQueue)
 {
 	BS_ASSERT(dx11Renderer);
 	BS_ASSERT(shaderManager);
 
-	ID3D11Device* device = mDx11Renderer->getDevice();
-	ID3D11DeviceContext* deviceContext = mDx11Renderer->getDeviceContext();
+	ID3D11Device& device = *mDx11Renderer->getDevice();
+	ID3D11DeviceContext& deviceContext = *mDx11Renderer->getDeviceContext();
 
 	const int windowWidth = window->getWindowWidth(), windowHeight = window->getWindowHeight();
 	
@@ -41,28 +40,34 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer,
 	mLightRenderTarget	= new bsRenderTarget(windowWidth, windowHeight, device);
 	mFinalRenderTarget	= new bsRenderTarget(windowWidth, windowHeight, device);
 
+	mDx11Renderer->registerRenderTarget(*mGBuffer.position);
+	mDx11Renderer->registerRenderTarget(*mGBuffer.normal);
+	mDx11Renderer->registerRenderTarget(*mGBuffer.diffuse);
+	mDx11Renderer->registerRenderTarget(*mLightRenderTarget);
+	mDx11Renderer->registerRenderTarget(*mFinalRenderTarget);
+
 	D3D11_RASTERIZER_DESC rasterizerDesc;
 	memset(&rasterizerDesc, 0, sizeof(rasterizerDesc));
 	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
 	rasterizerDesc.CullMode = D3D11_CULL_BACK;
 	rasterizerDesc.DepthClipEnable = true;
 
-	device->CreateRasterizerState(&rasterizerDesc, &mGeometryRasterizerState);
+	device.CreateRasterizerState(&rasterizerDesc, &mGeometryRasterizerState);
 
 	rasterizerDesc.DepthClipEnable = false;
 	rasterizerDesc.CullMode = D3D11_CULL_BACK;
-	device->CreateRasterizerState(&rasterizerDesc, &mCullBackFacingNoDepthClip);
+	device.CreateRasterizerState(&rasterizerDesc, &mCullBackFacingNoDepthClip);
 
 	rasterizerDesc.CullMode = D3D11_CULL_FRONT;
-	device->CreateRasterizerState(&rasterizerDesc, &mCullFrontFacingNoDepthClip);
+	device.CreateRasterizerState(&rasterizerDesc, &mCullFrontFacingNoDepthClip);
 
 	rasterizerDesc.CullMode = D3D11_CULL_NONE;
-	device->CreateRasterizerState(&rasterizerDesc, &mCullNoneNoDepthClip);
+	device.CreateRasterizerState(&rasterizerDesc, &mCullNoneNoDepthClip);
 
 
-	deviceContext->RSSetState(mGeometryRasterizerState);
+	deviceContext.RSSetState(mGeometryRasterizerState);
 
-	mFullScreenQuad = new bsFullScreenQuad(device);
+	mFullScreenQuad = new bsFullScreenQuad(&device);
 
 	createShaders();
 
@@ -72,7 +77,7 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer,
 	blendDesc.IndependentBlendEnable = false;
 	blendDesc.RenderTarget[0].BlendEnable = false;
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-	HRESULT hresult = device->CreateBlendState(&blendDesc, &mGeometryBlendState);
+	HRESULT hresult = device.CreateBlendState(&blendDesc, &mGeometryBlendState);
 	BS_ASSERT2(SUCCEEDED(hresult), "Failed to create blend state");
 
 	/*
@@ -94,10 +99,10 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer,
 	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = 0x0f;
 
-	hresult = device->CreateBlendState(&blendDesc, &mLightBlendState);
+	hresult = device.CreateBlendState(&blendDesc, &mLightBlendState);
 	BS_ASSERT2(SUCCEEDED(hresult), "Failed to create blend state");
 
-	deviceContext->OMSetBlendState(mGeometryBlendState, nullptr, 0xFFFFFFFF);
+	deviceContext.OMSetBlendState(mGeometryBlendState, nullptr, 0xFFFFFFFF);
 
 
 	//Depth stencils
@@ -119,15 +124,15 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer,
 	depthStencilDescription.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
 	depthStencilDescription.DepthFunc = D3D11_COMPARISON_LESS;
 	
-	device->CreateDepthStencilState(&depthStencilDescription, &mDepthEnabledStencilState);
+	device.CreateDepthStencilState(&depthStencilDescription, &mDepthEnabledStencilState);
 
 	depthStencilDescription.DepthEnable = false;
 	depthStencilDescription.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 	depthStencilDescription.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	//depthStencilDescription.DepthFunc = D3D11_COMPARISON_LESS;
-	device->CreateDepthStencilState(&depthStencilDescription, &mDepthDisabledStencilState);
+	device.CreateDepthStencilState(&depthStencilDescription, &mDepthDisabledStencilState);
 
-	deviceContext->OMSetDepthStencilState(mDepthEnabledStencilState, 0);
+	deviceContext.OMSetDepthStencilState(mDepthEnabledStencilState, 0);
 
 	
 

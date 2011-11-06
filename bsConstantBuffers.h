@@ -35,10 +35,10 @@ __declspec(align(16)) struct CBLight
 	XMFLOAT4A	lightColor;
 };
 
-struct CBFxaa
+struct CBScreenSize
 {
-	XMFLOAT2	oneOverScreenSize;
-	XMFLOAT2	padding;//Pad to multiple of 16 bytes.
+	//XY = screen width and height, ZW = 1 / screen width and height.
+	XMFLOAT4	screenSizeAndOneOverScreenSize;
 };
 
 __declspec(align(16)) struct LightInstanceData

@@ -68,6 +68,10 @@ public:
 	}
 
 private:
+	void windowResizedCallback(unsigned int width, unsigned int height, const bsWindow& window);
+
+
+
 	//Non-copyable.
 	bsCore(const bsCore&);
 	void operator=(const bsCore&);
@@ -85,4 +89,8 @@ private:
 
 	bsFileIoManager		mFileIoManager;
 	tbb::tbb_thread*	mFileIoThread;
+
+	bool			mResizeQueued;
+	unsigned int	mResizeWidth;
+	unsigned int	mResizeHeight;
 };

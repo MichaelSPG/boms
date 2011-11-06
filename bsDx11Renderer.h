@@ -1,10 +1,12 @@
 #pragma once
 
-
 #include <Windows.h>
+
 #include <d3d11.h>
 #include <D3DX11.h>
 #include <D3Dcompiler.h>
+
+#include <vector>
 
 class bsRenderTarget;
 
@@ -12,13 +14,19 @@ class bsRenderTarget;
 class bsDx11Renderer
 {
 public:
-	bsDx11Renderer(HWND hWnd, int renderWindowWidth, int renderWindowHeight);
+	bsDx11Renderer(HWND hWnd, unsigned int renderWindowWidth, unsigned int renderWindowHeight);
 
 	~bsDx11Renderer();
 
-	bool createRenderWindow(HWND hWnd, int renderWindowWidth, int renderWindowHeight);
 
-	void destroyCurrentRenderWindow();
+	void resizeWindow(HWND hWnd, unsigned int windowWidth, unsigned int windowHeight);
+
+	void setFullscreenMode(bool enableFullscreen);
+
+	bool isFullscreenEnabled() const
+	{
+		return mIsFullscreenEnabled;
+	}
 
 	//Presents drawn primitives, waits for v-sync if enabled.
 	void present() const;
@@ -64,8 +72,28 @@ public:
 
 	void clearBackBuffer();
 
+	void registerRenderTarget(bsRenderTarget& renderTarget);
+
+	void unregisterRenderTarget(bsRenderTarget& renderTarget);
+
+	/*	Add a listener which will be called whenever the screen is resized.
+		Parameters to callback function are new window width and height, in that order.
+	*/
+	void addResizeListener(const std::function<void(unsigned int, unsigned int)>& callback);
+
 
 private:
+	bool createRenderWindow(HWND hWnd, unsigned int renderWindowWidth, unsigned int renderWindowHeight);
+
+	void destroyCurrentRenderWindow();
+
+	bool createDeviceAndSwapChain(HWND hWnd, unsigned int windowWidth, unsigned int windowHeight);
+
+	bool createBackBufferAndDepthStencil(unsigned int windowWidth, unsigned int windowHeight);
+
+	void createViewport(unsigned int windowWidth, unsigned int windowHeight);
+
+
 	IDXGISwapChain*			mSwapChain;
 	ID3D11Device*			mDevice;
 	ID3D11DeviceContext*	mDeviceContext;
@@ -74,6 +102,14 @@ private:
 	ID3D11Texture2D*		mDepthStencil;
 	ID3D11DepthStencilView*	mDepthStencilView;
 
+	ID3D11Buffer*	mScreenSizeBuffer;
+
 	bool	mVsyncEnabled;
+	bool	mIsFullscreenEnabled;
+
 	float	mRenderTargetClearColor[4];
+
+	std::vector<bsRenderTarget*>	mRenderTargets;
+
+	std::vector<std::function<void(unsigned int, unsigned int)>> mResizeListeners;
 };

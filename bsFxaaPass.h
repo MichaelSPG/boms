@@ -2,23 +2,20 @@
 
 #include <memory>
 
-#include <xnamath.h>
-
 #include "bsFullScreenQuad.h"
 #include "bsDx11Renderer.h"
 
 class bsPixelShader;
 class bsVertexShader;
 class bsShaderManager;
+struct ID3D11DeviceContext;
 
 
 class bsFxaaPass
 {
 public:
-	bsFxaaPass(bsShaderManager* shaderManager, bsDx11Renderer* dx11Renderer,
-		float screenWidth, float screenHeight);
+	bsFxaaPass(bsShaderManager* shaderManager, bsDx11Renderer* dx11Renderer);
 
-	~bsFxaaPass();
 
 	void draw();
 
@@ -32,7 +29,4 @@ private:
 	std::shared_ptr<bsVertexShader>	mVertexShader;
 	std::shared_ptr<bsPixelShader>	mFxaaPixelShader;
 	std::shared_ptr<bsPixelShader>	mPassthroughPixelShader;
-
-	ID3D11Buffer*	mOneOverScreenSizeBuffer;
-	XMFLOAT2		mOneOverScreenSize;
 };
