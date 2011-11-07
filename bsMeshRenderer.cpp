@@ -37,7 +37,7 @@ void bsMeshRenderer::draw(bsDx11Renderer* dx11Renderer) const
 	unsigned int strides[D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT];
 	for (unsigned int i = 0; i < D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i)
 	{
-		strides[i] = sizeof(bsVertexNormalTex);
+		strides[i] = sizeof(bsVertexNormalTangentTex);
 	}
 
 	
@@ -59,7 +59,7 @@ void bsMeshRenderer::draw(bsDx11Renderer* dx11Renderer) const
 	
 	if (mMaterial.diffuse != nullptr)
 	{
-		mMaterial.diffuse->apply(*dx11Renderer->getDeviceContext());
+		mMaterial.diffuse->apply(*dx11Renderer->getDeviceContext(), 0);
 		//mTexture->apply(deviceContext);
 	}
 
@@ -71,8 +71,12 @@ void bsMeshRenderer::drawInstanced(ID3D11DeviceContext& deviceContext,
 {
 	if (mMaterial.diffuse != nullptr)
 	{
-		mMaterial.diffuse->apply(deviceContext);
+		mMaterial.diffuse->apply(deviceContext, 0);
 		//mTexture->apply(deviceContext);
+	}
+	if (mMaterial.normal != nullptr)
+	{
+		mMaterial.normal->apply(deviceContext, 1);
 	}
 
 	mMesh->drawInstanced(deviceContext, instanceBuffer, instanceCount);

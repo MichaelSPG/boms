@@ -97,7 +97,7 @@ void bsMesh::draw(bsDx11Renderer* dx11Renderer) const
 	unsigned int strides[D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT];
 	for (unsigned int i = 0; i < D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i)
 	{
-		strides[i] = sizeof(bsVertexNormalTex);
+		strides[i] = sizeof(bsVertexNormalTangentTex);
 	}
 
 	const size_t bufferCount = mVertexBuffers.size();
@@ -120,7 +120,7 @@ void bsMesh::drawInstanced(ID3D11DeviceContext& deviceContext, ID3D11Buffer* ins
 		return;
 	}
 
-	unsigned int strides[2] = { sizeof(bsVertexNormalTex), sizeof(XMMATRIX) };
+	unsigned int strides[2] = { sizeof(bsVertexNormalTangentTex), sizeof(XMMATRIX) };
 	unsigned int offsets[2] = { 0, 0 };
 	ID3D11Buffer* vertexInstanceBuffers[2] = { nullptr, instanceBuffer };
 

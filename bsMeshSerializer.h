@@ -90,7 +90,7 @@ struct bsSerializedMesh
 
 			if (memcmp(currentVertexBuffer.vertices,
 				other.vertexBuffers[i].vertices,
-				sizeof(bsVertexNormalTex) * currentVertexBuffer.vertexCount) != 0)
+				sizeof(bsVertexNormalTangentTex) * currentVertexBuffer.vertexCount) != 0)
 			{
 				return false;
 			}
@@ -181,5 +181,7 @@ typedef std::function<bool(const bsSerializedMesh&, XMFLOAT3&, float&)> bsComput
 	Returns true on success.
 */
 bsCreateSerializedMeshFlags bsCreateSerializedMesh(const std::string& fileName,
-	const bsComputeBoundingSphereCallback& boundingSphereCallback, bsSerializedMesh& meshOut);
+	const bsComputeBoundingSphereCallback& boundingSphereCallback, bool verboseLogging,
+	bsSerializedMesh& meshOut);
+
 #endif // BS_SUPPORT_MESH_CREATION

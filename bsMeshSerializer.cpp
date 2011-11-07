@@ -22,7 +22,7 @@ Last 16		Bounding sphere, XMFLOAT4, xyz=sphere center, w=sphere radius.
 bsVertexBuffer
 {
 1-4			Amount of following vertices (uint).
-5-...		(Vertex amount * sizeof(bsVertexNormalTex)) of bsVertexNormalTex*.
+5-...		(Vertex amount * sizeof(bsVertexNormalTangentTex)) of bsVertexNormalTangentTex*.
 }
 
 bsIndexBuffer
@@ -37,8 +37,9 @@ bsIndexBuffer
 	Version history:
 	0: Initial version, used AABB.
 	1: Removed AABB and added sphere center+sphere radius.
+	2: Added tangents.
 */
-const char kSerializerVersion = 1;
+const char kSerializerVersion = 2;
 
 
 #include <float.h>
@@ -58,6 +59,7 @@ extern void bsMeshSerializerLogErrorMessage(const char*);
 #include "bsLinearHeapAllocator.h"
 
 #ifdef BS_SUPPORT_MESH_CREATION
+#include <assimp.h>
 #include <assimp.hpp>
 #include <aiScene.h>
 #include <aiPostProcess.h>
@@ -169,8 +171,8 @@ bool bsLoadSerializedMesh(const std::string& fileName, bsSerializedMesh& meshOut
 		//Assign vertices.
 		bsVertexBuffer& currentVertexBuffer = meshToLoad.vertexBuffers[i];
 
-		currentVertexBuffer.vertices = reinterpret_cast<bsVertexNormalTex*>(head);
-		head += sizeof(bsVertexNormalTex) * currentVertexBuffer.vertexCount;
+		currentVertexBuffer.vertices = reinterpret_cast<bsVertexNormalTangentTex*>(head);
+		head += sizeof(bsVertexNormalTangentTex) * currentVertexBuffer.vertexCount;
 		assert(head < dataBuffer + totalDynamicMemorySize);
 
 		//Assign indices.
@@ -294,8 +296,8 @@ bool bsLoadSerializedMeshFromMemory(const char* data, unsigned int dataSize,
 		//Assign vertices.
 		bsVertexBuffer& currentVertexBuffer = meshToLoad.vertexBuffers[i];
 
-		currentVertexBuffer.vertices = reinterpret_cast<bsVertexNormalTex*>(head);
-		head += sizeof(bsVertexNormalTex) * currentVertexBuffer.vertexCount;
+		currentVertexBuffer.vertices = reinterpret_cast<bsVertexNormalTangentTex*>(head);
+		head += sizeof(bsVertexNormalTangentTex) * currentVertexBuffer.vertexCount;
 		assert(head < dataBuffer + totalDynamicMemorySize);
 
 		//Assign indices.
@@ -382,6 +384,7 @@ bool bsSaveSerializedMesh(const std::string& fileName, const bsSerializedMesh& m
 	//Write the entire buffer to the file.
 	size_t write = fwrite(dataBuffer, totalBufferSize, 1, file);
 	assert(write == 1);
+	(void)write;
 
 	fclose(file);
 
@@ -439,7 +442,7 @@ unsigned int getAiMeshBufferMemSize(const aiScene* scene)
 		totalIndexCount += getAiMeshIndexCount(currentMesh);
 	}
 
-	const unsigned int vertexBufferSize = sizeof(bsVertexNormalTex) * totalVertexCount;
+	const unsigned int vertexBufferSize = sizeof(bsVertexNormalTangentTex) * totalVertexCount;
 	const unsigned int indexBufferSize = sizeof(unsigned int) * totalIndexCount;
 	const unsigned int vertexBufferExtraSize = sizeof(bsVertexBuffer) * meshCount;
 	const unsigned int indexBufferExtraSize = sizeof(bsIndexBuffer) * meshCount;
@@ -447,13 +450,37 @@ unsigned int getAiMeshBufferMemSize(const aiScene* scene)
 	return vertexBufferSize + indexBufferSize + vertexBufferExtraSize + indexBufferExtraSize;
 }
 
-bsCreateSerializedMeshFlags bsCreateSerializedMesh(const std::string& fileName,
-	const bsComputeBoundingSphereCallback& boundingSphereCallback, bsSerializedMesh& meshOut)
+void assimpLogCallback(const char* message, char*)
 {
+#ifndef BS_MESH_SERIALIZER_EXTERNAL
+	bsLog::log(message, bsLog::SEV_ERROR);
+#else
+	bsMeshSerializerLogErrorMessage(message);
+#endif
+}
+
+bsCreateSerializedMeshFlags bsCreateSerializedMesh(const std::string& fileName,
+	const bsComputeBoundingSphereCallback& boundingSphereCallback, bool verboseLogging,
+	bsSerializedMesh& meshOut)
+{
+	if (verboseLogging)
+	{
+		aiLogStream logStream;
+		logStream.callback = assimpLogCallback;
+		logStream.user = nullptr;
+		aiAttachLogStream(&logStream);
+	}
+	else
+	{
+		aiDetachAllLogStreams();
+	}
+
+
 	Assimp::Importer importer;
 	const unsigned int flags = aiProcess_Triangulate
 		| aiProcessPreset_TargetRealtime_MaxQuality
-		| aiProcess_ConvertToLeftHanded; //Need this one for D3D.
+		| aiProcess_ConvertToLeftHanded //Need this one for D3D.
+		| aiProcess_CalcTangentSpace;
 
 	const aiScene* scene = importer.ReadFile(fileName.c_str(), flags);
 	if (scene == nullptr)
@@ -587,11 +614,38 @@ bsCreateSerializedMeshFlags copyVertices(const aiMesh* mesh, bsVertexBuffer& ver
 	bsLinearHeapAllocator& allocator)
 {
 	const bool meshHasNormals = mesh->HasNormals();
+	const bool meshHasTangents = mesh->HasTangentsAndBitangents();
 	const bool meshHasTexCoords = mesh->HasTextureCoords(0);
+
+
+	std::string missingElements("WARNING: Mesh is missing ");
+	if (!meshHasNormals)
+	{
+		missingElements.append("normals, ");
+	}
+	if (!meshHasTexCoords)
+	{
+		missingElements.append("texture coordinates, ");
+	}
+	if (!meshHasTangents)
+	{
+		missingElements.append("tangents, ");
+	}
+	if (!meshHasNormals || !meshHasTangents || !meshHasTexCoords)
+	{
+		missingElements.append("replacing with zeros");
+
+#ifndef BS_MESH_SERIALIZER_EXTERNAL
+		bsLog::log(missingElements.c_str(), bsLog::SEV_WARNING);
+#else
+		bsMeshSerializerLogErrorMessage(missingElements.c_str());
+#endif
+	}
+
 
 	vertexBufferOut.vertexCount = mesh->mNumVertices;
 	//Allocate enough space for all the vertices.
-	vertexBufferOut.vertices = allocator.allocate<bsVertexNormalTex>(mesh->mNumVertices);
+	vertexBufferOut.vertices = allocator.allocate<bsVertexNormalTangentTex>(mesh->mNumVertices);
 	assert(vertexBufferOut.vertices != nullptr && "Failed to allocate memory while"
 		"creating a mesh");
 	if (vertexBufferOut.vertices == nullptr)
@@ -600,7 +654,7 @@ bsCreateSerializedMeshFlags copyVertices(const aiMesh* mesh, bsVertexBuffer& ver
 	}
 
 	//Copy data from aiMesh into the vertex buffers.
-	bsVertexNormalTex vertex;
+	bsVertexNormalTangentTex vertex;
 
 	for (unsigned int i = 0u; i < mesh->mNumVertices; ++i)
 	{
@@ -610,7 +664,11 @@ bsCreateSerializedMeshFlags copyVertices(const aiMesh* mesh, bsVertexBuffer& ver
 		vertex.normal = meshHasNormals ? aiVector3ToXMFloat3(mesh->mNormals[i])
 			: XMFLOAT3(0.0f, 0.0f, 0.0f);
 
-		//Same for texture coords.
+		//If the aiMesh has tangents, use them, otherwise use invalid dummy tangents.
+		vertex.tangent = meshHasTangents ? aiVector3ToXMFloat3(mesh->mTangents[i])
+			: XMFLOAT3(0.0f, 0.0f, 0.0f);
+
+		//If the aiMesh has texture coords, use them, otherwise use invalid dummy texture coords.
 		vertex.textureCoord = meshHasTexCoords ? aiVector3ToXMFloat2TexCoord
 			(mesh->mTextureCoords[0][i]) : XMFLOAT2(0.0f, 0.0f);
 

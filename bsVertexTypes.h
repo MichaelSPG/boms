@@ -39,11 +39,20 @@ struct bsVertexNormalTex
 	XMFLOAT2 textureCoord;
 };
 
+//Vertex position, normal, tangent, texture coordinates
+struct bsVertexNormalTangentTex
+{
+	XMFLOAT3 position;
+	XMFLOAT3 normal;
+	XMFLOAT3 tangent;
+	XMFLOAT2 textureCoord;
+};
+
 /*	A vertex buffer, with an array of vertices, normals and texture coordinates.
 */
 struct bsVertexBuffer
 {
-	bsVertexNormalTex*	vertices;
+	bsVertexNormalTangentTex*	vertices;
 	unsigned int		vertexCount;
 };
 

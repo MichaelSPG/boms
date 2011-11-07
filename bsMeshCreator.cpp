@@ -142,7 +142,7 @@ bool bsMeshCreator::createBuffers(ID3D11Buffer*& vertexBuffer, ID3D11Buffer*& in
 	D3D11_BUFFER_DESC bufferDescription;
 	memset(&bufferDescription, 0, sizeof(bufferDescription));
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
-	bufferDescription.ByteWidth = sizeof(bsVertexNormalTex)
+	bufferDescription.ByteWidth = sizeof(bsVertexNormalTangentTex)
 		* currentVertexBuffer.vertexCount;
 	bufferDescription.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
