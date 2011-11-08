@@ -91,7 +91,7 @@ void bsEntity::attachRigidBody(hkpRigidBody& rigidBody)
 	}
 }
 
-void bsEntity::attachMesh(const bsSharedMesh& mesh)
+void bsEntity::attachMeshRenderer(bsMeshRenderer& meshRenderer)
 {
 	BS_ASSERT2(!mMeshRenderer, "Trying to attach a mesh renderer, but a mesh renderer is"
 		" already attached");
@@ -148,8 +148,21 @@ void bsEntity::detachRigidBody()
 	BS_ASSERT2(mRigidBody != nullptr, "Trying to detach a rigid body, but no rigid"
 		" body is attached");
 
+	hkpWorld* world = mRigidBody->getWorld();
+	if (world != nullptr)
+	{
+		world->markForWrite();
+		world->removeEntity(mRigidBody);
+	}
+
 	mRigidBody->removeProperty(BSPK_ENTITY_POINTER);
+	//This decreases hkRefPtr's reference to the body.
 	mRigidBody = nullptr;
+
+	if (world != nullptr)
+	{
+		world->unmarkForWrite();
+	}
 }
 
 void bsEntity::detachMeshRenderer()
@@ -157,6 +170,7 @@ void bsEntity::detachMeshRenderer()
 	BS_ASSERT2(mMeshRenderer, "Trying to detach a mesh renderer, but no mesh renderer is attached");
 
 	delete mMeshRenderer;
+	mMeshRenderer = nullptr;
 
 	calculateLocalBoundingSphere();
 }
@@ -285,7 +299,7 @@ void bsEntity::addedToScene(bsScene& scene, unsigned int id)
 void bsEntity::removedFromScene(bsScene& scene)
 {
 	BS_ASSERT2(mScene == &scene, "Entity was removed from a scene it was not a part of");
-
+	
 	const std::vector<bsTransform*>& children = mTransform.getChildren();
 	for (unsigned int i = 0; i < children.size(); ++i)
 	{
