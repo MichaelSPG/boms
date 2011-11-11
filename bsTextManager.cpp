@@ -21,9 +21,13 @@ bsTextManager::bsTextManager(bsDx11Renderer* dx11Renderer)
 
 bsTextManager::~bsTextManager()
 {
+	mTextBoxes.clear();
+	mTexts.clear();
 	if (mFw1Factory)
 	{
-		mFw1Factory->Release();
+		const unsigned long remainingReferences = mFw1Factory->Release();
+		BS_ASSERT2(remainingReferences == 0, "There are remaining references to text"
+			" objects. Please release all of them before bsTextManager is destroyed");
 	}
 }
 

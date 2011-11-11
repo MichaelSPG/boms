@@ -58,6 +58,10 @@ bsCore::bsCore(const bsCoreCInfo& cInfo)
 
 bsCore::~bsCore()
 {
+	//This avoids reference counting problems where a log callback is hooked to a text
+	//box or similar.
+	bsLog::clearAllCallbacks();
+
 	//Shutdown file IO manager and join the thread it was using to avoid it trying to
 	//access data that goes out of scope once this destructor returns.
 	mFileIoManager.quit();
@@ -77,7 +81,7 @@ bsCore::~bsCore()
 
 	delete mWindow;
 
-	bsLog::log("Core shut down successfully");
+	bsLog::log("Core shut down successfully, closing log");
 	bsLog::deinit();
 }
 

@@ -93,6 +93,24 @@ bsTextureCache::bsTextureCache(ID3D11Device& device, const bsFileSystem& fileSys
 	mTextures.insert(std::move(StringTexturePair(bsTextureCacheDefaultTextureName, defaultTexture)));
 }
 
+bsTextureCache::~bsTextureCache()
+{
+#ifdef BS_DEBUG
+	//Warn if there are external references to any textures.
+	for (auto itr = mTextures.begin(), end = mTextures.end(); itr != end; ++itr)
+	{
+		if (!itr->second.unique())
+		{
+			bsLog::logf(bsLog::SEV_WARNING, "All references to texture '%s' have not"
+				" been released when bsTextureCache is being destroyed (%u external refs)",
+				itr->first.c_str(), itr->second.use_count() - 1);
+		}
+	}
+#endif //ifdef BS_DEBUG
+
+	mTextures.clear();
+}
+
 std::shared_ptr<bsTexture2D> bsTextureCache::getTexture(const char* fileName)
 {
 	const auto findResult = mTextures.find(fileName);

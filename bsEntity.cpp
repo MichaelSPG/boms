@@ -42,10 +42,8 @@ bsEntity::bsEntity()
 
 bsEntity::~bsEntity()
 {
-	if (mScene)
-	{
-		mScene->removeEntity(*this);
-	}
+	BS_ASSERT2(mScene == nullptr, "Tried to delete an entity while it is still a part of"
+		" a scene. Remove if from the scene before deleting it");
 
 	//Delete all child entities.
 	const std::vector<bsTransform*>& children = mTransform.getChildren();
@@ -59,6 +57,9 @@ bsEntity::~bsEntity()
 	delete mLight;
 	delete mCamera;
 	delete mTextRenderer;
+	delete mMeshRenderer;
+
+	//Rigid body is in smart pointer.
 }
 
 void bsEntity::attachRigidBody(hkpRigidBody& rigidBody)
@@ -88,6 +89,13 @@ void bsEntity::attachRigidBody(hkpRigidBody& rigidBody)
 	if (world)
 	{
 		world->unmarkForWrite();
+	}
+
+	if (mScene && !world)
+	{
+		mScene->getPhysicsWorld()->markForWrite();
+		mScene->getPhysicsWorld()->addEntity(&rigidBody);
+		mScene->getPhysicsWorld()->unmarkForWrite();
 	}
 }
 

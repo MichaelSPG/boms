@@ -160,6 +160,11 @@ public:
 		mCallbacks.push_back(func);
 	}
 
+	static inline void clearAllCallbacks()
+	{
+		mCallbacks.clear();
+	}
+
 private:
 	//Non-copyable.
 	bsLog(const bsLog&);

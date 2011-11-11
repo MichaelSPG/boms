@@ -96,9 +96,52 @@ bsDx11Renderer::~bsDx11Renderer()
 {
 	bsLog::log("Uninitializing DirectX");
 
-	mScreenSizeBuffer->Release();
+	unsigned long remainingRefs = mScreenSizeBuffer->Release();
+	BS_ASSERT2(remainingRefs == 0, "Screen size buffer has remaining references when"
+		" shutting down");
+	
+	if (mDepthStencil)
+	{
+		remainingRefs = mDepthStencil->Release();
+		BS_ASSERT2(remainingRefs == 0, "Depth stencil has remaining references when"
+			" shutting down");
+	}
+	if (mDepthStencilView)
+	{
+		remainingRefs = mDepthStencilView->Release();
+		BS_ASSERT2(remainingRefs == 0, "Depth stencil view has remaining references when"
+			" shutting down");
+	}
 
-	destroyCurrentRenderWindow();
+	if (mBackBufferRenderTargetView)
+	{
+		remainingRefs = mBackBufferRenderTargetView->Release();
+		BS_ASSERT2(remainingRefs == 0, "Back buffer has remaining references when"
+			" shutting down");
+	}
+
+	if (mSwapChain)
+	{
+		remainingRefs = mSwapChain->Release();
+		BS_ASSERT2(remainingRefs == 0, "Swap chain has remaining references when"
+			" shutting down");
+	}
+
+	if (mDeviceContext)
+	{
+		mDeviceContext->ClearState();
+		mDeviceContext->Flush();
+		remainingRefs = mDeviceContext->Release();
+		BS_ASSERT2(remainingRefs == 0, "Device context has remaining references when"
+			" shutting down");
+	}
+	if (mDevice)
+	{
+		//There's probably a memory leak somewhere, so release it twice.
+		mDevice->Release();
+		remainingRefs = mDevice->Release();
+		BS_ASSERT2(remainingRefs == 0, "Device has remaining references when shutting down");
+	}
 
 	bsLog::log("DirectX successfully uninitialized");
 }
@@ -271,39 +314,6 @@ void bsDx11Renderer::createViewport(unsigned int windowWidth, unsigned int windo
 	viewport.TopLeftY = 0;
 
 	mDeviceContext->RSSetViewports(1, &viewport);
-}
-
-void bsDx11Renderer::destroyCurrentRenderWindow()
-{
-	if (mDepthStencil)
-	{
-		mDepthStencil->Release();
-	}
-	if (mDepthStencilView)
-	{
-		mDepthStencilView->Release();
-	}
-
-	if (mBackBufferRenderTargetView)
-	{
-		mBackBufferRenderTargetView->Release();
-	}
-
-	if (mSwapChain)
-	{
-		mSwapChain->Release();
-	}
-
-	if (mDeviceContext)
-	{
-		mDeviceContext->ClearState();
-		mDeviceContext->Flush();
-		mDeviceContext->Release();
-	}
-	if (mDevice)
-	{
-		mDevice->Release();
-	}
 }
 
 void bsDx11Renderer::resizeWindow(HWND hWnd, unsigned int windowWidth, unsigned int windowHeight)

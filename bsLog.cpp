@@ -37,6 +37,8 @@ void bsLog::deinit()
 	{
 		fclose(mFile);
 	}
+
+	mCallbacks.clear();
 }
 
 void bsLog::log(const char* message, Severity severity /*= INFO*/)

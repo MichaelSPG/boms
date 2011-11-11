@@ -85,8 +85,6 @@ public:
 private:
 	bool createRenderWindow(HWND hWnd, unsigned int renderWindowWidth, unsigned int renderWindowHeight);
 
-	void destroyCurrentRenderWindow();
-
 	bool createDeviceAndSwapChain(HWND hWnd, unsigned int windowWidth, unsigned int windowHeight);
 
 	bool createBackBufferAndDepthStencil(unsigned int windowWidth, unsigned int windowHeight);

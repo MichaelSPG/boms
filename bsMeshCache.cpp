@@ -31,19 +31,17 @@ bsMeshCache::bsMeshCache(bsDx11Renderer* dx11Renderer, const bsFileSystem& fileS
 
 bsMeshCache::~bsMeshCache()
 {
-	//TODO: Maybe remove this
 	//Check that there are no meshes being referenced elsewhere when the mesh manager is
 	//shut down.
 
 #ifdef BS_DEBUG
 	for (auto itr = mMeshes.begin(), end = mMeshes.end(); itr != end; ++itr)
 	{
-		if (!(itr->second.use_count() == 1))
+		if (!itr->second.unique())
 		{
-			bsLog::log("There are external references to meshes when the mesh"
-				"manager is shutting down", bsLog::SEV_WARNING);
-
-			break;
+			bsLog::logf(bsLog::SEV_WARNING, "All references to mesh '%s' have not"
+				" been released when bsMeshCache is being destroyed (%u external refs)",
+				itr->first.c_str(), itr->second.use_count() - 1);
 		}
 	}
 #endif //BS_DEBUG
