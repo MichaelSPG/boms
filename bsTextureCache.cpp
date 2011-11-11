@@ -136,6 +136,31 @@ std::shared_ptr<bsTexture2D> bsTextureCache::getTexture(const char* fileName)
 	return texture;
 }
 
+std::shared_ptr<bsTexture2D> bsTextureCache::getTextureBlocking(const char* fileName)
+{
+	const auto findResult = mTextures.find(fileName);
+	if (findResult != std::end(mTextures))
+	{
+		//Found it in cache.
+		return findResult->second;
+	}
+
+	//Not found in cache, load it synchronously.
+
+	//Create a temporary default placeholder.
+	std::shared_ptr<bsTexture2D> texture(std::move(std::make_shared<bsTexture2D>(
+		mTextures[bsTextureCacheDefaultTextureName]->getShaderResourceView(), mDevice,
+		getNewTextureId())));
+
+	mTextures.insert(StringTexturePair(fileName, texture));
+
+	//Do the same as with async loading, but call loadBlocking instead.
+	bsTextureFileLoadFinishedCallback finishedCallback(texture, fileName, mDevice);
+	finishedCallback(mFileIoManager.loadBlocking(fileName));
+
+	return texture;
+}
+
 std::shared_ptr<bsTexture2D> bsTextureCache::getDefaultTexture() const
 {
 	BS_ASSERT2(mTextures.find(bsTextureCacheDefaultTextureName) != std::end(mTextures),

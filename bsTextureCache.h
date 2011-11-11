@@ -18,8 +18,12 @@ public:
 	bsTextureCache(ID3D11Device& device, const bsFileSystem& fileSystem,
 		bsFileIoManager& fileIoManager);
 
+	~bsTextureCache();
+
 
 	std::shared_ptr<bsTexture2D> getTexture(const char* fileName);
+
+	std::shared_ptr<bsTexture2D> getTextureBlocking(const char* fileName);
 	
 	std::shared_ptr<bsTexture2D> getDefaultTexture() const;
 
