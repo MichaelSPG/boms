@@ -39,6 +39,12 @@ bsCamera::bsCamera(const bsProjectionInfo& projectionInfo, bsDx11Renderer* dx11R
 	mDeviceContext->PSSetConstantBuffers(0, 1, &mCameraConstantBuffer);
 	mDeviceContext->VSSetConstantBuffers(0, 1, &mCameraConstantBuffer);
 
+#ifdef BS_DEBUG
+	const char* debugMessage = "bsCamera constant buffer";
+	mCameraConstantBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(debugMessage),
+		debugMessage);
+#endif
+
 	updateProjection();
 }
 
