@@ -38,7 +38,11 @@ bsEntity* bsPrimitiveCreator::createSphere(float radius) const
 		rbCinfo.m_mass, massProperties);
 	rbCinfo.setMassProperties(massProperties);
 
-	entity->attachRigidBody(*new hkpRigidBody(rbCinfo));
+	hkpRigidBody* rigidBody = new hkpRigidBody(rbCinfo);
+	entity->attachRigidBody(*rigidBody);
+
+	rbCinfo.m_shape->removeReference();
+	rigidBody->removeReference();
 
 	entity->getTransform().setLocalScaleUniform(radius * 2.0f);
 
@@ -76,7 +80,11 @@ bsEntity* bsPrimitiveCreator::createBox(const XMVECTOR& halfExtents) const
 	massProperties.scaleToDensity(1.0f);
 	rbCinfo.setMassProperties(massProperties);
 
-	entity->attachRigidBody(*new hkpRigidBody(rbCinfo));
+	hkpRigidBody* rigidBody = new hkpRigidBody(rbCinfo);
+	entity->attachRigidBody(*rigidBody);
+
+	rbCinfo.m_shape->removeReference();
+	rigidBody->removeReference();
 
 	entity->getTransform().setLocalScale(XMVectorScale(halfExtents, 2.0f));
 
@@ -102,10 +110,15 @@ bsEntity* bsPrimitiveCreator::createPlane(const XMVECTOR& halfExtents) const
 
 	hkpRigidBodyCinfo rbCinfo;
 	//Create plane shape point upwards at origin.
-	rbCinfo.m_shape = new hkpPlaneShape(hkVector4::getConstant<HK_QUADREAL_0100>(), hkVector4::getZero(), halfExt);
+	rbCinfo.m_shape = new hkpPlaneShape(hkVector4::getConstant<HK_QUADREAL_0100>(),
+		hkVector4::getZero(), halfExt);
 	rbCinfo.m_motionType = hkpMotion::MOTION_FIXED;
 
-	entity->attachRigidBody(*new hkpRigidBody(rbCinfo));
+	hkpRigidBody* rigidBody = new hkpRigidBody(rbCinfo);
+	entity->attachRigidBody(*rigidBody);
+
+	rbCinfo.m_shape->removeReference();
+	rigidBody->removeReference();
 
 	XMVECTOR scale = XMVectorScale(halfExtents, 2.0f);
 	//Set Y scale to 1 regardless of input. Doesn't make sense to scale the Y axis of a
@@ -143,8 +156,11 @@ bsEntity* bsPrimitiveCreator::createCapsule(float height, float radius) const
 	massProperties.scaleToDensity(1.0f);
 	rbCinfo.setMassProperties(massProperties);
 	
+	hkpRigidBody* rigidBody = new hkpRigidBody(rbCinfo);
+	entity->attachRigidBody(*rigidBody);
 
-	entity->attachRigidBody(*new hkpRigidBody(rbCinfo));
+	rbCinfo.m_shape->removeReference();
+	rigidBody->removeReference();
 
 	//Mesh' radius is 0.5, so if radius parameter is 0.5, the scale needs to be 1,
 	//so we multiply the radius by 2 to get the correct scaling factor.
@@ -188,7 +204,11 @@ bsEntity* bsPrimitiveCreator::createCylinder(float height, float radius) const
 	massProperties.scaleToDensity(1.0f);
 	rbCinfo.setMassProperties(massProperties);
 
-	entity->attachRigidBody(*new hkpRigidBody(rbCinfo));
+	hkpRigidBody* rigidBody = new hkpRigidBody(rbCinfo);
+	entity->attachRigidBody(*rigidBody);
+
+	rbCinfo.m_shape->removeReference();
+	rigidBody->removeReference();
 
 	//Mesh' radius is 0.5, so if radius parameter is 0.5, the scale needs to be 1,
 	//so we multiply the radius by 2 to get the correct scaling factor.
