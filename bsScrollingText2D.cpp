@@ -2,8 +2,8 @@
 
 #include "bsScrollingText2D.h"
 
-#include <sstream>
 #include <algorithm>
+#include <string>
 
 #include "bsText2D.h"
 #include "bsStringUtils.h"
@@ -44,16 +44,27 @@ void bsScrollingText2D::updateText()
 {
 	if (mText->getEnabled())
 	{
-		std::wstringstream text;
-		
+		//Iterate through all elements once to find out how much space needs to be
+		//allocated to combine them all.
+		size_t totalRequiredSize = 0;
+		for (unsigned int i = 0; i < mTextLines.size(); ++i)
+		{
+			totalRequiredSize += mTextLines[i].text.length();
+		}
+
+		std::wstring text;
+		//Adding number of text lines to account for newlines.
+		text.reserve(totalRequiredSize + mTextLines.size());
+
 		//Iterate through all the currently stored texts and generate a single string
 		//containing all of them
-		for (unsigned int i = 0, count = mTextLines.size(); i < count; ++i)
+		for (unsigned int i = 0; i < mTextLines.size(); ++i)
 		{
-			text << mTextLines[i].text << L"\n";
+			text.append(mTextLines[i].text);
+			text.push_back(L'\n');
 		}
-		
-		mText->setText(text.str());
+
+		mText->setText(text);
 	}
 
 	mNeedTextSync = false;
