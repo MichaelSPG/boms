@@ -1,12 +1,10 @@
 #pragma once
 
 #include <vector>
-#include <memory>
 #include <numeric>
 
 #include <Windows.h>
 #include <d3d11.h>
-#include <D3DX11.h>
 
 #include "bsCollision.h"
 
@@ -116,5 +114,3 @@ private:
 
 	std::vector<bsEntity*>	mEntities;
 };
-
-typedef std::shared_ptr<bsMesh> bsSharedMesh;
