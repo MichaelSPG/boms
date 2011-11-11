@@ -10,7 +10,7 @@ public:
 
 	~bsTexture2D();
 
-	void apply(ID3D11DeviceContext& deviceContext);
+	void apply(ID3D11DeviceContext& deviceContext, unsigned int slot);
 
 	inline ID3D11ShaderResourceView* getShaderResourceView() const
 	{

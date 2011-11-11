@@ -51,12 +51,12 @@ bsTexture2D::~bsTexture2D()
 	}
 }
 
-void bsTexture2D::apply(ID3D11DeviceContext& deviceContext)
+void bsTexture2D::apply(ID3D11DeviceContext& deviceContext, unsigned int slot)
 {
 	if (mLoadingCompleted)
 	{
-		deviceContext.PSSetShaderResources(0, 1, &mShaderResourceView);
-		deviceContext.PSSetSamplers(0, 1, &mSamplerState);
+		deviceContext.PSSetShaderResources(slot, 1, &mShaderResourceView);
+		deviceContext.PSSetSamplers(slot, 1, &mSamplerState);
 	}
 }
 
