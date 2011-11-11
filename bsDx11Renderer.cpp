@@ -2,13 +2,12 @@
 
 #include "bsDx11Renderer.h"
 
-#include <string>
-
 #include "bsLog.h"
 #include "bsRenderTarget.h"
 #include "bsAssert.h"
 #include "bsConstantBuffers.h"
 #include "bsWindowsUtils.h"
+#include "bsFixedSizeString.h"
 
 
 bsDx11Renderer::bsDx11Renderer(HWND hWnd, unsigned int renderWindowWidth, unsigned int renderWindowHeight)
@@ -61,7 +60,7 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, unsigned int renderWindowWidth, unsign
 
 #ifdef BS_DEBUG
 	//Set debug info in D3D objects to help debugging their lifetimes if necessary.
-	std::string debugString("IDXGISwapChain");
+	bsString64 debugString("IDXGISwapChain");
 	mSwapChain->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
 		debugString.c_str());
 

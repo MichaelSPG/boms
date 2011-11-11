@@ -24,6 +24,7 @@
 #include "bsFrustum.h"
 
 #include "bsAlignedAllocator.h"
+#include "bsFixedSizeString.h"
 
 
 bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shaderManager)
@@ -141,6 +142,20 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	mLightInstancedVertexShader = mShaderManager->getVertexShader("LightInstanced.fx",
 		lightInstanced, 7);
 	mLightInstancedPixelShader = mShaderManager->getPixelShader("LightInstanced.fx");
+
+#ifdef BS_DEBUG
+	bsString128 debugName("bsRenderQueue world buffer");
+	mWorldBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, debugName.size(),
+		debugName.c_str());
+
+	debugName = "bsRenderQueue wireframe world buffer";
+	mWireframeWorldBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, debugName.size(),
+		debugName.c_str());
+
+	debugName = "bsRenderQueue light buffer buffer";
+	mLightBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, debugName.size(),
+		debugName.c_str());
+#endif
 }
 
 bsRenderQueue::~bsRenderQueue()

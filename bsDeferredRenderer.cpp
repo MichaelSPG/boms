@@ -3,7 +3,6 @@
 #include "bsDeferredRenderer.h"
 
 #include <vector>
-#include <string>
 
 #include <d3d11.h>
 
@@ -16,6 +15,7 @@
 #include "bsAssert.h"
 #include "bsTimer.h"
 #include "bsFrameStatistics.h"
+#include "bsFixedSizeString.h"
 
 
 bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer,
@@ -140,7 +140,7 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer,
 #ifdef BS_DEBUG
 	//Set names for debugging purposes
 	//Position
-	std::string debugData = "SRV GBuffer Position";
+	bsString128 debugData = "SRV GBuffer Position";
 	mGBuffer.position->getShaderResourceView()->SetPrivateData(WKPDID_D3DDebugObjectName,
 		debugData.size(), debugData.c_str());
 
@@ -209,6 +209,18 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer,
 	mGeometryRasterizerState->SetPrivateData(WKPDID_D3DDebugObjectName, debugData.size(),
 		debugData.c_str());
 
+	debugData = "RasterizerState Cull backfacing";
+	mCullBackFacingNoDepthClip->SetPrivateData(WKPDID_D3DDebugObjectName, debugData.size(),
+		debugData.c_str());
+
+	debugData = "RasterizerState Cull frontfacing";
+	mCullFrontFacingNoDepthClip->SetPrivateData(WKPDID_D3DDebugObjectName, debugData.size(),
+		debugData.c_str());
+
+	debugData = "RasterizerState Cull none no depth clip";
+	mCullNoneNoDepthClip->SetPrivateData(WKPDID_D3DDebugObjectName, debugData.size(),
+		debugData.c_str());
+
 	//Blend states
 	debugData = "BlendState Geometry";
 	mGeometryBlendState->SetPrivateData(WKPDID_D3DDebugObjectName, debugData.size(),
@@ -218,6 +230,14 @@ bsDeferredRenderer::bsDeferredRenderer(bsDx11Renderer* dx11Renderer,
 	mLightBlendState->SetPrivateData(WKPDID_D3DDebugObjectName, debugData.size(),
 		debugData.c_str());
 
+	//Depth stencil states
+	debugData = "DepthStencil Depth enabled";
+	mDepthEnabledStencilState->SetPrivateData(WKPDID_D3DDebugObjectName, debugData.size(),
+		debugData.c_str());
+
+	debugData = "DepthStencil Depth disabled";
+	mDepthDisabledStencilState->SetPrivateData(WKPDID_D3DDebugObjectName, debugData.size(),
+		debugData.c_str());
 #endif
 }
 
@@ -345,7 +365,9 @@ void bsDeferredRenderer::renderOneFrame(bsFrameStatistics& frameStatistics)
 	//Draw lines here since we don't want them to be affected by lights.
 	preLines = timer.getTimeMilliSeconds();
 	{
+		deviceContext->OMSetBlendState(mGeometryBlendState, nullptr, 0xFFFFFFFF);
 		mRenderQueue->drawLines();
+		deviceContext->OMSetBlendState(mLightBlendState, nullptr, 0xFFFFFFFF);
 	}
 	linesDuration = timer.getTimeMilliSeconds() - preLines;
 

@@ -7,6 +7,7 @@
 #include "bsLog.h"
 #include "bsVertexTypes.h"
 #include "bsAssert.h"
+#include "bsFixedSizeString.h"
 
 
 bsFullScreenQuad::bsFullScreenQuad(ID3D11Device* const device)
@@ -79,7 +80,7 @@ bsFullScreenQuad::bsFullScreenQuad(ID3D11Device* const device)
 
 
 #ifdef BS_DEBUG
-	std::string debugString("VertexBuffer fullscreen quad");
+	bsString64 debugString("VertexBuffer fullscreen quad");
 	
 	mVertexBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
 		debugString.c_str());

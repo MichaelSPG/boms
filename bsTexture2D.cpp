@@ -2,6 +2,7 @@
 
 #include "bsTexture2D.h"
 #include "bsAssert.h"
+#include "bsFixedSizeString.h"
 
 
 bsTexture2D::bsTexture2D(ID3D11ShaderResourceView* texture, ID3D11Device& device,
@@ -26,6 +27,16 @@ bsTexture2D::bsTexture2D(ID3D11ShaderResourceView* texture, ID3D11Device& device
 
 	const HRESULT hresult = device.CreateSamplerState(&samplerDesc, &mSamplerState);
 	BS_ASSERT2(SUCCEEDED(hresult), "Creating sampler state for texture failed");
+
+#ifdef BS_DEBUG
+	bsString128 debugString("bsTexture2D texture");
+	texture->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+		debugString.c_str());
+
+	debugString = "bsTexture2D sampler state";
+	mSamplerState->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+		debugString.c_str());
+#endif
 }
 
 bsTexture2D::~bsTexture2D()
