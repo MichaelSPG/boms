@@ -146,11 +146,6 @@ public:
 		return mFrameStats;
 	}
 
-	void setUseInstancing(bool useInstancing)
-	{
-		mUseInstancing = useInstancing;
-	}
-
 private:
 	/*	Add a batch of entities (or all entities) and cull the ones that are not visible
 		to the specified frustum.
@@ -166,11 +161,9 @@ private:
 	void sortLights();
 
 	//Functions to draw individual renderable types.
-	void drawMeshes();
 	void drawMeshesInstanced();
 
-	void drawLightsNotInstanced();
-	void drawLightsInstanced();
+	//void drawLightsInstanced();
 
 
 	void setWorldConstantBuffer(const XMMATRIX& world);
@@ -180,8 +173,6 @@ private:
 	void setLightConstantBuffer(const CBLight& cbLight);
 
 	void unbindGeometryShader();
-
-	bool mUseInstancing;
 
 	bsCamera*		mCamera;
 
@@ -197,13 +188,10 @@ private:
 	std::shared_ptr<bsPixelShader>	mWireframePixelShader;
 	std::shared_ptr<bsVertexShader>	mWireframeVertexShader;
 
-	std::shared_ptr<bsPixelShader>	mMeshInstancedPixelShader;
 	std::shared_ptr<bsVertexShader>	mMeshInstancedVertexShader;
 
-	std::shared_ptr<bsPixelShader>	mMeshPixelShader;
-	std::shared_ptr<bsVertexShader>	mMeshVertexShader;
-
 	std::shared_ptr<bsPixelShader>	mInstancedTexturedMeshPixelShader;
+	std::shared_ptr<bsPixelShader>	mInstancedTexturedMeshNormalPixelShader;
 
 	std::shared_ptr<bsPixelShader>	mLightPixelShader;
 	std::shared_ptr<bsVertexShader>	mLightVertexShader;

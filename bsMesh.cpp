@@ -82,36 +82,6 @@ bsMesh& bsMesh::operator=(bsMesh&& other)
 	return *this;
 }
 
-void bsMesh::draw(bsDx11Renderer* dx11Renderer) const
-{
-	if (!mLoadingFinished)
-	{
-		return;
-	}
-
-	ID3D11DeviceContext* context = dx11Renderer->getDeviceContext();
-
-	//Not using any buffers where offset starts at anything but zero.
-	const unsigned int offsets[D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT] = { 0 };
-
-	unsigned int strides[D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT];
-	for (unsigned int i = 0; i < D3D11_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT; ++i)
-	{
-		strides[i] = sizeof(bsVertexNormalTangentTex);
-	}
-
-	const size_t bufferCount = mVertexBuffers.size();
-
-	//Draw all vertex/index buffers.
-	for (size_t i = 0; i < bufferCount; ++i)
-	{
-		context->IASetVertexBuffers(0, 1, &mVertexBuffers[i], strides, offsets);
-		context->IASetIndexBuffer(mIndexBuffers[i], DXGI_FORMAT_R32_UINT, 0);
-
-		context->DrawIndexed(mIndexCounts[i], 0, 0);
-	}
-}
-
 void bsMesh::drawInstanced(ID3D11DeviceContext& deviceContext, ID3D11Buffer* instanceBuffer,
 	unsigned int instanceCount) const
 {

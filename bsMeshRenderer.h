@@ -24,8 +24,6 @@ public:
 
 
 	
-	void draw(bsDx11Renderer* dx11Renderer) const;
-
 	void drawInstanced(ID3D11DeviceContext& deviceContext, ID3D11Buffer* instanceBuffer,
 		unsigned int instanceCount) const;
 

@@ -48,12 +48,8 @@ public:
 
 	bsMesh& operator=(bsMesh&& other);
 
-	/*	Renders the mesh.
-		Calling this function before the mesh has finished loading results in undefined
-		behavior.
+	/*	Renders the mesh using instancing.
 	*/
-	void draw(bsDx11Renderer* dx11Renderer) const;
-
 	void drawInstanced(ID3D11DeviceContext& deviceContext, ID3D11Buffer* instanceBuffer,
 		unsigned int instanceCount) const;
 

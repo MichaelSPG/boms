@@ -32,7 +32,6 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	, mScene(nullptr)
 	, mDx11Renderer(dx11Renderer)
 	, mShaderManager(shaderManager)
-	, mUseInstancing(false)
 {
 	BS_ASSERT(dx11Renderer);
 	BS_ASSERT(shaderManager);
@@ -96,22 +95,8 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	};
 
 	mMeshInstancedVertexShader = mShaderManager->getVertexShader("MeshInstanced.fx", layout, 8);
-	mMeshInstancedPixelShader = mShaderManager->getPixelShader("MeshInstanced.fx");
 	mInstancedTexturedMeshPixelShader = mShaderManager->getPixelShader("MeshInstancedTextured.fx");
-
-	{
-		D3D11_INPUT_ELEMENT_DESC layoutNotInstanced[4] =
-		{
-			//Vertex data.
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		};
-
-		mMeshVertexShader = mShaderManager->getVertexShader("Mesh.fx", layoutNotInstanced, 4);
-		mMeshPixelShader = mShaderManager->getPixelShader("MeshInstanced.fx");
-	}
+	mInstancedTexturedMeshNormalPixelShader = mShaderManager->getPixelShader("MeshInstancedTexturedNormal.fx");
 
 	//Light
 	inputLayout.clear();
@@ -213,14 +198,7 @@ void bsRenderQueue::drawGeometry()
 	//sortLights();
 
 	//Render all the geometric renderable types
-	if (mUseInstancing)
-	{
-		drawMeshesInstanced();
-	}
-	else
-	{
-		drawMeshes();
-	}
+	drawMeshesInstanced();
 }
 
 void bsRenderQueue::setWorldConstantBuffer(const XMMATRIX& world)
@@ -336,71 +314,6 @@ void bsRenderQueue::unbindGeometryShader()
 	mDx11Renderer->getDeviceContext()->GSSetShader(nullptr, nullptr, 0);
 }
 
-void bsRenderQueue::drawMeshes()
-{
-	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(
-		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	//mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-
-	mShaderManager->setPixelShader(mMeshPixelShader);
-	mShaderManager->setVertexShader(mMeshVertexShader);
-
-	mFrameStats.uniqueMeshesDrawn = mMeshesToDraw.size();
-
-	for (auto itr = mMeshesToDraw.begin(), end = mMeshesToDraw.end(); itr != end; ++itr)
-	{
-		const bsMeshRenderer* meshRenderer = itr->first;
-		if (!meshRenderer->hasFinishedLoading())
-		{
-			continue;
-		}
-		const std::vector<const bsEntity*>& entities = itr->second;
-
-		mFrameStats.totalMeshesDrawn += entities.size();
-
-		//For each entity which contains this mesh, draw the mesh with different
-		//transforms.
-		for (unsigned int i = 0, count = entities.size(); i < count; ++i)
-		{
-			/*
-			const hkTransform& transform = entities[i]->getDerivedTransformation();
-			float f4x4[16];
-			transform.get4x4ColumnMajor(f4x4);
-			XMFLOAT4X4 xmf4x4(f4x4);
-			bsMath::XMFloat4x4Transpose(xmf4x4);
-			setWorldConstantBuffer(xmf4x4);
-
-			meshRenderer->draw(mDx11Renderer);
-			*/
-
-
-			/*
-			const XMVECTOR& pos = entities[i]->getPosition();
-			const XMVECTOR& rot = entities[i]->getDerivedRotation2();
-			const XMVECTOR& scale = entities[i]->getDerivedScale2();
-
-			const XMMATRIX positionMat = XMMatrixTranslationFromVector(pos);
-			const XMMATRIX rotationMat = XMMatrixRotationQuaternion(rot);
-			const XMMATRIX scaleMat = XMMatrixScalingFromVector(scale);
-
-			XMMATRIX transformMat = XMMatrixMultiply(scaleMat, rotationMat);
-			transformMat = XMMatrixMultiply(transformMat, positionMat);
-			transformMat = XMMatrixTranspose(transformMat);
-			*/
-			//XMFLOAT4X4 xmf4x4;
-			//XMStoreFloat4x4(&xmf4x4, transformMat);
-			//XMStoreFloat4x4(&xmf4x4, );
-			setWorldConstantBuffer(entities[i]->getTransform().getTransposedTransform());
-
-			meshRenderer->draw(mDx11Renderer);
-
-			const unsigned int triangleCount = meshRenderer->getTriangleCount();
-			mFrameStats.totalTrianglesDrawn += triangleCount;
-			mFrameStats.totalTrianglesDrawnNotInstanced += triangleCount;
-		}
-	}
-}
-
 void drawMeshInstanced(const bsDx11Renderer& renderer, const bsMeshRenderer& meshRenderer,
 	const XMMATRIX* transforms, unsigned int transformCount);
 
@@ -409,7 +322,6 @@ void bsRenderQueue::drawMeshesInstanced()
 	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(
 		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	mShaderManager->setPixelShader(mMeshInstancedPixelShader);
 	mShaderManager->setVertexShader(mMeshInstancedVertexShader);
 
 	mFrameStats.uniqueMeshesDrawn = mMeshesToDraw.size();
@@ -437,13 +349,13 @@ void bsRenderQueue::drawMeshesInstanced()
 			transforms.push_back(entities[i]->getTransform().getTransposedTransform());
 		}
 
-		if (meshRenderer.getMaterial().diffuse)
+		if (meshRenderer.getMaterial().normal)
 		{
-			mShaderManager->setPixelShader(mInstancedTexturedMeshPixelShader);
+			mShaderManager->setPixelShader(mInstancedTexturedMeshNormalPixelShader);
 		}
 		else
 		{
-			mShaderManager->setPixelShader(mMeshInstancedPixelShader);
+			mShaderManager->setPixelShader(mInstancedTexturedMeshPixelShader);
 		}
 
 		drawMeshInstanced(*mDx11Renderer, meshRenderer, transforms.data(), transforms.size());
@@ -522,18 +434,6 @@ void bsRenderQueue::drawLines()
 	}
 }
 
-void bsRenderQueue::drawLights()
-{
-	if (mUseInstancing)
-	{
-		drawLightsInstanced();
-	}
-	else
-	{
-		drawLightsNotInstanced();
-	}
-}
-
 void drawInstancedLight(const bsDx11Renderer& renderer, const bsLight& light,
 	const LightInstanceData* lightInstanceData, unsigned int instanceCount)
 {
@@ -555,7 +455,7 @@ void drawInstancedLight(const bsDx11Renderer& renderer, const bsLight& light,
 	instanceBuffer->Release();
 }
 
-void bsRenderQueue::drawLightsInstanced()
+void bsRenderQueue::drawLights()
 {
 	if (mLightPositionPairs.empty())
 	{
@@ -626,50 +526,6 @@ void bsRenderQueue::drawLightsInstanced()
 	//	drawInstancedLight(*mDx11Renderer, *mLightPositionPairs[i].first,
 	//		lightData.data(), lightData.size());
 	//}
-}
-
-void bsRenderQueue::drawLightsNotInstanced()
-{
-	mShaderManager->setPixelShader(mLightPixelShader);
-	mShaderManager->setVertexShader(mLightVertexShader);
-
-	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(
-		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	XMMATRIX scalingMatrix;
-	XMMATRIX fullTransform;
-	XMFLOAT4X4 lightWorldTransform;
-	CBLight cbLight;
-
-	for (size_t i = 0; i < mLightPositionPairs.size(); ++i)
-	{
-		const bsLight* light = mLightPositionPairs[i].first;
-		const XMFLOAT3& position = mLightPositionPairs[i].second;
-
-		//Create the light's transform, which includes the light's radius as scaling factor
-		//and the entity's position.
-		//Multiply with 2 to get diameter rather than radius.
-		const float scale = light->getRadius() * 2.0f;
-		scalingMatrix = XMMatrixScaling(scale, scale, scale);
-		fullTransform = XMMatrixMultiply(scalingMatrix,
-			XMMatrixTranslation(position.x, position.y, position.z));
-		fullTransform = XMMatrixTranspose(fullTransform);
-
-		//XMStoreFloat4x4(&lightWorldTransform, fullTransform);
-
-		setWorldConstantBuffer(fullTransform);
-
-
-		memcpy(&cbLight.lightColor.x, &light->mColor.x, sizeof(XMFLOAT3));
-		cbLight.lightColor.w = light->mIntensity;
-
-		memcpy(&cbLight.lightPosition.x, &position.x, sizeof(XMFLOAT3));
-		cbLight.lightPosition.w = light->mRadius;
-		
-		setLightConstantBuffer(cbLight);
-
-		light->draw(mDx11Renderer);
-	}
 }
 
 void bsRenderQueue::sortLights()
