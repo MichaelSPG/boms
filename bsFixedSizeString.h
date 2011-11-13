@@ -598,4 +598,30 @@ namespace std
 	{
 		return str.end();
 	}
+
+
+
+	/*	Overloads for std::hash to allow it to be used for unordered collection keys,
+		ie unordered_map.
+		Hashing algorithm taken from std::hash<std::string>.
+	*/
+	template <size_t Size>
+	class hash<bsFixedSizeString<Size>>
+		: public unary_function<bsFixedSizeString<Size>, size_t>
+	{
+	public:
+		size_t operator()(const bsFixedSizeString<Size>& str) const
+		{
+			const size_t last = str.size();
+			const size_t stride = 1 + last / 10;
+
+			size_t val = 2166136261U;
+			for(size_t first = 0; first < last; first += stride)
+			{
+				val = 16777619U * val ^ (size_t)str[first];
+			}
+
+			return val;
+		}
+	};
 }
