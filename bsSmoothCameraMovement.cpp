@@ -49,7 +49,7 @@ void bsSmoothCameraMovement::update(float forwardSpeed, float rightSpeed, float 
 
 	//Rotate the translation to be aligned with the camera's rotation.
 	const XMVECTOR& cameraRotation = mCameraTransform->getRotation();
-	translation = XMVector3Rotate(translation, XMQuaternionInverse(cameraRotation));
+	translation = XMVector3Rotate(translation, cameraRotation);
 
 	mCameraTransform->translate(translation);
 }

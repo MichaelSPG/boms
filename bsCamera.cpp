@@ -77,7 +77,7 @@ void bsCamera::updateViewProjection()
 		not move since the camera will likely move almost every frame during a game,
 		and to avoid needless branching.
 	*/
-
+	/*
 	const XMVECTOR& pos = mEntity->getTransform().getPosition();
 	const XMVECTOR& rot = mEntity->getTransform().getRotation();
 
@@ -88,6 +88,8 @@ void bsCamera::updateViewProjection()
 	const XMMATRIX rotationMat = XMMatrixRotationQuaternion(rot);
 
 	const XMMATRIX viewTransform = XMMatrixMultiply(rotationMat, inversePositionMat);
+	*/
+	const XMMATRIX viewTransform = getViewMatrix();
 
 	XMMATRIX viewProjection = XMMatrixMultiply(viewTransform, mProjection);
 	mViewProjection = viewProjection;
@@ -112,23 +114,30 @@ std::vector<bsEntity*> bsCamera::getVisibleEntities() const
 	return mScene->getEntities();
 }
 
-XMMATRIX bsCamera::getView() const
+XMMATRIX bsCamera::getViewMatrix() const
 {
-	XMVECTOR determinant;
-	return XMMatrixInverse(&determinant, mEntity->getTransform().getTransform());
+	const bsTransform& entityTransform = mEntity->getTransform();
+
+	const XMVECTOR& entityPosition = entityTransform.getPosition();
+	const XMVECTOR& entityRotation = entityTransform.getRotation();
+	const XMVECTOR& entityScale = entityTransform.getScale();
+
+	return XMMatrixAffineTransformation(
+		(entityScale),//Scale.
+		entityPosition,//Rotation origin.
+		XMQuaternionInverse(entityRotation),//Rotation.
+		XMVectorScale(entityPosition, -1.0f));//Translation.
+
+	//XMVECTOR determinant;
+	//return XMMatrixInverse(&determinant, mEntity->getTransform().getTransform());
 }
 
 hkpWorldRayCastOutput bsCamera::screenPointToWorldRay(const XMFLOAT2& screenPoint,
 	float rayLength, XMVECTOR* destinationOut, XMVECTOR* originOut) const
 {
-	//Build view matrix with inverted rotation.
 	const XMVECTOR& cameraPosition = mEntity->getTransform().getPosition();
-	const XMVECTOR cameraRotation = mEntity->getTransform().getRotation();
-	const XMMATRIX positionMat = XMMatrixTranslationFromVector(
-		XMVectorSubtract(XMVectorZero(), cameraPosition));
-	const XMMATRIX rotationMat = XMMatrixRotationQuaternion(cameraRotation);
-
-	const XMMATRIX view = XMMatrixMultiply(positionMat, rotationMat);
+	
+	const XMMATRIX view = getViewMatrix();
 
 	//Convert 2D screen point to 3D object space point.
 	const XMVECTOR screenPointObjectSpace = bsRayCastUtil::screenSpaceToObjectSpace(
@@ -144,8 +153,15 @@ hkpWorldRayCastOutput bsCamera::screenPointToWorldRay(const XMFLOAT2& screenPoin
 	bsRayCastUtil::castRay(screenPointObjectSpace, rayDirection, rayLength,
 		mScene->getPhysicsWorld(), output, rayDestination);
 
-	*originOut = screenPointObjectSpace;
-	*destinationOut = rayDestination;
+	//User may not be interested in these two, so check if they're ignored before assigning.
+	if (originOut != nullptr)
+	{
+		*originOut = screenPointObjectSpace;
+	}
+	if (destinationOut != nullptr)
+	{
+		*destinationOut = rayDestination;
+	}
 	return output;
 }
 
@@ -159,9 +175,9 @@ bsFrustum bsCamera::getTransformedFrustum() const
 	BS_ASSERT2(mEntity != nullptr, "Camera must be attached to an entity before calling"
 		" getTransformedFrustum");
 
-	//Transform local space frustum by the entity the camera is attached to's inverse
-	//rotation and position.
+	//Transform local space frustum by the entity the camera is attached to's rotation
+	//and position.
 	return bsTransformFrustum(mFrustum,
-		XMQuaternionInverse(mEntity->getTransform().getRotation()),
+		mEntity->getTransform().getRotation(),
 		mEntity->getTransform().getPosition());
 }

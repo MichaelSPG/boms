@@ -89,8 +89,9 @@ public:
 	/*	Returns the camera's view matrix.
 		This matrix is generated every time this function is called, so storing it if it
 		is being used multiple times per frame may save some CPU.
+		This is the same as the entity the camera is attached to's inverse transform.
 	*/
-	XMMATRIX getView() const;
+	XMMATRIX getViewMatrix() const;
 
 	inline const XMMATRIX& getProjection() const
 	{
@@ -144,7 +145,7 @@ public:
 		1024x1024, the middle of the screen is 512,512, NOT 0.5,0.5.
 
 		destinationOut and originOut are output parameters representing the start and the
-		end points of the ray.
+		end points of the ray. They can be null if you are not interested in that information.
 	*/
 	hkpWorldRayCastOutput screenPointToWorldRay(const XMFLOAT2& screenPoint,
 		float rayLength, XMVECTOR* destinationOut, XMVECTOR* originOut) const;
