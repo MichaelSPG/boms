@@ -5,6 +5,7 @@
 #include "bsAssert.h"
 #include "bsTexture2D.h"
 #include "bsLog.h"
+#include "bsFixedSizeString.h"
 
 
 //Name for the default pink/yellow checker texture.
@@ -44,6 +45,15 @@ public:
 		bsLog::logf(bsLog::SEV_INFO, "Loading of texture '%s' finished, success: %u",
 			fileLoader.getFileName().c_str(),
 			fileLoader.getCurrentLoadState() == bsFileLoader::SUCCEEDED);
+
+#ifdef BS_DEBUG
+		if (shaderResourceView != nullptr)
+		{
+			bsString256 debugString(mMeshName.c_str());
+			shaderResourceView->SetPrivateData(WKPDID_D3DDebugObjectName,
+				debugString.size(), debugString.c_str());
+		}
+#endif
 	}
 
 private:
@@ -67,7 +77,7 @@ bsTextureCache::bsTextureCache(ID3D11Device& device, const bsFileSystem& fileSys
 		in the background. The colors can also help with identifying textures which failed
 		to load (they will always have the default yellow/pink checker texture.
 	*/
-	static const unsigned char yellowPinkCheckerPng[] =
+	const unsigned char yellowPinkCheckerPng[] =
 	{
 		0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 
 		0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02, 
@@ -86,6 +96,12 @@ bsTextureCache::bsTextureCache(ID3D11Device& device, const bsFileSystem& fileSys
 		&shaderResourceView, nullptr);
 
 	BS_ASSERT2(SUCCEEDED(hres), "Failed to create default yellow/pink checker texture");
+
+#ifdef BS_DEBUG
+	bsString32 debugString("Texture cache default texture");
+	shaderResourceView->SetPrivateData(WKPDID_D3DDebugObjectName,
+		debugString.size(), debugString.c_str());
+#endif
 
 	//Insert the default texture into texture cache.
 	std::shared_ptr<bsTexture2D> defaultTexture(

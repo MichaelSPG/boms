@@ -60,31 +60,7 @@ bsDx11Renderer::bsDx11Renderer(HWND hWnd, unsigned int renderWindowWidth, unsign
 
 #ifdef BS_DEBUG
 	//Set debug info in D3D objects to help debugging their lifetimes if necessary.
-	bsString64 debugString("IDXGISwapChain");
-	mSwapChain->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
-		debugString.c_str());
-
-	debugString = "ID3D11Device";
-	mDevice->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
-		debugString.c_str());
-
-	debugString = "ID3D11DeviceContext";
-	mDeviceContext->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
-		debugString.c_str());
-	
-	debugString = "ID3D11RenderTargetView Back buffer";
-	mBackBufferRenderTargetView->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
-		debugString.c_str());
-		
-	debugString = "ID3D11Texture2D_DepthStencil";
-	mDepthStencil->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
-		debugString.c_str());
-
-	debugString = "ID3D11DepthStencilView";
-	mDepthStencilView->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
-		debugString.c_str());
-
-	debugString = "Screen size constant buffer";
+	bsString32 debugString("Screen size constant buffer");
 	mScreenSizeBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
 		debugString.c_str());
 #endif
@@ -219,6 +195,33 @@ bool bsDx11Renderer::createDeviceAndSwapChain(HWND hWnd, unsigned int windowWidt
 	//Disable DXGI's listening for Alt-Enter.
 	iDxgiFactory->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER);
 
+
+#ifdef BS_DEBUG
+	bsString32 debugString("Swap chain");
+	mSwapChain->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+		debugString.c_str());
+
+	debugString = "Device";
+	mDevice->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+		debugString.c_str());
+
+	debugString = "Device context";
+	mDeviceContext->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+		debugString.c_str());
+
+	debugString = "DXGI device";
+	dxgiDevice->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+		debugString.c_str());
+
+	debugString = "DXGI adapter";
+	dxgiAdapter->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+		debugString.c_str());
+
+	debugString = "DXGI Factory";
+	iDxgiFactory->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+		debugString.c_str());
+#endif
+
 	return true;
 }
 
@@ -241,6 +244,16 @@ bool bsDx11Renderer::createBackBufferAndDepthStencil(unsigned int windowWidth,
 
 		return false;
 	}
+
+#ifdef BS_DEBUG
+	bsString32 debugString("Back buffer");
+	backBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+		debugString.c_str());
+
+	debugString = "Back buffer render target view";
+	mBackBufferRenderTargetView->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+		debugString.c_str());
+#endif
 
 	backBuffer->Release();
 
@@ -300,6 +313,16 @@ bool bsDx11Renderer::createBackBufferAndDepthStencil(unsigned int windowWidth,
 		return false;
 	}
 
+#ifdef BS_DEBUG
+	debugString = "Depth stencil";
+	mDepthStencil->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+		debugString.c_str());
+
+	debugString = "Depth stencil view";
+	mDepthStencilView->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
+		debugString.c_str());
+#endif
+
 	return true;
 }
 
@@ -336,10 +359,10 @@ void bsDx11Renderer::resizeWindow(HWND hWnd, unsigned int windowWidth, unsigned 
 
 	if (!SUCCEEDED(hres))
 	{
-		std::string err = bsWindowsUtils::winApiErrorCodeToString(GetLastError());
+		std::string errorMessage = bsWindowsUtils::winApiErrorCodeToString(GetLastError());
 
 		bsLog::logf(bsLog::SEV_CRICICAL, "Failed to resize swap chain, error message: %s",
-			err.c_str());
+			errorMessage.c_str());
 
 		BS_ASSERT2(SUCCEEDED(hres), "Failed to resize swap chain buffers");
 	}

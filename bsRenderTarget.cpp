@@ -6,7 +6,7 @@
 
 #include "bsDx11Renderer.h"
 #include "bsAssert.h"
-
+#include "bsFixedSizeString.h"
 
 
 bsRenderTarget::bsRenderTarget(unsigned int width, unsigned int height,
@@ -29,6 +29,8 @@ bsRenderTarget::bsRenderTarget(unsigned int width, unsigned int height,
 
 	//TODO: Do something sensible when something fails.
 	(void)success;
+
+	BS_ASSERT2(success, "Failed to create render target");
 }
 
 bsRenderTarget::~bsRenderTarget()
@@ -80,6 +82,12 @@ bool bsRenderTarget::createTexture(unsigned int width, unsigned int height,
 
 	BS_ASSERT2(SUCCEEDED(hr), "Failed to create texture");
 
+#ifdef BS_DEBUG
+	const bsString32 debugName("Render target texture");
+	mRenderTargetTexture->SetPrivateData(WKPDID_D3DDebugObjectName, debugName.size(),
+		debugName.c_str());
+#endif
+
 	return SUCCEEDED(hr);
 }
 
@@ -96,6 +104,12 @@ bool bsRenderTarget::createView(ID3D11Device& device)
 		&mRenderTargetView);
 
 	BS_ASSERT2(SUCCEEDED(hr), "Failed to create render target view");
+
+#ifdef BS_DEBUG
+	const bsString32 debugName("Render target view");
+	mRenderTargetView->SetPrivateData(WKPDID_D3DDebugObjectName, debugName.size(),
+		debugName.c_str());
+#endif
 
 	return SUCCEEDED(hr);
 }
@@ -114,6 +128,12 @@ bool bsRenderTarget::createShaderResourceView(ID3D11Device& device)
 		&shaderResourceDesc, &mShaderResourceView);
 
 	BS_ASSERT2(SUCCEEDED(hr), "Failed to create shader resource view");
+
+#ifdef BS_DEBUG
+	const bsString64 debugName("Render target shader resource view");
+	mShaderResourceView->SetPrivateData(WKPDID_D3DDebugObjectName, debugName.size(),
+		debugName.c_str());
+#endif
 
 	return SUCCEEDED(hr);
 }
