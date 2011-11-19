@@ -100,6 +100,9 @@ LRESULT CALLBACK bsWindow::WinProc(HWND hWnd, UINT message, WPARAM wParam, LPARA
 				BS_ASSERT(width != 0);
 				BS_ASSERT(height != 0);
 
+				window->mWindowWidth = width;
+				window->mWindowHeight = height;
+
 				window->mWindowResizedCallback(width, height, *window);
 			}
 		}
