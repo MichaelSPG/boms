@@ -123,13 +123,10 @@ XMMATRIX bsCamera::getViewMatrix() const
 	const XMVECTOR& entityScale = entityTransform.getScale();
 
 	return XMMatrixAffineTransformation(
-		(entityScale),//Scale.
+		XMVectorDivide(XMVectorReplicate(1.0f), entityScale),//Scale.
 		entityPosition,//Rotation origin.
 		XMQuaternionInverse(entityRotation),//Rotation.
 		XMVectorScale(entityPosition, -1.0f));//Translation.
-
-	//XMVECTOR determinant;
-	//return XMMatrixInverse(&determinant, mEntity->getTransform().getTransform());
 }
 
 hkpWorldRayCastOutput bsCamera::screenPointToWorldRay(const XMFLOAT2& screenPoint,
