@@ -5,9 +5,11 @@
 
 #include <Common/Base/hkBase.h>
 #include <Common/Base/Types/hkRefPtr.h>
+#include <Physics/Dynamics/World/hkpWorldObject.h>
 
 #include "bsTransform.h"
 #include "bsCollision.h"
+#include "bsAssert.h"
 
 class hkpRigidBody;
 
@@ -19,7 +21,24 @@ class bsText3D;
 class bsScene;
 class bsMeshRenderer;
 
-//typedef std::shared_ptr<bsMesh> bsSharedMesh;
+
+/*	Keys used for properties attached to Havok rigid bodies and similar, making it
+	possible to find an entity from a Havok rigid body.
+*/
+enum bsPropertyKeys
+{
+	//Pointer to the bsEntity owning the Havok entity.
+	BSPK_ENTITY_POINTER = 10000
+};
+
+/*	Utility function to get a bsEntity from a Havok object.
+*/
+inline bsEntity& bsGetEntity(const hkpWorldObject& havokObject)
+{
+	BS_ASSERT2(havokObject.hasProperty(BSPK_ENTITY_POINTER), "Object does not have an"
+		" entity property");
+	return *static_cast<bsEntity*>(havokObject.getProperty(BSPK_ENTITY_POINTER).getPtr());
+}
 
 
 /*	Entities are used to represent an object in 3D space which can have multiple components

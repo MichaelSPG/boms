@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vector>
-#include <memory>
 
 #include <Common/Base/hkBase.h>
 
@@ -14,16 +13,6 @@ struct bsCoreCInfo;
 struct bsFrameStatistics;
 class hkJobQueue;
 class bsEntity;
-
-
-/*	Keys used for properties attached to Havok rigid bodies and similar, making it
-	possible to find an entity from a Havok rigid body.
-*/
-enum bsPropertyKeys
-{
-	//Pointer to the bsEntity owning the Havok entity.
-	BSPK_ENTITY_POINTER = 10000
-};
 
 
 /*	A scene represents a collection of entities.

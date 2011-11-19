@@ -195,19 +195,14 @@ void bsScene::synchronizeActiveEntities(unsigned int* totalActiveRigidBodies,
 
 		for (int j = 0; j < entities.getSize(); ++j)
 		{
-			hkpRigidBody* rigidBody = hkpGetRigidBody(entities[j]->getCollidable());
-			BS_ASSERT(rigidBody->hasProperty(BSPK_ENTITY_POINTER));
+			//Can use unchecked here as non-rigid body entites are not in simulation islands.
+			const hkpRigidBody* rigidBody = hkpGetRigidBodyUnchecked(entities[j]->getCollidable());
 			
-			if (rigidBody != nullptr)
-			{
-				++numActiveRigidBodies;
+			++numActiveRigidBodies;
 
-				bsEntity* entity = static_cast<bsEntity*>
-					(rigidBody->getProperty(BSPK_ENTITY_POINTER).getPtr());
-
-				entity->getTransform().setTransformFromRigidBody(bsMath::toXM(rigidBody->getPosition()),
-					bsMath::toXM(rigidBody->getRotation()));
-			}
+			bsEntity& entity = bsGetEntity(*rigidBody);
+			entity.getTransform().setTransformFromRigidBody(bsMath::toXM(rigidBody->getPosition()),
+				bsMath::toXM(rigidBody->getRotation()));
 		}
 	}
 
