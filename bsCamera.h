@@ -103,10 +103,6 @@ public:
 		return mViewProjection;
 	}
 
-	/*	Returns a vector of all entities which overlap with the frustum.
-	*/
-	std::vector<bsEntity*> getVisibleEntities() const;
-
 	/*	Updates and uploads view/projection matrices to the GPU.
 		This should be called at least every time the camera's transform/projection has
 		changed.

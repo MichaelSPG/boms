@@ -105,15 +105,6 @@ void bsCamera::updateViewProjection()
 	mDeviceContext->UpdateSubresource(mCameraConstantBuffer, 0, nullptr, &cbCam, 0, 0);
 }
 
-std::vector<bsEntity*> bsCamera::getVisibleEntities() const
-{
-	BS_ASSERT2(mScene != nullptr, "Trying to get a camera's visible nodes, but camera"
-		" is not in a scene");
-
-	//Temporary solution, no culling.
-	return mScene->getEntities();
-}
-
 XMMATRIX bsCamera::getViewMatrix() const
 {
 	const bsTransform& entityTransform = mEntity->getTransform();
