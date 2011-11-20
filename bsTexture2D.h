@@ -6,7 +6,8 @@
 class bsTexture2D
 {
 public:
-	bsTexture2D(ID3D11ShaderResourceView* texture, ID3D11Device& device, unsigned int id);
+	bsTexture2D(ID3D11ShaderResourceView* texture, ID3D11Device& device, unsigned int id,
+		D3D11_FILTER filter = D3D11_FILTER_ANISOTROPIC);
 
 	~bsTexture2D();
 

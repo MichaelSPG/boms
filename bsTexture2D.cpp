@@ -6,7 +6,7 @@
 
 
 bsTexture2D::bsTexture2D(ID3D11ShaderResourceView* texture, ID3D11Device& device,
-	unsigned int id)
+	unsigned int id, D3D11_FILTER filter /*= D3D11_FILTER_ANISOTROPIC*/)
 	: mShaderResourceView(texture)
 	, mLoadingCompleted(1)
 	, mID(id)
@@ -14,8 +14,9 @@ bsTexture2D::bsTexture2D(ID3D11ShaderResourceView* texture, ID3D11Device& device
 	BS_ASSERT2(texture, "Invalid texture");
 
 	D3D11_SAMPLER_DESC samplerDesc;
-	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+	//samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
 	//samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
+	samplerDesc.Filter = filter;
 	samplerDesc.AddressU = samplerDesc.AddressV = samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
 	samplerDesc.MinLOD = -FLT_MAX;
 	samplerDesc.MaxLOD = FLT_MAX;

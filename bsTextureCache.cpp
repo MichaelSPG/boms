@@ -105,7 +105,9 @@ bsTextureCache::bsTextureCache(ID3D11Device& device, const bsFileSystem& fileSys
 
 	//Insert the default texture into texture cache.
 	std::shared_ptr<bsTexture2D> defaultTexture(
-		std::make_shared<bsTexture2D>(shaderResourceView, mDevice, getNewTextureId()));
+		std::make_shared<bsTexture2D>(shaderResourceView, mDevice, getNewTextureId(),
+		D3D11_FILTER_MIN_MAG_MIP_POINT));
+
 	mTextures.insert(std::move(StringTexturePair(bsTextureCacheDefaultTextureName, defaultTexture)));
 }
 
