@@ -46,7 +46,20 @@ __declspec(align(16)) struct LightInstanceData
 	XMMATRIX world;
 
 	//xyz=position, w=lightRadius
+	XMFLOAT4A positionRadius;
+
 	//xyz=color, w=intensity
-	XMVECTOR positionRadius;
-	XMVECTOR colorIntensity;
+	XMFLOAT4A colorIntensity;
+
+	//xyz=light direction, w=spotCone;
+	XMFLOAT4A direction;
+
+	//unused
+	XMFLOAT4A attenuation;
+};
+
+struct CBMaterial
+{
+	XMFLOAT4	color;
+	XMFLOAT2	uvTile;
 };
