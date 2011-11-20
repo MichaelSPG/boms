@@ -8,14 +8,14 @@ namespace bsFileUtil
 	/*	Checks if the specified directory name is actually a directory.
 		Returns true if it exists and is a directory, false otherwise.
 	*/
-	bool directoryExists(const char* directoryName)
+	inline bool directoryExists(const char* directoryName)
 	{
 		const DWORD attributes = GetFileAttributes(directoryName);
 
 		return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
 	}
 
-	bool fileExists(const char* fileName)
+	inline bool fileExists(const char* fileName)
 	{
 		const DWORD attributes = GetFileAttributes(fileName);
 
@@ -23,7 +23,7 @@ namespace bsFileUtil
 
 	}
 
-	time_t filetimeToTime_t(const FILETIME& ft)
+	inline time_t filetimeToTime_t(const FILETIME& ft)
 	{
 		//A FILETIME is the number of 100-nanosecond intervals since January 1, 1601.
 		//A time_t is the number of 1-second intervals since January 1, 1970.
@@ -35,7 +35,7 @@ namespace bsFileUtil
 
 	/*	Returns a time_t describing when a file was last modified.
 	*/
-	time_t lastModifiedTime(const char* fileName)
+	inline time_t lastModifiedTime(const char* fileName)
 	{
 		WIN32_FILE_ATTRIBUTE_DATA fileAttributes;
 		GetFileAttributesEx(fileName, GetFileExInfoStandard, &fileAttributes);

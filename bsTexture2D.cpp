@@ -25,17 +25,22 @@ bsTexture2D::bsTexture2D(ID3D11ShaderResourceView* texture, ID3D11Device& device
 	samplerDesc.BorderColor[0] = samplerDesc.BorderColor[1] = samplerDesc.BorderColor[2] =
 		samplerDesc.BorderColor[3] = 0.0f;
 
-	const HRESULT hresult = device.CreateSamplerState(&samplerDesc, &mSamplerState);
+	HRESULT hresult = device.CreateSamplerState(&samplerDesc, &mSamplerState);
 	BS_ASSERT2(SUCCEEDED(hresult), "Creating sampler state for texture failed");
 
 #ifdef BS_DEBUG
-	bsString128 debugString("bsTexture2D texture");
-	texture->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
-		debugString.c_str());
-
-	debugString = "bsTexture2D sampler state";
+	bsString128 debugString = "bsTexture2D sampler state";
 	mSamplerState->SetPrivateData(WKPDID_D3DDebugObjectName, debugString.size(),
 		debugString.c_str());
+
+	unsigned int dataSize = 127;
+	hresult = texture->GetPrivateData(WKPDID_D3DDebugObjectName, &dataSize,
+		debugString.begin());
+	if (hresult == DXGI_ERROR_NOT_FOUND)
+	{
+		BS_ASSERT2(false, "Texture missing a debug name. Please ensure every texture is"
+			" assigned a name when created");
+	}
 #endif
 }
 

@@ -34,15 +34,8 @@ public:
 		Note: The callback function will not be called by the same thread as the one
 		calling this function, and is therefore required to be thread safe.
 	*/
-	inline void addAsynchronousLoadRequest(const std::string& fileName,
-		const AsyncCompletionCallback& callback)
-	{
-		//Make sure it's a not an empty callback.
-		//assert(callback);
-
-		mAsynchronousLoadRequests.push(std::move
-			(std::make_pair<std::string, AsyncCompletionCallback>(fileName, callback)));
-	}
+	void addAsynchronousLoadRequest(const std::string& fileName,
+		const AsyncCompletionCallback& callback);
 
 	/*	Loads a file and blocks until it is completely loaded/fails to load.
 		You may want to use this function when loading a small object

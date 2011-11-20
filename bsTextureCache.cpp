@@ -20,9 +20,9 @@ class bsTextureFileLoadFinishedCallback
 {
 public:
 	bsTextureFileLoadFinishedCallback(const std::shared_ptr<bsTexture2D>& texture,
-		const std::string& meshName, ID3D11Device& device)
+		const std::string& textureName, ID3D11Device& device)
 		: mTexture(texture)
-		, mMeshName(meshName)
+		, mTextureName(textureName)
 		, mDevice(device)
 	{
 	}
@@ -49,7 +49,7 @@ public:
 #ifdef BS_DEBUG
 		if (shaderResourceView != nullptr)
 		{
-			bsString256 debugString(mMeshName.c_str());
+			bsString256 debugString(mTextureName.c_str());
 			shaderResourceView->SetPrivateData(WKPDID_D3DDebugObjectName,
 				debugString.size(), debugString.c_str());
 		}
@@ -58,7 +58,7 @@ public:
 
 private:
 	std::shared_ptr<bsTexture2D> mTexture;
-	std::string				mMeshName;
+	std::string				mTextureName;
 	ID3D11Device&			mDevice;
 };
 

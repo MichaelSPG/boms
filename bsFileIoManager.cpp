@@ -9,6 +9,7 @@
 #include "bsLog.h"
 #include "bsAssert.h"
 #include "bsWindowsUtils.h"
+#include "bsFileUtil.h"
 
 
 void bsFileIoManager::threadLoop()
@@ -87,4 +88,17 @@ void bsFileIoManager::shutdown()
 
 	mAsynchronousLoaders.clear();
 	mAsynchronousLoadRequests.clear();
+}
+
+void bsFileIoManager::addAsynchronousLoadRequest(const std::string& fileName,
+	const AsyncCompletionCallback& callback)
+{
+	//Make sure it's a not an empty callback.
+	BS_ASSERT2(callback, "Invalid callback");
+
+	BS_ASSERT2(bsFileUtil::fileExists(fileName.c_str()), "Load request for file which does"
+		" not exist added");
+
+	mAsynchronousLoadRequests.push(std::move
+		(std::make_pair<std::string, AsyncCompletionCallback>(fileName, callback)));
 }

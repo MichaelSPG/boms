@@ -26,26 +26,26 @@ public:
 	{
 		setLength(0);
 	}
-
+	
 	bsFixedSizeString(const char* str)
 	{
 		//+1 to include null terminator.
 		const size_t paramLength = strlen(str) + 1;
 		BS_ASSERT2(paramLength <= Size, "Buffer overflow");
 
-		memcpy(mData, str, paramLength);
+		memcpy(mData, str, std::min(paramLength, Size - 1));
 
-		setLength(paramLength - 1);
+		setLength(std::min(paramLength, Size - 1));
 	}
-
+	
 	bsFixedSizeString(const char* str, size_t stringLength)
 	{
 		//+1 to include null terminator.
 		BS_ASSERT2(stringLength + 1 <= Size, "Buffer overflow");
 
-		memcpy(mData, str, stringLength);
+		memcpy(mData, str, std::min(stringLength, Size - 1));
 
-		setLength(stringLength);
+		setLength(std::min(stringLength, Size - 1));
 	}
 
 	bsFixedSizeString(const bsFixedSizeString& other)
@@ -64,7 +64,7 @@ public:
 		const size_t paramLength = strlen(str) + 1;
 		BS_ASSERT2(paramLength <= Size, "Buffer overflow");
 
-		memmove(mData, str, paramLength);
+		memmove(mData, str, std::min(paramLength, Size - 1));
 
 		setLength(paramLength - 1);
 
@@ -90,7 +90,7 @@ public:
 		//+1 to include null terminator.
 		BS_ASSERT2(stringLength + 1 <= Size, "Buffer overflow");
 
-		memmove(mData, str, stringLength);
+		memmove(mData, str, std::min(stringLength, Size - 1));
 
 		setLength(stringLength);
 	}
@@ -264,6 +264,12 @@ public:
 	{
 		BS_ASSERT2(mStringLength + 2 <= Size, "Capacity exceeded");
 
+		if (mStringLength + 2 > Size)
+		{
+			//Avoid buffer overflow.
+			return;
+		}
+
 		mData[mStringLength] = c;
 
 		setLength(mStringLength + 1);
@@ -274,6 +280,12 @@ public:
 	void pop_back()
 	{
 		BS_ASSERT2(mStringLength > 0, "Popping an empty string");
+
+		if (mStringLength == 0)
+		{
+			//Avoid buffer underflow.
+			return;
+		}
 
 		setLength(mStringLength - 1);
 	}
@@ -294,6 +306,12 @@ public:
 		//Verify that we can fit own string, str, and null terminator.
 		BS_ASSERT2(mStringLength + paramLength + 1 < Size, "Buffer overflow");
 
+		if (mStringLength + paramLength + 1 >= Size)
+		{
+			//Avoid buffer overflow.
+			return;
+		}
+
 		//Copy str to end of current string.
 		strcpy_s(mData + mStringLength, Size - mStringLength, str);
 
@@ -305,6 +323,12 @@ public:
 	{
 		const size_t paramLength = str.length();
 		BS_ASSERT2(mStringLength + paramLength < Size, "Buffer overflow");
+
+		if (mStringLength + paramLength >= Size)
+		{
+			//Avoid buffer overflow.
+			return;
+		}
 
 		//Copy str to end of current string.
 		strcpy_s(mData + mStringLength, Size - mStringLength, str.mData);

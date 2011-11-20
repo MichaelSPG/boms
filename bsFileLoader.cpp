@@ -92,6 +92,8 @@ void bsFileLoader::createHandle()
 			" Error message: %s", mFileName.c_str(),
 			bsWindowsUtils::winApiErrorCodeToString(GetLastError()).c_str());
 
+		BS_ASSERT2(false, "Failed to create handle for file");
+
 		mLoadState = FAILED;
 
 		CloseHandle(mFileHandle);
