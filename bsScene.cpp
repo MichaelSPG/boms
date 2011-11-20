@@ -76,6 +76,9 @@ bsScene::~bsScene()
 	mHavokManager->destroyVisualDebuggerForWorld(*mPhysicsWorld);
 
 	mPhysicsWorld->markForWrite();
+	
+	mPhysicsWorld->removeContactListener(&mContactCounter);
+
 	mPhysicsWorld->removeReference();
 
 	//Camera is attached to an entity and will be deleted by that entity.
@@ -152,6 +155,7 @@ void bsScene::update(float deltaTimeMs, bsFrameStatistics& framStatistics)
 	framStatistics.physicsInfo.synchronizationDuration = timer.getTimeMilliSeconds() - preSynchronize;
 	framStatistics.physicsInfo.numActiveRigidBodies = totalActiveRigidBodies;
 	framStatistics.physicsInfo.numActiveSimulationIslands = totalActiveSimulationIslands;
+	framStatistics.physicsInfo.numContacts = mContactCounter.getNumContacts();
 }
 
 void bsScene::createPhysicsWorld(hkJobQueue& jobQueue)
@@ -168,6 +172,8 @@ void bsScene::createPhysicsWorld(hkJobQueue& jobQueue)
 
 	hkpAgentRegisterUtil::registerAllAgents(mPhysicsWorld->getCollisionDispatcher());
 	mPhysicsWorld->registerWithJobQueue(&jobQueue);
+
+	mPhysicsWorld->addContactListener(&mContactCounter);
 
 	mPhysicsWorld->unmarkForWrite();
 }

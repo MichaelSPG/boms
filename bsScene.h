@@ -4,6 +4,8 @@
 
 #include <Common/Base/hkBase.h>
 
+#include "bsContactCounter.h"
+
 class bsCamera;
 class bsDx11Renderer;
 class bsRenderable;
@@ -13,6 +15,7 @@ struct bsCoreCInfo;
 struct bsFrameStatistics;
 class hkJobQueue;
 class bsEntity;
+//class bsContactCounter;
 
 
 /*	A scene represents a collection of entities.
@@ -110,7 +113,8 @@ private:
 	unsigned int		mNumCreatedEntities;
 	bsDx11Renderer*		mDx11Renderer;
 
-	hkpWorld*	mPhysicsWorld;
+	hkpWorld*			mPhysicsWorld;
+	bsContactCounter	mContactCounter;
 
 	bsHavokManager* mHavokManager;
 

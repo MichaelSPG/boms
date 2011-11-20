@@ -26,6 +26,7 @@ struct bsFrameStatistics
 		float synchronizationDuration;
 		unsigned int numActiveRigidBodies;
 		unsigned int numActiveSimulationIslands;
+		unsigned int numContacts;
 	};
 
 	RenderingInfo renderingInfo;
