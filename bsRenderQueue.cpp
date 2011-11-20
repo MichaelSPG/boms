@@ -37,6 +37,8 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	BS_ASSERT(shaderManager);
 
 
+	ID3D11Device& device = *mDx11Renderer->getDevice();
+
 	D3D11_BUFFER_DESC bufferDescription;
 	memset(&bufferDescription, 0, sizeof(bufferDescription));
 	bufferDescription.Usage = D3D11_USAGE_DEFAULT;
@@ -45,19 +47,16 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	bufferDescription.CPUAccessFlags = 0;
 	bufferDescription.MiscFlags = 0;
 
-	HRESULT hres = mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr,
-		&mWorldBuffer);
+	HRESULT hres = device.CreateBuffer(&bufferDescription, nullptr, &mWorldBuffer);
 
 	BS_ASSERT2(SUCCEEDED(hres), "bsRenderQueue::bsRenderQueue failed to create world buffer");
 
 	bufferDescription.ByteWidth = sizeof(CBWireFrame);
-	hres = mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr,
-		&mWireframeWorldBuffer);
+	hres = device.CreateBuffer(&bufferDescription, nullptr, &mWireframeWorldBuffer);
 	BS_ASSERT(SUCCEEDED(hres));
 
 	bufferDescription.ByteWidth = sizeof(CBLight);
-	hres = mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr,
-		&mLightBuffer);
+	hres = device.CreateBuffer(&bufferDescription, nullptr, &mLightBuffer);
 	BS_ASSERT(SUCCEEDED(hres));
 
 	//Shaders
@@ -109,7 +108,7 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 		inputLayout.size());
 	mLightPixelShader = mShaderManager->getPixelShader("Light.fx");
 
-	D3D11_INPUT_ELEMENT_DESC lightInstanced[7] =
+	D3D11_INPUT_ELEMENT_DESC lightInstanced[8] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 
@@ -122,11 +121,36 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 		{ "TEXCOORD", 4, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 64, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
 		//Color/intensity
 		{ "TEXCOORD", 5, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 80, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
+		//Direction/spot cone
+		{ "TEXCOORD", 6, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 96, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
 	};
 
 	mLightInstancedVertexShader = mShaderManager->getVertexShader("LightInstanced.fx",
-		lightInstanced, 7);
-	mLightInstancedPixelShader = mShaderManager->getPixelShader("LightInstanced.fx");
+		lightInstanced, ARRAYSIZE(lightInstanced));
+	mPointLightInstancedPixelShader = mShaderManager->getPixelShader("LightInstanced.fx");
+	mSpotLightInstancedPixelShader = mShaderManager->getPixelShader("SpotLightInstanced.fx");
+
+	//Create material buffer.
+	bufferDescription.ByteWidth = sizeof(XMFLOAT4) * 2;
+	hres = mDx11Renderer->getDevice()->CreateBuffer(&bufferDescription, nullptr, &mMaterialBuffer);
+	BS_ASSERT2(SUCCEEDED(hres), "Failed to create material buffer");
+
+
+	D3D11_SAMPLER_DESC lightSamplerDesc;
+	lightSamplerDesc.AddressU = lightSamplerDesc.AddressV = lightSamplerDesc.AddressW =
+		D3D11_TEXTURE_ADDRESS_CLAMP;
+	lightSamplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	lightSamplerDesc.MinLOD = 0.0f;
+	lightSamplerDesc.MaxLOD = 0.0f;
+	lightSamplerDesc.MipLODBias = 0.0f;
+	lightSamplerDesc.MaxAnisotropy = 16;
+	lightSamplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+	lightSamplerDesc.BorderColor[0] = lightSamplerDesc.BorderColor[1] =
+		lightSamplerDesc.BorderColor[2] = lightSamplerDesc.BorderColor[3] = 0.0f;
+
+	hres = device.CreateSamplerState(&lightSamplerDesc, &mLightSamplerState);
+	BS_ASSERT2(SUCCEEDED(hres), "Failed to create light sampler state");
+
 
 #ifdef BS_DEBUG
 	bsString128 debugName("bsRenderQueue world buffer");
@@ -139,6 +163,10 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 
 	debugName = "bsRenderQueue light buffer buffer";
 	mLightBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, debugName.size(),
+		debugName.c_str());
+
+	debugName = "bsRenderQueue material buffer";
+	mMaterialBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, debugName.size(),
 		debugName.c_str());
 #endif
 }
@@ -156,7 +184,11 @@ void bsRenderQueue::reset()
 
 	mMeshesToDraw.clear();
 	mLinesToDraw.clear();
-	mLightPositionPairs.clear();
+	
+	mPointLightPositionPairs.clear();
+	mSpotLightPositionPairs.clear();
+	mDirectionalLightPositionPairs.clear();
+
 	mText3dToDraw.clear();
 }
 
@@ -254,9 +286,20 @@ void bsRenderQueue::sortRenderables(const bsEntity** entities, unsigned int enti
 		const bsEntity& entity = *entities[i];
 
 		const bsMeshRenderer* meshRenderer = entity.getMeshRenderer();
+
 		if (meshRenderer)
 		{
 			auto finder = mMeshesToDraw.find(meshRenderer);
+
+			for (auto itr = mMeshesToDraw.begin(), end = mMeshesToDraw.end(); itr != end; ++itr)
+			{
+				if (itr->first->getUniqueID() == meshRenderer->getUniqueID())
+				{
+					finder = itr;
+					break;
+				}
+			}
+
 
 			if (finder == mMeshesToDraw.end())
 			{
@@ -296,7 +339,20 @@ void bsRenderQueue::sortRenderables(const bsEntity** entities, unsigned int enti
 		{
 			XMFLOAT3 position;
 			XMStoreFloat3(&position, entity.getTransform().getPosition());
-			mLightPositionPairs.push_back(std::make_pair(light, position));
+			switch (light->getLightType())
+			{
+			case bsLight::LT_POINT:
+				mPointLightPositionPairs.push_back(std::make_pair(light, position));
+				break;
+
+			case bsLight::LT_SPOT:
+				mSpotLightPositionPairs.push_back(std::make_pair(light, &entity));
+				break;
+
+			case bsLight::LT_DIRECTIONAL:
+				mDirectionalLightPositionPairs.push_back(std::make_pair(light, position));
+				break;
+			}
 		}
 
 		const bsText3D* text = entity.getTextRenderer();
@@ -306,16 +362,13 @@ void bsRenderQueue::sortRenderables(const bsEntity** entities, unsigned int enti
 		}
 	}
 
-	mFrameStats.visibleLights = mLightPositionPairs.size();
+	mFrameStats.visibleLights = mPointLightPositionPairs.size();
 }
 
 void bsRenderQueue::unbindGeometryShader()
 {
 	mDx11Renderer->getDeviceContext()->GSSetShader(nullptr, nullptr, 0);
 }
-
-void drawMeshInstanced(const bsDx11Renderer& renderer, const bsMeshRenderer& meshRenderer,
-	const XMMATRIX* transforms, unsigned int transformCount);
 
 void bsRenderQueue::drawMeshesInstanced()
 {
@@ -349,7 +402,7 @@ void bsRenderQueue::drawMeshesInstanced()
 			transforms.push_back(entities[i]->getTransform().getTransposedTransform());
 		}
 
-		if (meshRenderer.getMaterial().normal)
+		if (meshRenderer.getMaterial()->normal)
 		{
 			mShaderManager->setPixelShader(mInstancedTexturedMeshNormalPixelShader);
 		}
@@ -358,13 +411,15 @@ void bsRenderQueue::drawMeshesInstanced()
 			mShaderManager->setPixelShader(mInstancedTexturedMeshPixelShader);
 		}
 
-		drawMeshInstanced(*mDx11Renderer, meshRenderer, transforms.data(), transforms.size());
+		drawMeshInstanced(meshRenderer, transforms.data(), transforms.size());
 	}
 }
 
-void drawMeshInstanced(const bsDx11Renderer& renderer, const bsMeshRenderer& meshRenderer,
+void bsRenderQueue::drawMeshInstanced(const bsMeshRenderer& meshRenderer,
 	const XMMATRIX* transforms, unsigned int transformCount)
 {
+	//Create instance buffer. TODO: Find a less terrible way to do this.
+
 	D3D11_BUFFER_DESC instanceBufferDesc = { 0 };
 	instanceBufferDesc.Usage = D3D11_USAGE_DEFAULT;
 	instanceBufferDesc.ByteWidth = sizeof(XMMATRIX) * transformCount;
@@ -374,10 +429,25 @@ void drawMeshInstanced(const bsDx11Renderer& renderer, const bsMeshRenderer& mes
 	instanceData.pSysMem = transforms;
 
 	ID3D11Buffer* instanceBuffer;
-	HRESULT hr = renderer.getDevice()->CreateBuffer(&instanceBufferDesc, &instanceData, &instanceBuffer);
+	HRESULT hr = mDx11Renderer->getDevice()->CreateBuffer(&instanceBufferDesc, &instanceData, &instanceBuffer);
 	BS_ASSERT(SUCCEEDED(hr));
 
-	meshRenderer.drawInstanced(*renderer.getDeviceContext(), instanceBuffer, transformCount);
+#ifdef BS_DEBUG
+	bsString32 debugName("Mesh instance buffer");
+	instanceBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, debugName.size(), debugName.c_str());
+#endif
+
+	ID3D11DeviceContext& deviceContext = *mDx11Renderer->getDeviceContext();
+
+	CBMaterial materialContent;
+	materialContent.color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	materialContent.uvTile = meshRenderer.getMaterial()->uvTile;
+	deviceContext.UpdateSubresource(mMaterialBuffer, 0, nullptr, &materialContent, 0, 0);
+
+	deviceContext.VSSetConstantBuffers(5, 1, &mMaterialBuffer);
+
+
+	meshRenderer.drawInstanced(deviceContext, instanceBuffer, transformCount);
 
 
 	instanceBuffer->Release();
@@ -449,6 +519,11 @@ void drawInstancedLight(const bsDx11Renderer& renderer, const bsLight& light,
 	HRESULT hr = renderer.getDevice()->CreateBuffer(&instanceBufferDesc, &instanceData, &instanceBuffer);
 	BS_ASSERT(SUCCEEDED(hr));
 
+#ifdef BS_DEBUG
+	bsString32 debugName("Light instance buffer");
+	instanceBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, debugName.size(), debugName.c_str());
+#endif
+
 	//bsLight::drawInstanced(*renderer.getDeviceContext(), instanceBuffer, instanceCount);
 	light.drawInstanced(*renderer.getDeviceContext(), instanceBuffer, instanceCount);
 
@@ -457,75 +532,27 @@ void drawInstancedLight(const bsDx11Renderer& renderer, const bsLight& light,
 
 void bsRenderQueue::drawLights()
 {
-	if (mLightPositionPairs.empty())
-	{
-		return;
-	}
-
-	mShaderManager->setPixelShader(mLightInstancedPixelShader);
-	mShaderManager->setVertexShader(mLightInstancedVertexShader);
-
 	mDx11Renderer->getDeviceContext()->IASetPrimitiveTopology(
 		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	XMMATRIX scalingMatrix;
-	XMMATRIX fullTransform;
-	XMFLOAT4X4 lightWorldTransform;
-	CBLight cbLight;
+	mDx11Renderer->getDeviceContext()->PSSetSamplers(3, 1, &mLightSamplerState);
 
-	const unsigned int lightCount = mLightPositionPairs.size();
+	mShaderManager->setVertexShader(mLightInstancedVertexShader);
 
-	std::vector<LightInstanceData, bsAlignedAllocator<LightInstanceData>> lightData;
-	lightData.reserve(lightCount);
-
-	for (size_t i = 0; i < lightCount; ++i)
+	if (!mPointLightPositionPairs.empty())
 	{
-		const bsLight* light = mLightPositionPairs[i].first;
-		const XMFLOAT3& position = mLightPositionPairs[i].second;
-
-		//Create the light's transform, which includes the light's radius as scaling factor
-		//and the entity's position.
-		//Multiply with 2 to get diameter rather than radius.
-		const float scale = light->getRadius() * 2.0f;
-		scalingMatrix = XMMatrixScaling(scale, scale, scale);
-		fullTransform = XMMatrixMultiply(scalingMatrix,
-			XMMatrixTranslation(position.x, position.y, position.z));
-		fullTransform = XMMatrixTranspose(fullTransform);
-
-
-		LightInstanceData data;
-		data.world = fullTransform;
-		data.colorIntensity = XMVectorSet(light->mColor.x, light->mColor.y, light->mColor.z,
-			light->mIntensity);
-		data.positionRadius = XMVectorSet(position.x, position.y, position.z, light->mRadius);
-		lightData.push_back(data);
-
-
-		//XMStoreFloat4x4(&lightWorldTransform, fullTransform);
-#if 0
-		setWorldConstantBuffer(fullTransform);
-
-
-		memcpy(&cbLight.lightColor.x, &light->mColor.x, sizeof(XMFLOAT3));
-		cbLight.lightColor.w = light->mIntensity;
-
-		memcpy(&cbLight.lightPosition.x, &position.x, sizeof(XMFLOAT3));
-		cbLight.lightPosition.w = light->mRadius;
-
-		setLightConstantBuffer(cbLight);
-
-		light->draw(mDx11Renderer);
-#endif
+		mShaderManager->setPixelShader(mPointLightInstancedPixelShader);
+		drawPointLights();
 	}
 
-	drawInstancedLight(*mDx11Renderer, *mLightPositionPairs[0].first,
-		lightData.data(), lightData.size());
-	//
-	//for (unsigned int i = 0; i < lightCount; ++i)
-	//{
-	//	drawInstancedLight(*mDx11Renderer, *mLightPositionPairs[i].first,
-	//		lightData.data(), lightData.size());
-	//}
+	if (!mSpotLightPositionPairs.empty())
+	{
+		mShaderManager->setPixelShader(mSpotLightInstancedPixelShader);
+		drawSpotLights();
+	}
+
+	
+	//draw directional lights
 }
 
 void bsRenderQueue::sortLights()
@@ -549,14 +576,14 @@ void bsRenderQueue::sortLights()
 	//Light position - camera position.
 	XMVECTOR deltaPosition;
 
-	for (size_t i = 0; i < mLightPositionPairs.size(); ++i)
+	for (size_t i = 0; i < mPointLightPositionPairs.size(); ++i)
 	{
-		const bsLight* light = mLightPositionPairs[i].first;
-		const XMFLOAT3& position = mLightPositionPairs[i].second;
+		const bsLight* light = mPointLightPositionPairs[i].first;
+		const XMFLOAT3& position = mPointLightPositionPairs[i].second;
 
 		//Create the light's transform, which includes the light's radius as scaling factor
 		//and the entity's position.
-		const float scale = light->getRadius();
+		const float scale = light->getLightData().radius;
 		scalingMatrix = XMMatrixScaling(scale, scale, scale);
 		fullTransform = XMMatrixMultiply(scalingMatrix,
 			XMMatrixTranslation(position.x, position.y, position.z));
@@ -569,13 +596,13 @@ void bsRenderQueue::sortLights()
 		
 		const float distanceSquared = XMVectorGetX(XMVector3LengthSq(deltaPosition));
 
-		if (distanceSquared > nearClipSquared + (light->getRadius() * 2.0f))
+		if (distanceSquared > nearClipSquared + (light->getLightData().radius * 2.0f))
 		{
 			//Light completely outside camera near plane.
 
 			notClippingWithCamera.push_back(std::make_pair(light, lightWorldTransform));
 		}
-		else if (distanceSquared + nearClipSquared < (light->getRadius() * 2.0f))
+		else if (distanceSquared + nearClipSquared < (light->getLightData().radius * 2.0f))
 		{
 			//Light completely contains camera near plane.
 
@@ -608,4 +635,127 @@ void bsRenderQueue::drawTexts()
 
 		text.second->draw(transform);
 	});
+}
+
+void bsRenderQueue::drawPointLights()
+{
+	BS_ASSERT2(!mPointLightPositionPairs.empty(), "drawPointLights called, but there are"
+		" no point lights to draw");
+
+	XMMATRIX scalingMatrix;
+	XMMATRIX fullTransform;
+	XMFLOAT4X4 lightWorldTransform;
+	CBLight cbLight;
+
+	const unsigned int lightCount = mPointLightPositionPairs.size();
+
+	std::vector<LightInstanceData, bsAlignedAllocator<LightInstanceData>> lightData;
+	lightData.reserve(lightCount);
+
+	for (size_t i = 0; i < lightCount; ++i)
+	{
+		const bsLight* light = mPointLightPositionPairs[i].first;
+		const XMFLOAT3& position = mPointLightPositionPairs[i].second;
+
+		//Create the light's transform, which includes the light's radius as scaling factor
+		//and the entity's position.
+		//Multiply with 2 to get diameter rather than radius.
+		const float scale = light->getLightData().radius * 2.0f;
+		scalingMatrix = XMMatrixScaling(scale, scale, scale);
+		fullTransform = XMMatrixMultiply(scalingMatrix,
+			XMMatrixTranslation(position.x, position.y, position.z));
+		fullTransform = XMMatrixTranspose(fullTransform);
+
+
+		LightInstanceData data;
+		data.world = fullTransform;
+		const XMFLOAT3& lightColor = light->getLightData().color;
+		data.colorIntensity.x = lightColor.x;
+		data.colorIntensity.y = lightColor.y;
+		data.colorIntensity.z = lightColor.z;
+		data.colorIntensity.w = light->getLightData().intensity;
+
+		data.positionRadius.x = position.x;
+		data.positionRadius.y = position.y;
+		data.positionRadius.z = position.z;
+		data.positionRadius.w = light->getLightData().radius;
+
+		//Unused for point lights.
+		memset(&data.attenuation, 0, sizeof(data.attenuation));
+		memset(&data.direction, 0, sizeof(data.direction));
+
+		lightData.push_back(data);
+	}
+
+	drawInstancedLight(*mDx11Renderer, *mPointLightPositionPairs[0].first,
+		lightData.data(), lightData.size());
+}
+
+void bsRenderQueue::drawSpotLights()
+{
+	BS_ASSERT2(!mSpotLightPositionPairs.empty(), "drawSpotLights called, but there are"
+		" no spot lights to draw");
+
+	XMMATRIX scalingMatrix;
+	XMMATRIX fullTransform;
+	XMFLOAT4X4 lightWorldTransform;
+	CBLight cbLight;
+
+	const unsigned int lightCount = mSpotLightPositionPairs.size();
+
+	std::vector<LightInstanceData, bsAlignedAllocator<LightInstanceData>> lightData;
+	lightData.reserve(lightCount);
+
+	for (size_t i = 0; i < lightCount; ++i)
+	{
+		const bsLight* light = mSpotLightPositionPairs[i].first;
+
+		const bsTransform& lightTransform = mSpotLightPositionPairs[i].second->getTransform();
+		const XMVECTOR& position = lightTransform.getPosition();
+		const XMVECTOR& rotation = lightTransform.getRotation();
+
+
+		//Create the light's transform, which includes the light's radius as scaling factor
+		//and the entity's position.
+		//Multiply with 2 to get diameter rather than radius.
+		const float scale = light->getLightData().radius * 2.0f;
+		scalingMatrix = XMMatrixScaling(scale, scale, scale);
+		fullTransform = XMMatrixMultiply(scalingMatrix,
+			XMMatrixTranslationFromVector(position));
+		fullTransform = XMMatrixTranspose(fullTransform);
+
+
+		LightInstanceData data;
+		data.world = fullTransform;
+		const XMFLOAT3& lightColor = light->getLightData().color;
+		data.colorIntensity.x = lightColor.x;
+		data.colorIntensity.y = lightColor.y;
+		data.colorIntensity.z = lightColor.z;
+		data.colorIntensity.w = light->getLightData().intensity;
+		
+		XMStoreFloat4A(&data.positionRadius, position);
+		data.positionRadius.w = light->getLightData().radius;
+
+		//Rotate the light's direction by its current rotation.
+		const XMVECTOR lightDirection = XMVector3Rotate(
+			XMLoadFloat3(&light->getLightData().direction), rotation);
+
+		//const XMVECTOR lightDirection = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+
+		XMStoreFloat4A(&data.direction, lightDirection);
+
+
+		//Unused for spot lights.
+		memset(&data.attenuation, 0, sizeof(data.attenuation));
+
+		lightData.push_back(data);
+	}
+
+	drawInstancedLight(*mDx11Renderer, *mSpotLightPositionPairs[0].first,
+		lightData.data(), lightData.size());
+}
+
+size_t bsRenderQueue::MeshRendererHasher::operator()(const bsMeshRenderer* meshRenderer) const
+{
+	return std::hash<unsigned int>()(meshRenderer->getUniqueID());
 }

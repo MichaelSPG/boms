@@ -13,11 +13,22 @@ class bsDx11Renderer;
 struct LightInstanceData;
 
 
-struct bsPointLightCInfo
+struct bsLightData
 {
+	//Position of the light.
+	//XMFLOAT3	position;
+	//Direction of the light (ignored for point lights).
+	XMFLOAT3	direction;
+	//Diffuse color of the light.
 	XMFLOAT3	color;
+	//Radius of the light (ignored for directinoal lights).
 	float		radius;
+	//Controls the spot light cone (only for spot lights).
+	float		spotCone;
+	//Intensity of the light.
 	float		intensity;
+	//Attenuation (ignored for directional lights).
+	XMFLOAT3	attenuation;
 };
 
 
@@ -29,8 +40,6 @@ struct bsPointLightCInfo
 */
 __declspec(align(16)) class bsLight
 {
-	friend class bsRenderQueue;
-
 public:
 	enum LightType
 	{
@@ -50,19 +59,23 @@ public:
 
 
 	bsLight(LightType lightType, bsMeshCache* meshCache,
-		const bsPointLightCInfo& cInfo);
+		const bsLightData& cInfo);
 
 
-	/*	Draws the mesh this light uses to represent itself.
+	
+	/*	Draws light using instancing.
 	*/
-	void draw(bsDx11Renderer* dx11Renderer) const;
-
 	void drawInstanced(ID3D11DeviceContext& deviceContext, ID3D11Buffer* instanceBuffer,
 		unsigned int instanceCount) const;
 
-	inline float getRadius() const
+	inline LightType getLightType() const
 	{
-		return mRadius;
+		return mLightType;
+	}
+
+	const bsLightData& getLightData() const
+	{
+		return mLightData;
 	}
 
 	inline const bsCollision::Sphere& getBoundingSphere() const
@@ -71,19 +84,20 @@ public:
 	}
 
 
-protected:
-	std::shared_ptr<bsMesh>	mMesh;
 private:
-
 	LightType	mLightType;
 
-	//Direction for directional and spot lights only
-	XMFLOAT3	mDirection;
-	XMFLOAT3	mColor;
+	bsLightData	mLightData;
 
-	//Radius for point lights only
-	float		mRadius;
-	float		mIntensity;
+	//Direction for directional and spot lights only
+	//XMFLOAT3	mDirection;
+	//XMFLOAT3	mColor;
+	//
+	////Radius for point lights only
+	//float		mRadius;
+	//float		mIntensity;
+
+	std::shared_ptr<bsMesh>	mMesh;
 
 	bsCollision::Sphere mBoundingSphere;
 };

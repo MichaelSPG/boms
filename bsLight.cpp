@@ -9,24 +9,16 @@
 
 
 bsLight::bsLight(LightType lightType, bsMeshCache* meshCache,
-	const bsPointLightCInfo& cInfo)
+	const bsLightData& lightData)
 	: mLightType(lightType)
-	, mMesh(meshCache->getMesh("sphere_1m_d.bsm"))
-	, mColor(cInfo.color)
-	, mRadius(cInfo.radius)
-	, mIntensity(cInfo.intensity)
+	, mLightData(lightData)
+	//, mMesh(meshCache->getMesh("sphere_1m_d.bsm"))
+	, mMesh(meshCache->getMesh("unit_cube.bsm"))
 {
-	memset(&mDirection, 0, sizeof(mDirection));
-
-	BS_ASSERT2(lightType == LT_POINT, "Only points lights are functional");
+	//BS_ASSERT2(lightType == LT_POINT, "Only points lights are functional");
 
 	mBoundingSphere.positionAndRadius = XMVectorReplicate(0.0f);
-	mBoundingSphere.setRadius(mRadius);
-}
-
-void bsLight::draw(bsDx11Renderer* dx11Renderer) const
-{
-	mMesh->draw(dx11Renderer);
+	mBoundingSphere.setRadius(mLightData.radius);
 }
 
 void bsLight::drawInstanced(ID3D11DeviceContext& deviceContext,
@@ -42,7 +34,7 @@ void bsLight::drawInstanced(ID3D11DeviceContext& deviceContext,
 	const std::vector<unsigned int>& indexCounts = mMesh->getIndexCounts();
 
 
-	unsigned int strides[2] = { sizeof(bsVertexNormalTex), sizeof(LightInstanceData) };
+	unsigned int strides[2] = { sizeof(bsVertexNormalTangentTex), sizeof(LightInstanceData) };
 	unsigned int offsets[2] = { 0, 0 };
 	ID3D11Buffer* vertexInstanceBuffers[2] = { nullptr, instanceBuffer };
 

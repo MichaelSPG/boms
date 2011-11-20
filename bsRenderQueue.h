@@ -163,7 +163,12 @@ private:
 	//Functions to draw individual renderable types.
 	void drawMeshesInstanced();
 
-	//void drawLightsInstanced();
+	void drawMeshInstanced(const bsMeshRenderer& meshRenderer, const XMMATRIX* transforms,
+		unsigned int transformCount);
+
+	void drawPointLights();
+
+	void drawSpotLights();
 
 
 	void setWorldConstantBuffer(const XMMATRIX& world);
@@ -184,6 +189,10 @@ private:
 	ID3D11Buffer*		mWorldBuffer;
 	ID3D11Buffer*		mWireframeWorldBuffer;
 	ID3D11Buffer*		mLightBuffer;
+	ID3D11Buffer*		mMaterialBuffer;
+
+	ID3D11SamplerState*	mLightSamplerState;
+
 
 	std::shared_ptr<bsPixelShader>	mWireframePixelShader;
 	std::shared_ptr<bsVertexShader>	mWireframeVertexShader;
@@ -195,14 +204,28 @@ private:
 
 	std::shared_ptr<bsPixelShader>	mLightPixelShader;
 	std::shared_ptr<bsVertexShader>	mLightVertexShader;
-	std::shared_ptr<bsPixelShader>	mLightInstancedPixelShader;
+
 	std::shared_ptr<bsVertexShader>	mLightInstancedVertexShader;
+	std::shared_ptr<bsPixelShader>	mPointLightInstancedPixelShader;
+	std::shared_ptr<bsPixelShader>	mSpotLightInstancedPixelShader;
 
 	bsFrameStats		mFrameStats;
 
-	std::unordered_map<const bsMeshRenderer*, std::vector<const bsEntity*>>		mMeshesToDraw;
+	struct MeshRendererHasher
+	{
+		size_t operator()(const bsMeshRenderer* meshRenderer) const;
+	};
+
+	typedef std::unordered_map<const bsMeshRenderer*, std::vector<const bsEntity*>,
+		MeshRendererHasher> MeshRendererMap;
+
+	MeshRendererMap mMeshesToDraw;
+	//std::unordered_map<const bsMeshRenderer*, std::vector<const bsEntity*>>		mMeshesToDraw;
 	std::unordered_map<const bsLineRenderer*, std::vector<const bsEntity*>>	mLinesToDraw;
-	std::vector<std::pair<const bsLight*, XMFLOAT3>>	mLightPositionPairs;
+	std::vector<std::pair<const bsLight*, XMFLOAT3>>	mPointLightPositionPairs;
+	std::vector<std::pair<const bsLight*, const bsEntity*>>	mSpotLightPositionPairs;
+	std::vector<std::pair<const bsLight*, XMFLOAT3>>	mDirectionalLightPositionPairs;
+
 
 	std::vector<std::pair<const bsEntity*, const bsText3D*>> mText3dToDraw;
 };
