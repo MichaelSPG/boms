@@ -1,10 +1,14 @@
 #pragma once
 
+#include <memory>
+
 #include <xnamath.h>
 
 class bsEntity;
 class bsMeshCache;
 class bsTextureCache;
+class bsMaterialCache;
+struct bsMaterial;
 
 
 /*	Utility class for making simple geometric objects with both graphical and physical
@@ -12,18 +16,19 @@ class bsTextureCache;
 	
 	All the objects created by this class are dynamic by default unless stated otherwise
 	by comments for a specific function.
+
+	All the objects created by this class use the default material, so if you modify it,
+	it will alter any object using the default material.
 */
 class bsPrimitiveCreator
 {
 public:
-	bsPrimitiveCreator(bsMeshCache& meshCache, bsTextureCache& textureCache)
-		: mMeshCache(meshCache)
-		, mTextureCache(textureCache)
-	{}
+	bsPrimitiveCreator(bsMeshCache& meshCache, bsMaterialCache& materialCache,
+		bsTextureCache& textureCache);
 
 	bsPrimitiveCreator(const bsPrimitiveCreator& other)
 		: mMeshCache(other.mMeshCache)
-		, mTextureCache(other.mTextureCache)
+		, mDefaultMaterial(other.mDefaultMaterial)
 	{}
 
 	/*	Creates an entity with a sphere mesh and rigid body with radius equal to input.
@@ -84,6 +89,6 @@ public:
 private:
 	bsPrimitiveCreator& operator=(const bsPrimitiveCreator&);
 
-	bsMeshCache&	mMeshCache;
-	bsTextureCache&	mTextureCache;
+	bsMeshCache&		mMeshCache;
+	std::shared_ptr<bsMaterial>	mDefaultMaterial;
 };

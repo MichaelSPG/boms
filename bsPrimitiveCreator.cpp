@@ -18,7 +18,16 @@
 #include "bsMath.h"
 #include "bsMeshRenderer.h"
 #include "bsAssert.h"
+#include "bsMaterialCache.h"
 
+
+bsPrimitiveCreator::bsPrimitiveCreator(bsMeshCache& meshCache, bsMaterialCache& materialCache,
+	bsTextureCache& textureCache)
+	: mMeshCache(meshCache)
+	, mDefaultMaterial(materialCache.createNewMaterial("Primitive default material"))
+{
+	mDefaultMaterial->diffuse = textureCache.getDefaultTexture();
+}
 
 bsEntity* bsPrimitiveCreator::createSphere(float radius) const
 {
@@ -26,7 +35,7 @@ bsEntity* bsPrimitiveCreator::createSphere(float radius) const
 
 	bsEntity* entity = new bsEntity();
 	entity->attachMeshRenderer(*new bsMeshRenderer(mMeshCache.getMesh("sphere_1m_d.bsm"),
-		mTextureCache.getDefaultTexture()));
+		mDefaultMaterial));
 
 	hkpRigidBodyCinfo rbCinfo;
 	rbCinfo.m_shape = new hkpSphereShape(radius);
@@ -60,7 +69,7 @@ bsEntity* bsPrimitiveCreator::createBox(const XMVECTOR& halfExtents) const
 
 	bsEntity* entity = new bsEntity();
 	entity->attachMeshRenderer(*new bsMeshRenderer(mMeshCache.getMesh("unit_cube.bsm"),
-		mTextureCache.getDefaultTexture()));
+		mDefaultMaterial));
 
 	hkVector4 halfExt(bsMath::toHK(halfExtents));
 	//Subtract convex radius from the half extents to prevent the box from
@@ -100,7 +109,7 @@ bsEntity* bsPrimitiveCreator::createPlane(const XMVECTOR& halfExtents) const
 
 	bsEntity* entity = new bsEntity();
 	entity->attachMeshRenderer(*new bsMeshRenderer(mMeshCache.getMesh("plane_1m.bsm"),
-		mTextureCache.getDefaultTexture()));
+		mDefaultMaterial));
 
 	XMFLOAT4A halfExtents4A;
 	XMStoreFloat4A(&halfExtents4A, halfExtents);
@@ -139,7 +148,7 @@ bsEntity* bsPrimitiveCreator::createCapsule(float height, float radius) const
 
 	bsEntity* entity = new bsEntity();
 	entity->attachMeshRenderer(*new bsMeshRenderer(mMeshCache.getMesh("capsule.bsm"),
-		mTextureCache.getDefaultTexture()));
+		mDefaultMaterial));
 
 	const hkVector4 vertexBottom(0.0f, radius, 0.0f);
 	const hkVector4 vertexTop(0.0f, height - radius, 0.0f);
@@ -186,7 +195,7 @@ bsEntity* bsPrimitiveCreator::createCylinder(float height, float radius) const
 
 	bsEntity* entity = new bsEntity();
 	entity->attachMeshRenderer(*new bsMeshRenderer(mMeshCache.getMesh("cylinder.bsm"),
-		mTextureCache.getDefaultTexture()));
+		mDefaultMaterial));
 
 	//Bake convex radius into the cylinder's shape.
 	const hkVector4 vertexBottom(0.0f, hkConvexShapeDefaultRadius, 0.0f);
