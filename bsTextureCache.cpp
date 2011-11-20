@@ -6,6 +6,7 @@
 #include "bsTexture2D.h"
 #include "bsLog.h"
 #include "bsFixedSizeString.h"
+#include "bsFileSystem.h"
 
 
 //Name for the default pink/yellow checker texture.
@@ -140,15 +141,26 @@ std::shared_ptr<bsTexture2D> bsTextureCache::getTexture(const char* fileName)
 
 	//Not found in cache, load it asynchronously.
 
+	const std::string fullFilePath(mFileSystem.getPathFromFilename(fileName));
+	
+	if (fullFilePath.empty())
+	{
+		bsLog::logf(bsLog::SEV_ERROR, "Failed to find path for file '%s'", fileName);
+
+		BS_ASSERT2(false, "Failed to find texture file");
+
+		//Failed to load the requested texture, return default texture to prevent crashing.
+		return getDefaultTexture();
+	}
+
 	//Create a temporary default placeholder while loading the actual texture in the background.
 	std::shared_ptr<bsTexture2D> texture(std::move(std::make_shared<bsTexture2D>(
 		mTextures[bsTextureCacheDefaultTextureName]->getShaderResourceView(), mDevice,
 		getNewTextureId())));
 
 	mTextures.insert(StringTexturePair(fileName, texture));
-	auto uhh = StringTexturePair(fileName, texture);
 
-	mFileIoManager.addAsynchronousLoadRequest(fileName,
+	mFileIoManager.addAsynchronousLoadRequest(fullFilePath,
 		bsTextureFileLoadFinishedCallback(texture, fileName, mDevice));
 
 	return texture;
@@ -165,6 +177,18 @@ std::shared_ptr<bsTexture2D> bsTextureCache::getTextureBlocking(const char* file
 
 	//Not found in cache, load it synchronously.
 
+	const std::string fullFilePath(mFileSystem.getPathFromFilename(fileName));
+
+	if (fullFilePath.empty())
+	{
+		bsLog::logf(bsLog::SEV_ERROR, "Failed to find path for file '%s'", fileName);
+
+		BS_ASSERT2(false, "Failed to find texture file");
+
+		//Failed to load the requested texture, return default texture to prevent crashing.
+		return getDefaultTexture();
+	}
+
 	//Create a temporary default placeholder.
 	std::shared_ptr<bsTexture2D> texture(std::move(std::make_shared<bsTexture2D>(
 		mTextures[bsTextureCacheDefaultTextureName]->getShaderResourceView(), mDevice,
@@ -174,7 +198,7 @@ std::shared_ptr<bsTexture2D> bsTextureCache::getTextureBlocking(const char* file
 
 	//Do the same as with async loading, but call loadBlocking instead.
 	bsTextureFileLoadFinishedCallback finishedCallback(texture, fileName, mDevice);
-	finishedCallback(mFileIoManager.loadBlocking(fileName));
+	finishedCallback(mFileIoManager.loadBlocking(fullFilePath));
 
 	return texture;
 }
