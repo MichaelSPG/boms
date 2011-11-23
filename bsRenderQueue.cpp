@@ -168,11 +168,17 @@ bsRenderQueue::bsRenderQueue(bsDx11Renderer* dx11Renderer, bsShaderManager* shad
 	debugName = "bsRenderQueue material buffer";
 	mMaterialBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, debugName.size(),
 		debugName.c_str());
+
+	debugName = "bsREnderQueue light sampler state";
+	mLightSamplerState->SetPrivateData(WKPDID_D3DDebugObjectName, debugName.size(),
+		debugName.c_str());
 #endif
 }
 
 bsRenderQueue::~bsRenderQueue()
 {
+	mLightSamplerState->Release();
+	mMaterialBuffer->Release();
 	mWorldBuffer->Release();
 	mWireframeWorldBuffer->Release();
 	mLightBuffer->Release();
