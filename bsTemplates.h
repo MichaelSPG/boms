@@ -29,6 +29,13 @@ inline void unordered_erase(std::vector<T>& vec, T& elem)
 	vec.pop_back();
 }
 
+template <typename T>
+inline void unordered_erase(std::vector<T>& vec, typename std::vector<T>::iterator& itr)
+{
+	*itr = vec.back();
+	vec.pop_back();
+}
+
 /*	Removes every element from the map for which the predicate evaluates to true.
 */
 template<typename Key, typename Value, typename Comp, typename Alloc, typename Predicate>
