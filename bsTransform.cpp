@@ -4,6 +4,7 @@
 #include "bsAssert.h"
 #include "bsEntity.h"
 #include "bsMath.h"
+#include "bsTemplates.h"
 
 #include <Physics/Dynamics/Entity/hkpRigidBody.h>
 
@@ -156,10 +157,30 @@ void bsTransform::updateDerivedTransform()
 
 	if (mParentTransform != nullptr)
 	{
+
+
 		//In a node hierarchy, include parent transforms in own transform.
-		mWorldPosition = XMVectorAdd(mParentTransform->getPosition(), mLocalPosition);
-		mWorldRotation = XMQuaternionMultiply(mParentTransform->getRotation(),
-			mLocalRotation);
+		//mWorldPosition = XMVectorAdd(mParentTransform->getPosition(), mLocalPosition);
+		//mWorldPosition = XMVector3Rotate(mWorldPosition, (mParentTransform->getRotation()));
+		
+		//XMVECTOR worldPosition = mParentTransform->getPosition();
+		//XMVECTOR localPositionOffset = XMVector3Rotate(mLocalPosition, mParentTransform->getRotation());
+		//mWorldPosition = XMVectorAdd(worldPosition, localPositionOffset);
+
+		//XMVECTOR worldPosition = XMVectorAdd(mParentTransform->getPosition(), mLocalPosition);
+		//Local position rotated by parent's rotation.
+		const XMVECTOR localPositionOffset = XMVector3Rotate(mLocalPosition, mParentTransform->getRotation());
+		mWorldPosition = XMVectorAdd(mParentTransform->getPosition(), localPositionOffset);
+
+		//mWorldPosition = XMVectorAdd(mWorldPosition, mParentTransform->getPosition());
+
+		//mWorldRotation = XMQuaternionMultiply((mParentTransform->getRotation()),
+		//	mLocalRotation);
+		mWorldRotation = XMQuaternionMultiply(mLocalRotation, mParentTransform->getRotation());
+		
+		//mWorldRotation = XMQuaternionMultiply(XMQuaternionInverse(mParentTransform->getRotation()),
+		//	mLocalRotation);
+
 		mWorldScale = XMVectorMultiply(mParentTransform->getScale(), mLocalScale);
 	}
 	else
@@ -171,12 +192,34 @@ void bsTransform::updateDerivedTransform()
 	}
 
 	//Combine to a full scale * rotation * translation matrix.
-	const XMMATRIX positionMat = XMMatrixTranslationFromVector(mWorldPosition);
-	const XMMATRIX rotationMat = XMMatrixRotationQuaternion(mWorldRotation);
-	const XMMATRIX scaleMat = XMMatrixScalingFromVector(mWorldScale);
+	//const XMMATRIX positionMat = XMMatrixTranslationFromVector(mWorldPosition);
+	//const XMMATRIX rotationMat = XMMatrixRotationQuaternion(mWorldRotation);
+	//const XMMATRIX scaleMat = XMMatrixScalingFromVector(mWorldScale);
 
-	XMMATRIX mat = XMMatrixMultiply(scaleMat, rotationMat);
-	mat = XMMatrixMultiply(mat, positionMat);
+	XMVECTOR rotationOrigin = mParentTransform ? XMVector3Rotate(mParentTransform->getPosition(), mParentTransform->getRotation())
+		: XMVectorZero();
+	if (mParentTransform)
+	{
+		rotationOrigin = XMVectorSubtract(rotationOrigin, mParentTransform->getPosition());
+	}
+
+	//XMMATRIX mat = XMMatrixMultiply(scaleMat, rotationMat);
+	//mat = XMMatrixMultiply(mat, positionMat);
+	XMMATRIX mat = XMMatrixAffineTransformation(mWorldScale,//scale
+		//XMVectorSubtract(mWorldPosition, mLocalPosition),//rotation origin
+		//mWorldPosition,
+		XMVectorZero(),
+		//mParentTransform ? mWorldPosition : XMVectorZero(),
+		//mWorldPosition,
+		//mParentTransform ? mParentTransform->getPosition() : XMVectorZero(),
+		//XMVectorScale(mParentTransform ? mParentTransform->getPosition() : mWorldPosition, -1.0f),
+
+		mWorldRotation,//rotation
+		//mParentTransform ? XMQuaternionMultiply((mLocalRotation), (mParentTransform->getRotation())) : mWorldRotation,
+
+		mWorldPosition
+		//mParentTransform ? mParentTransform->getPosition() : XMVectorZero()
+		);//position
 
 	//Transpose to save some CPU when sending to the GPU.
 	mTransposedWorldTransform = XMMatrixTranspose(mat);
@@ -250,4 +293,19 @@ void bsTransform::updateRigidBodyTransform()
 			world->unmarkForWrite();
 		}
 	}
+}
+
+void bsTransform::unparentChild(bsTransform& childToRemove)
+{
+	BS_ASSERT2(childToRemove.getParentTransform() == this, "Trying to remove a child, but"
+		" that child's parent is not 'this'");
+
+	auto child = std::find(std::begin(mChildren), std::end(mChildren), &childToRemove);
+
+	BS_ASSERT2(child != std::end(mChildren), "Trying to remove a child, but that child is"
+		" not a child of this transform");
+
+	bs::unordered_erase(mChildren, child);
+
+	childToRemove.setParentTransform(nullptr);
 }

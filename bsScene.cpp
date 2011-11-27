@@ -66,19 +66,15 @@ bsScene::~bsScene()
 	//Delete all entities in this scene. Cannot do this in a for loop
 	while (!mEntities.empty())
 	{
-		bsEntity* entity = mEntities.back();
-		entity->removedFromScene(*this);
+		bsEntity& entity = *mEntities.back();
 
-		delete entity;
-		mEntities.pop_back();
+		removeEntityAndChildrenRecursively(entity, true);
 	}
 
 	mHavokManager->destroyVisualDebuggerForWorld(*mPhysicsWorld);
 
 	mPhysicsWorld->markForWrite();
-	
 	mPhysicsWorld->removeContactListener(&mContactCounter);
-
 	mPhysicsWorld->removeReference();
 
 	//Camera is attached to an entity and will be deleted by that entity.
@@ -102,16 +98,27 @@ void bsScene::addEntity(bsEntity& entity)
 
 void bsScene::removeEntity(bsEntity& entityToRemove)
 {
-	BS_ASSERT2(entityToRemove.getScene() == this, "Trying to remove en entity from a scene"
+	BS_ASSERT2(entityToRemove.getScene() == this, "Trying to remove an entity from a scene"
 		" it is not a part of");
 
-	const auto itr = std::find(std::begin(mEntities), std::end(mEntities), &entityToRemove);
+	auto itr = std::find(std::begin(mEntities), std::end(mEntities), &entityToRemove);
 
 	//Verify that the entity was found in this scene.
-	BS_ASSERT2(itr != std::end(mEntities),
-		"Trying to remove an entity from a scene it does not exist in");
+	if (itr == mEntities.end())
+	{
+		BS_ASSERT2(false, "Trying to remove an entity from a scene it does not exist in");
+		return;
+	}
 
-	bs::unordered_erase(mEntities, *itr);
+	bsTransform* parent = entityToRemove.getTransform().getParentTransform();
+	if (parent != nullptr)
+	{
+		//Remove from parent, preventing the parent from keep an invalid reference to the
+		//entity after it's been deleted.
+		parent->unparentChild(entityToRemove.getTransform());
+	}
+
+	bs::unordered_erase(mEntities, itr);
 
 	entityToRemove.removedFromScene(*this);
 
@@ -215,4 +222,20 @@ void bsScene::synchronizeActiveEntities(unsigned int* totalActiveRigidBodies,
 	mPhysicsWorld->unmarkForRead();
 
 	*totalActiveRigidBodies = numActiveRigidBodies;
+}
+
+void bsScene::removeEntityAndChildrenRecursively(bsEntity& entityToRemove, bool deleteAfterRemoving)
+{
+	const std::vector<bsTransform*>& children = entityToRemove.getTransform().getChildren();
+	for (unsigned int i = 0, count = children.size(); i < count; ++i)
+	{
+		removeEntityAndChildrenRecursively(children[i]->getEntity(), deleteAfterRemoving);
+	}
+
+	removeEntity(entityToRemove);
+	
+	if (deleteAfterRemoving)
+	{
+		delete &entityToRemove;
+	}
 }

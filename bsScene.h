@@ -86,6 +86,13 @@ public:
 	}
 
 private:
+	/*	This recursively removes entityToRemove and all of its children, all of the
+		children's children, and so on, from the scene.
+		This function can also delete all the entities it removes.
+	*/
+	void removeEntityAndChildrenRecursively(bsEntity& entityToRemove, bool deleteAfterRemoving);
+
+
 	/*	Increments the amount of created entities and returns it.
 		Used to assign unique IDs to entities.
 	*/

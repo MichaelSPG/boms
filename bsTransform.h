@@ -125,7 +125,7 @@ public:
 	
 	/*	Return parent transform, or null if there is no parent.
 	*/
-	inline const bsTransform* getParentTransform() const;
+	inline bsTransform* getParentTransform() const;
 
 	/*	Sets this transform's parent transform.
 		This transform will inherit the parent's transform.
@@ -137,6 +137,10 @@ public:
 	*/
 	inline const std::vector<bsTransform*>& getChildren() const;
 
+	/*	Removes the child from this transform's list of children.
+		The child will not have a parent when this function returns.
+	*/
+	void unparentChild(bsTransform& childToRemove);
 
 
 	/*	Internal functions.

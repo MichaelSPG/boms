@@ -114,7 +114,7 @@ inline const bsEntity& bsTransform::getEntity() const
 	return *mEntity;
 }
 
-inline const bsTransform* bsTransform::getParentTransform() const
+inline bsTransform* bsTransform::getParentTransform() const
 {
 	return mParentTransform;
 }
