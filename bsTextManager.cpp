@@ -8,6 +8,7 @@
 #include "bsScrollingText2D.h"
 #include "bsFrameStatistics.h"
 #include "bsTimer.h"
+#include "bsStringUtils.h"
 
 
 bsTextManager::bsTextManager(bsDx11Renderer* dx11Renderer)
@@ -22,6 +23,22 @@ bsTextManager::bsTextManager(bsDx11Renderer* dx11Renderer)
 bsTextManager::~bsTextManager()
 {
 	mTextBoxes.clear();
+#ifdef BS_DEBUG
+	for (auto itr = mTexts.begin(), end = mTexts.end(); itr != end; ++itr)
+	{
+		const long useCount = itr->use_count();
+		if (useCount > 1)
+		{
+			//There are some remaining external references.
+			const std::wstring& text = (*itr)->getText();
+			std::string charText(bsStringUtils::wideToChar(text));
+
+			bsLog::logf(bsLog::SEV_WARNING, "A bsText2D has %i remaining references when"
+				" bsTextManager is shutting down. Text: %s", useCount - 1, charText.c_str());
+		}
+	}
+#endif
+
 	mTexts.clear();
 	if (mFw1Factory)
 	{

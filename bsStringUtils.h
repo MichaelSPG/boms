@@ -31,6 +31,24 @@ inline std::wstring utf8ToUtf16(const std::string& utf8String)
 	return utf16String;
 }
 
+inline std::string wideToChar(const std::wstring& wideString)
+{
+	const unsigned int stringLength = wideString.length();
+
+	if (stringLength == 0)
+	{
+		return std::string();
+	}
+
+	std::string charString;
+	charString.resize(stringLength);
+
+	WideCharToMultiByte(CP_UTF8, 0, wideString.c_str(), stringLength, &charString[0],
+		stringLength * sizeof(char), nullptr, nullptr);
+
+	return charString;
+}
+
 //Converts any type std::stringstream supports to a string.
 template<typename T>
 inline std::string toString(const T& t)
