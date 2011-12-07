@@ -75,5 +75,10 @@ inline XMVECTOR toXM(const hkQuaternion& rotation)
 	return XMLoadFloat4A(&xmQuat);
 }
 
+//3x3 rotation matrix to quaternion.
+inline XMVECTOR toXM(const hkRotation& rotation)
+{
+	return toXM(hkQuaternion(rotation));
+}
 
 } // namespace bsMath
