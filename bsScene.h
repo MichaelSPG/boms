@@ -15,7 +15,6 @@ struct bsCoreCInfo;
 struct bsFrameStatistics;
 class hkJobQueue;
 class bsEntity;
-//class bsContactCounter;
 
 
 /*	A scene represents a collection of entities.
@@ -85,6 +84,38 @@ public:
 		return mStepPhysics;
 	}
 
+	/*	Sets the time scale of the physics world.
+		Making sudden non-small changes to this value is not encouraged as it will reduce the
+		stability of the simulation. Larger values (over 1) will also reduce the stability.
+		Default is 1.
+	*/
+	inline void setTimeScale(float newTimeScale)
+	{
+		mTimeScale = newTimeScale;
+	}
+
+	inline float getTimeScale() const
+	{
+		return mTimeScale;
+	}
+
+	/*	Sets the amount of physics steps to perform per second, and the size of each
+		step in ms. The step size will set to 1000 / stepsPerSecond.
+		Making sudden non-small changes to this value is not encouraged as it will reduce the
+		stability of the simulation.
+	*/
+	void setPhysicsFrequency(float stepsPerSecond)
+	{
+		mPhysicsFrequency = stepsPerSecond;
+		mPhysicsStepSizeMs = 1000.0f / stepsPerSecond;
+	}
+
+	float getPhysicsFrequency() const
+	{
+		return mPhysicsFrequency;
+	}
+
+
 private:
 	/*	This recursively removes entityToRemove and all of its children, all of the
 		children's children, and so on, from the scene.
@@ -127,4 +158,10 @@ private:
 
 	//Whether physics should be stepped.
 	bool mStepPhysics;
+
+	float				mTimeScale;
+	//Number of physics steps to perform per second.
+	float				mPhysicsFrequency;
+	//Size of each physics step, in milliseconds.
+	float				mPhysicsStepSizeMs;
 };

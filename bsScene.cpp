@@ -20,6 +20,7 @@
 #include "bsMath.h"
 #include "bsTemplates.h"
 #include "bsFrameStatistics.h"
+#include "bsDx11Renderer.h"
 
 
 bsScene::bsScene(bsDx11Renderer* renderer, bsHavokManager* havokManager,
@@ -29,6 +30,9 @@ bsScene::bsScene(bsDx11Renderer* renderer, bsHavokManager* havokManager,
 	, mPhysicsWorld(nullptr)
 	, mHavokManager(havokManager)
 	, mStepPhysics(true)
+	, mTimeScale(1.0f)
+	, mPhysicsFrequency(60.0f)
+	, mPhysicsStepSizeMs(1000.0f / 60.0f)
 {
 	BS_ASSERT(renderer);
 	BS_ASSERT(havokManager);
@@ -38,7 +42,7 @@ bsScene::bsScene(bsDx11Renderer* renderer, bsHavokManager* havokManager,
 	mHavokManager->createVisualDebuggerForWorld(*mPhysicsWorld);
 
 	//Create the camera.
-	bsProjectionInfo projectionInfo(45.0f, 1000.0f, 0.1f,
+	bsProjectionInfo projectionInfo(60.0f, 1000.0f, 0.1f,
 		(float)cInfo.windowWidth / (float)cInfo.windowHeight, (float)cInfo.windowWidth,
 		(float)cInfo.windowHeight);
 	mCamera = new bsCamera(projectionInfo, mDx11Renderer);
@@ -63,15 +67,15 @@ bsScene::bsScene(bsDx11Renderer* renderer, bsHavokManager* havokManager,
 
 bsScene::~bsScene()
 {
-	//Delete all entities in this scene. Cannot do this in a for loop
+	mHavokManager->destroyVisualDebuggerForWorld(*mPhysicsWorld);
+
+	//Delete all entities in this scene.
 	while (!mEntities.empty())
 	{
 		bsEntity& entity = *mEntities.back();
 
 		removeEntityAndChildrenRecursively(entity, true);
 	}
-
-	mHavokManager->destroyVisualDebuggerForWorld(*mPhysicsWorld);
 
 	mPhysicsWorld->markForWrite();
 	mPhysicsWorld->removeContactListener(&mContactCounter);
@@ -145,30 +149,62 @@ void bsScene::update(float deltaTimeMs, bsFrameStatistics& framStatistics)
 {
 	bsTimer timer;
 
-	float preStep = timer.getTimeMilliSeconds();
+	const float preStep = timer.getTimeMilliSeconds();
+
+	unsigned int numPhysicsSteps = 0;
+
 	if (mStepPhysics)
 	{
-		mHavokManager->stepWorld(*mPhysicsWorld, deltaTimeMs);
+		mPhysicsWorld->setFrameTimeMarker(deltaTimeMs * 0.001f * mTimeScale);
+
+		const hkpStepResult result = mPhysicsWorld->advanceTime();
+		BS_ASSERT(result == HK_STEP_RESULT_SUCCESS);
+
+		while (!mPhysicsWorld->isSimulationAtMarker())
+		{
+			BS_ASSERT(mPhysicsWorld->isSimulationAtPsi());
+
+			//pre-step callbacks
+
+			mHavokManager->stepWorld(*mPhysicsWorld, mPhysicsStepSizeMs);
+			mHavokManager->stepVisualDebugger(mPhysicsStepSizeMs);
+
+			++numPhysicsSteps;
+
+			if (mPhysicsWorld->isSimulationAtPsi())
+			{
+				//sync entities with rbs (maybe)
+			}
+		}
 	}
 
-	framStatistics.physicsInfo.stepDuration = timer.getTimeMilliSeconds() - preStep;
-
-	mCamera->update();
-
-	float preSynchronize = timer.getTimeMilliSeconds();
+	const float preSynchronize = timer.getTimeMilliSeconds();
 	unsigned int totalActiveRigidBodies, totalActiveSimulationIslands;
 	synchronizeActiveEntities(&totalActiveRigidBodies, &totalActiveSimulationIslands);
 
 	framStatistics.physicsInfo.synchronizationDuration = timer.getTimeMilliSeconds() - preSynchronize;
+	framStatistics.physicsInfo.stepDuration = preSynchronize - preStep;
+
+	framStatistics.physicsInfo.numSteps = numPhysicsSteps;
 	framStatistics.physicsInfo.numActiveRigidBodies = totalActiveRigidBodies;
 	framStatistics.physicsInfo.numActiveSimulationIslands = totalActiveSimulationIslands;
 	framStatistics.physicsInfo.numContacts = mContactCounter.getNumContacts();
+
+	mCamera->update();
 }
 
 void bsScene::createPhysicsWorld(hkJobQueue& jobQueue)
 {
 	hkpWorldCinfo worldCinfo;
 	worldCinfo.setBroadPhaseWorldSize(1000.0f);
+
+	{
+		worldCinfo.setupSolverInfo(hkpWorldCinfo::SOLVER_TYPE_8ITERS_HARD);
+		worldCinfo.m_solverMicrosteps = 3;
+		//worldCinfo.m_contactPointGeneration = hkpWorldCinfo::CONTACT_POINT_ACCEPT_ALWAYS;
+		//worldCinfo.m_contactPointGeneration = hkpWorldCinfo::CONTACT_POINT_REJECT_DUBIOUS;
+	}
+
 	worldCinfo.m_solverIterations;
 	worldCinfo.m_enableDeactivation;
 	worldCinfo.m_simulationType = hkpWorldCinfo::SIMULATION_TYPE_MULTITHREADED;
@@ -214,8 +250,18 @@ void bsScene::synchronizeActiveEntities(unsigned int* totalActiveRigidBodies,
 			++numActiveRigidBodies;
 
 			bsEntity& entity = bsGetEntity(*rigidBody);
-			entity.getTransform().setTransformFromRigidBody(bsMath::toXM(rigidBody->getPosition()),
-				bsMath::toXM(rigidBody->getRotation()));
+			//entity.getTransform().setTransformFromRigidBody(bsMath::toXM(rigidBody->getPosition()),
+			//	bsMath::toXM(rigidBody->getRotation()));
+
+			{
+				hkTransform transform;
+				rigidBody->approxCurrentTransform(transform);
+
+				const XMVECTOR position = bsMath::toXM(transform.getTranslation());
+				const XMVECTOR rotation = bsMath::toXM(transform.getRotation());
+
+				entity.getTransform().setTransformFromRigidBody(position, rotation);
+			}
 		}
 	}
 
